@@ -47,18 +47,9 @@ Deno.serve(async (req: Request) => {
     return new Response("Method not allowed", { status: 405, headers: CORS });
   }
 
-  // ── Debug: log todos os headers ───────────────────────────────────────
-  console.log("Headers recebidos:");
-  for (const [k, v] of req.headers.entries()) {
-    console.log(`  ${k}: ${v}`);
-  }
-
   // ── Validação do token ──────────────────────────────────────────────────
   const webhookToken  = req.headers.get("asaas-access-token");
   const tokenEsperado = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
-
-  console.log("Token esperado:", tokenEsperado ? "setado" : "NULO");
-  console.log("Token recebido:", webhookToken);
 
   if (!tokenEsperado || webhookToken !== tokenEsperado) {
     console.warn("Webhook token inválido");
