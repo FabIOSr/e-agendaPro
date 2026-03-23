@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script src="/config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agendar — Ana Cabelos</title>
@@ -417,14 +418,10 @@ body {
 <!-- HERO -->
 <div class="hero">
   <div class="hero-inner">
-    <div class="avatar-wrap">A</div>
-    <h1>Ana Cabelos</h1>
-    <p class="hero-bio">Especialista em coloração e tratamentos capilares. Atendimento personalizado em São Paulo.</p>
-    <div class="hero-tags">
-      <span class="hero-tag">✂️ Cortes</span>
-      <span class="hero-tag">🎨 Coloração</span>
-      <span class="hero-tag">💆 Tratamentos</span>
-    </div>
+    <div class="avatar-wrap" id="hero-avatar">A</div>
+    <h1 id="hero-nome">Carregando…</h1>
+    <p class="hero-bio" id="hero-bio"></p>
+    <div class="hero-tags" id="hero-tags" style="display:none"></div>
   </div>
 </div>
 
@@ -463,64 +460,8 @@ body {
   <div class="section active" id="step-1">
     <div class="section-title">Escolha o serviço</div>
 
-    <div class="servico-card" onclick="selecionarServico(this, 'Corte + escova', 60, 90, '✂️')">
-      <div class="servico-icon">✂️</div>
-      <div class="servico-info">
-        <div class="servico-nome">Corte + escova</div>
-        <div class="servico-meta"><span>60 min</span></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="servico-preco">R$90</div>
-        <div class="check-icon"></div>
-      </div>
-    </div>
-
-    <div class="servico-card" onclick="selecionarServico(this, 'Tintura', 120, 160, '🎨')">
-      <div class="servico-icon">🎨</div>
-      <div class="servico-info">
-        <div class="servico-nome">Tintura</div>
-        <div class="servico-meta"><span>120 min</span></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="servico-preco">R$160</div>
-        <div class="check-icon"></div>
-      </div>
-    </div>
-
-    <div class="servico-card" onclick="selecionarServico(this, 'Escova progressiva', 90, 200, '💆')">
-      <div class="servico-icon">💆</div>
-      <div class="servico-info">
-        <div class="servico-nome">Escova progressiva</div>
-        <div class="servico-meta"><span>90 min</span></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="servico-preco">R$200</div>
-        <div class="check-icon"></div>
-      </div>
-    </div>
-
-    <div class="servico-card" onclick="selecionarServico(this, 'Corte masculino', 30, 45, '💈')">
-      <div class="servico-icon">💈</div>
-      <div class="servico-info">
-        <div class="servico-nome">Corte masculino</div>
-        <div class="servico-meta"><span>30 min</span></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="servico-preco">R$45</div>
-        <div class="check-icon"></div>
-      </div>
-    </div>
-
-    <div class="servico-card" onclick="selecionarServico(this, 'Hidratação profunda', 60, 120, '🧴')">
-      <div class="servico-icon">🧴</div>
-      <div class="servico-info">
-        <div class="servico-nome">Hidratação profunda</div>
-        <div class="servico-meta"><span>60 min</span></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="servico-preco">R$120</div>
-        <div class="check-icon"></div>
-      </div>
+    <div id="servicos-container">
+      <div style="text-align:center;padding:40px 0;color:#999;font-size:14px">Carregando serviços…</div>
     </div>
   </div>
 
@@ -612,8 +553,7 @@ body {
       <div class="success-card">
         <div class="resumo-row"><span class="resumo-row-label">Serviço</span><span class="resumo-row-val" id="s-servico">—</span></div>
         <div class="resumo-row"><span class="resumo-row-label">Data e hora</span><span class="resumo-row-val" id="s-data">—</span></div>
-        <div class="resumo-row"><span class="resumo-row-label">Com</span><span class="resumo-row-val">Ana Cabelos</span></div>
-        <div class="resumo-row"><span class="resumo-row-label">Endereço</span><span class="resumo-row-val" style="font-size:13px;text-align:right">Rua das Flores, 142<br>Vila Mariana, SP</span></div>
+        <div class="resumo-row"><span class="resumo-row-label">Com</span><span class="resumo-row-val" id="s-prestador">—</span></div>
       </div>
 
       <button class="btn-ghost" onclick="reiniciar()">Fazer outro agendamento</button>
@@ -633,132 +573,209 @@ body {
   </div>
 </div>
 
-<script>
-// ── ESTADO ───────────────────────────────────────────────────────────────
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+// ── LÊ SLUG DA URL ────────────────────────────────────────────────────────
+// Suporta /ana-cabelos e /pagina-cliente?slug=ana-cabelos (dev local)
+const pathSlug   = window.location.pathname.replace(/^\//, '').split('/')[0];
+const paramSlug  = new URLSearchParams(window.location.search).get('slug');
+const SLUG       = pathSlug && pathSlug !== 'pagina-cliente.html' ? pathSlug : paramSlug;
+
+// ── BUSCA PRESTADOR + SERVIÇOS ────────────────────────────────────────────
+let PRESTADOR  = null;
+let SERVICOS   = [];
+
+async function carregarPrestador() {
+  if (!SLUG) {
+    document.getElementById('hero-nome').textContent = 'Página não encontrada';
+    document.getElementById('servicos-container').innerHTML =
+      '<div style="text-align:center;padding:40px 0;color:#999">Link inválido ou prestador não encontrado.</div>';
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from('prestadores')
+    .select('id, nome, bio, foto_url, whatsapp, slug')
+    .eq('slug', SLUG)
+    .maybeSingle();
+
+  if (error || !data) {
+    document.getElementById('hero-nome').textContent = 'Prestador não encontrado';
+    document.getElementById('servicos-container').innerHTML =
+      '<div style="text-align:center;padding:40px 0;color:#999">Este link não existe ou foi desativado.</div>';
+    return false;
+  }
+
+  PRESTADOR = data;
+
+  // Preenche hero
+  const nomeEl = document.getElementById('hero-nome');
+  const bioEl  = document.getElementById('hero-bio');
+  const avEl   = document.getElementById('hero-avatar');
+  if (nomeEl) nomeEl.textContent = data.nome || 'Profissional';
+  if (bioEl)  bioEl.textContent  = data.bio  || '';
+  if (avEl) {
+    if (data.foto_url) {
+      avEl.innerHTML = `<img src="${data.foto_url}" alt="${data.nome}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      avEl.textContent = (data.nome || 'P')[0].toUpperCase();
+    }
+  }
+  document.title = (data.nome || 'AgendaPro') + ' — Agendamento';
+
+  // Carrega serviços
+  const { data: servs } = await supabase
+    .from('servicos')
+    .select('id, nome, duracao_min, preco')
+    .eq('prestador_id', data.id)
+    .eq('ativo', true)
+    .order('nome');
+
+  SERVICOS = servs || [];
+  renderServicos();
+  return true;
+}
+
+// ── RENDER SERVIÇOS DINÂMICO ──────────────────────────────────────────────
+const ICONES_PADRAO = ['✂️','💅','🏋️','🎨','💆','💇','🧴','💈','🩺','📸'];
+function renderServicos() {
+  const container = document.getElementById('servicos-container');
+  if (!container) return;
+  if (SERVICOS.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px 0;color:#999">Nenhum serviço disponível no momento.</div>';
+    return;
+  }
+  container.innerHTML = SERVICOS.map((s, i) => {
+    const icone = ICONES_PADRAO[i % ICONES_PADRAO.length];
+    const preco = s.preco > 0 ? `R$${Number(s.preco).toFixed(0)}` : 'Consultar';
+    return `
+      <div class="servico-card" onclick="selecionarServico(this, '${s.nome.replace(/'/g,"\\'")}', ${s.duracao_min}, ${s.preco || 0}, '${icone}', '${s.id}')">
+        <div class="servico-icon">${icone}</div>
+        <div class="servico-info">
+          <div class="servico-nome">${s.nome}</div>
+          <div class="servico-meta"><span>${s.duracao_min} min</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="servico-preco">${preco}</div>
+          <div class="check-icon"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── ESTADO ────────────────────────────────────────────────────────────────
 const state = {
   step: 1,
-  servico: null, duracaoMin: null, preco: null, icone: null,
+  servicoId: null, servico: null, duracaoMin: null, preco: null, icone: null,
   data: null, dataLabel: null,
   hora: null,
   nome: '', tel: '',
 };
 
-// Calendário
-let calAno  = new Date().getFullYear();
-let calMes  = new Date().getMonth();
+let calAno = new Date().getFullYear();
+let calMes = new Date().getMonth();
 
-// Slots simulados (em prod: Edge Function horarios-disponiveis)
-const SLOTS_DIA = [
-  { hora: '09:00', disp: true  },
-  { hora: '09:30', disp: true  },
-  { hora: '10:00', disp: false },
-  { hora: '10:30', disp: false },
-  { hora: '11:00', disp: true  },
-  { hora: '11:30', disp: false },
-  { hora: '12:00', disp: false }, // almoço
-  { hora: '12:30', disp: false }, // almoço
-  { hora: '13:00', disp: true  },
-  { hora: '13:30', disp: true  },
-  { hora: '14:00', disp: true  },
-  { hora: '14:30', disp: false },
-  { hora: '15:00', disp: false },
-  { hora: '15:30', disp: false },
-  { hora: '16:00', disp: true  },
-  { hora: '16:30', disp: false },
-  { hora: '17:00', disp: true  },
-  { hora: '17:30', disp: true  },
-];
+// Dias da semana disponíveis (busca do Supabase)
+let diasDisponiveis = new Set([1,2,3,4,5]); // fallback Seg-Sex
 
-// ── NAVEGAÇÃO ────────────────────────────────────────────────────────────
-function irPara(n) {
-  document.getElementById('step-' + state.step).classList.remove('active');
+async function carregarDisponibilidade() {
+  if (!PRESTADOR) return;
+  const { data } = await supabase
+    .from('disponibilidade')
+    .select('dia_semana')
+    .eq('prestador_id', PRESTADOR.id);
+  if (data && data.length > 0) {
+    diasDisponiveis = new Set(data.map(d => d.dia_semana));
+  }
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
+window.irPara = function(n) {
+  document.getElementById('step-' + state.step)?.classList.remove('active');
   state.step = n;
-  document.getElementById('step-' + n).classList.add('active');
+  document.getElementById('step-' + n)?.classList.add('active');
   atualizarStepsNav();
   atualizarStickyFooter();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
   if (n === 2) renderCalendario();
   if (n === 3) renderSlots();
   if (n === 5) preencherResumo();
-}
+};
 
-function avancarStep() {
-  if (state.step < 5) irPara(state.step + 1);
-}
+window.avancarStep = function() {
+  if (state.step < 5) window.irPara(state.step + 1);
+};
 
 function atualizarStepsNav() {
   for (let i = 1; i <= 5; i++) {
     const circ  = document.getElementById('sc-' + i);
     const label = document.getElementById('sl-' + i);
+    if (!circ) continue;
     if (i < state.step) {
       circ.className  = 'step-circle done';
       circ.textContent = '✓';
-      label.className = 'step-label';
+      if (label) label.className = 'step-label';
     } else if (i === state.step) {
       circ.className  = 'step-circle active';
       circ.textContent = i;
-      label.className = 'step-label active';
+      if (label) label.className = 'step-label active';
     } else {
       circ.className  = 'step-circle';
       circ.textContent = i;
-      label.className = 'step-label';
+      if (label) label.className = 'step-label';
     }
-    if (i < 5) {
-      document.getElementById('conn-' + i).className =
-        'step-connector' + (i < state.step ? ' done' : '');
-    }
+    const conn = document.getElementById('conn-' + i);
+    if (conn) conn.className = 'step-connector' + (i < state.step ? ' done' : '');
   }
 }
 
 function atualizarStickyFooter() {
   const footer = document.getElementById('sticky-footer');
-  const s = state;
-
-  if (s.step === 6) { footer.classList.remove('visible'); return; }
-  if (s.step === 1 && !s.servico) { footer.classList.remove('visible'); return; }
-
-  footer.classList.add('visible');
-
-  const sfServico = document.getElementById('sf-servico');
-  const sfDetail  = document.getElementById('sf-detail');
-  const sfBtn     = document.getElementById('sf-btn');
-
-  if (s.servico) {
-    sfServico.textContent = s.icone + ' ' + s.servico;
-    const parts = [];
-    if (s.dataLabel) parts.push(s.dataLabel);
-    if (s.hora) parts.push(s.hora);
-    if (s.preco) parts.push('R$' + s.preco);
-    sfDetail.textContent = parts.join(' · ');
+  if (!footer) return;
+  const mostrar = state.step >= 1 && state.step <= 5 && (state.servico || state.hora);
+  footer.classList.toggle('visible', mostrar);
+  const nomeSv  = footer.querySelector('#sticky-servico, .sticky-servico');
+  const btnEl   = footer.querySelector('button');
+  if (nomeSv) nomeSv.textContent = state.servico || '';
+  if (btnEl) {
+    const labels = ['','Escolher data →','Escolher horário →','Informar dados →','Revisar →',''];
+    btnEl.textContent = labels[state.step] || 'Avançar →';
+    const podeAvancar =
+      (state.step === 1 && state.servico) ||
+      (state.step === 2 && state.data)    ||
+      (state.step === 3 && state.hora)    ||
+      (state.step === 4 && state.nome && state.tel.replace(/\D/g,'').length >= 10);
+    btnEl.disabled = !podeAvancar;
   }
-
-  const labels = { 1:'Escolher data →', 2:'Ver horários →', 3:'Continuar →', 4:'Ver resumo →', 5:'Confirmar' };
-  sfBtn.textContent = labels[s.step] || 'Continuar →';
 }
 
-// ── STEP 1 — SERVIÇOS ────────────────────────────────────────────────────
-function selecionarServico(el, nome, dur, preco, icone) {
+// ── STEP 1 — SERVIÇOS ─────────────────────────────────────────────────────
+window.selecionarServico = function(el, nome, dur, preco, icone, servicoId) {
   document.querySelectorAll('.servico-card').forEach(c => {
     c.classList.remove('selected');
-    c.querySelector('.check-icon').textContent = '';
+    const ch = c.querySelector('.check-icon');
+    if (ch) ch.textContent = '';
   });
   el.classList.add('selected');
-  el.querySelector('.check-icon').textContent = '✓';
+  const ch = el.querySelector('.check-icon');
+  if (ch) ch.textContent = '✓';
+  state.servicoId  = servicoId || null;
   state.servico    = nome;
   state.duracaoMin = dur;
   state.preco      = preco;
   state.icone      = icone;
   atualizarStickyFooter();
-}
+};
 
-// ── STEP 2 — CALENDÁRIO ──────────────────────────────────────────────────
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const DIAS_S = ['D','S','T','Q','Q','S','S'];
+// ── STEP 2 — CALENDÁRIO ───────────────────────────────────────────────────
+const MESES   = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_S  = ['D','S','T','Q','Q','S','S'];
 
 function renderCalendario() {
   const grid = document.getElementById('cal-grid');
+  if (!grid) return;
   grid.innerHTML = '';
   document.getElementById('cal-month').textContent = MESES[calMes] + ' ' + calAno;
 
@@ -770,26 +787,21 @@ function renderCalendario() {
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const primeiroDia = new Date(calAno, calMes, 1).getDay();
   const totalDias   = new Date(calAno, calMes + 1, 0).getDate();
-  // Domingos bloqueados (dia 0) — prestador não atende
-  const diasOff = new Set([0]);
 
   for (let i = 0; i < primeiroDia; i++) {
     const el = document.createElement('div');
     el.className = 'cal-day empty'; grid.appendChild(el);
   }
-
   for (let d = 1; d <= totalDias; d++) {
     const data = new Date(calAno, calMes, d);
-    const el = document.createElement('div');
+    const el   = document.createElement('div');
     el.textContent = d;
     const passado = data < hoje;
-    const off     = diasOff.has(data.getDay());
+    const off     = !diasDisponiveis.has(data.getDay());
     el.className  = 'cal-day' + (passado || off ? ' disabled' : '')
       + (data.toDateString() === hoje.toDateString() ? ' today' : '');
-
     if (state.data && data.toDateString() === state.data.toDateString())
       el.classList.add('selected');
-
     if (!passado && !off) {
       el.onclick = () => {
         state.data      = data;
@@ -797,118 +809,257 @@ function renderCalendario() {
         state.hora      = null;
         renderCalendario();
         atualizarStickyFooter();
-        setTimeout(() => irPara(3), 200);
+        setTimeout(() => window.irPara(3), 200);
       };
     }
     grid.appendChild(el);
   }
 }
 
-function mudarMes(delta) {
+window.mudarMes = function(delta) {
   calMes += delta;
-  if (calMes > 11) { calMes = 0;  calAno++; }
+  if (calMes > 11) { calMes = 0; calAno++; }
   if (calMes < 0)  { calMes = 11; calAno--; }
   renderCalendario();
-}
+};
 
-// ── STEP 3 — SLOTS ───────────────────────────────────────────────────────
-function renderSlots() {
+// ── STEP 3 — SLOTS (via Edge Function) ───────────────────────────────────
+const slotsCache = {}; // chave: "YYYY-MM-DD"
+
+async function renderSlots() {
   const grid   = document.getElementById('slots-grid');
   const header = document.getElementById('slots-header');
-  grid.innerHTML = '';
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#999">Buscando horários…</div>';
 
-  const d   = state.data;
   const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-  header.textContent = d
+  const d   = state.data;
+  if (header) header.textContent = d
     ? `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} — ${state.duracaoMin} min`
     : '';
 
-  const disponiveis = SLOTS_DIA.filter(s => s.disp);
-  if (disponiveis.length === 0) {
+  const dataStr = state.data.toISOString().slice(0,10);
+  let slots = [];
+
+  // Usa cache se disponível (invalida ao confirmar)
+  if (slotsCache[dataStr]) {
+    slots = slotsCache[dataStr];
+  } else {
+    // Tenta Edge Function
+    try {
+      const resp = await fetch(
+        `${window.SUPABASE_URL}/functions/v1/horarios-disponiveis`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.SUPABASE_ANON}`,
+          },
+          body: JSON.stringify({
+            prestador_slug: SLUG,
+            servico_id:     state.servicoId,
+            data:           dataStr,
+          }),
+        }
+      );
+      if (resp.ok) {
+        const json = await resp.json();
+        slots = json.slots || json || [];
+      }
+    } catch (e) {
+      console.warn('Edge Function indisponível, usando fallback:', e);
+    }
+
+    // Fallback direto no banco
+    if (slots.length === 0 && PRESTADOR) {
+      slots = await gerarSlotsFallback();
+    }
+
+    slotsCache[dataStr] = slots;
+  }
+
+  grid.innerHTML = '';
+  if (slots.length === 0) {
     grid.innerHTML = '<div class="slots-empty" style="grid-column:1/-1">😔 Sem horários disponíveis neste dia.</div>';
     return;
   }
 
-  SLOTS_DIA.forEach(sl => {
-    const el = document.createElement('div');
-    el.className = 'slot' + (!sl.disp ? ' ocupado' : '');
-    el.textContent = sl.hora;
-    if (state.hora === sl.hora) el.classList.add('selected');
-
-    if (sl.disp) {
+  slots.forEach(sl => {
+    const hora = typeof sl === 'string' ? sl : sl.hora;
+    const disp = typeof sl === 'string' ? true : (sl.disponivel !== false);
+    const el   = document.createElement('div');
+    el.className = 'slot' + (!disp ? ' ocupado' : '');
+    el.textContent = hora;
+    if (state.hora === hora) el.classList.add('selected');
+    if (disp) {
       el.onclick = () => {
-        state.hora = sl.hora;
+        state.hora = hora;
         document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
         el.classList.add('selected');
         atualizarStickyFooter();
-        setTimeout(() => irPara(4), 160);
+        setTimeout(() => window.irPara(4), 160);
       };
     }
     grid.appendChild(el);
   });
 }
 
-// ── STEP 4 — DADOS ───────────────────────────────────────────────────────
-function mascaraTel(el) {
+async function gerarSlotsFallback() {
+  if (!PRESTADOR || !state.data) return [];
+  const diaSemana = state.data.getDay();
+  const { data: disp } = await supabase
+    .from('disponibilidade')
+    .select('hora_inicio, hora_fim')
+    .eq('prestador_id', PRESTADOR.id)
+    .eq('dia_semana', diaSemana)
+    .maybeSingle();
+  if (!disp) return [];
+
+  const [hIni, mIni] = disp.hora_inicio.split(':').map(Number);
+  const [hFim, mFim] = disp.hora_fim.split(':').map(Number);
+  const inicioMin = hIni * 60 + mIni;
+  const fimMin    = hFim * 60 + mFim;
+  const durServico = state.duracaoMin || 60;
+  const intervalo  = 30; // exibe slots a cada 30min
+
+  // Busca agendamentos do dia para marcar bloqueados
+  const inicioDia = new Date(state.data); inicioDia.setHours(0,0,0,0);
+  const fimDia    = new Date(state.data); fimDia.setHours(23,59,59,999);
+  const { data: ags } = await supabase
+    .from('agendamentos')
+    .select('data_hora, servicos(duracao_min)')
+    .eq('prestador_id', PRESTADOR.id)
+    .gte('data_hora', inicioDia.toISOString())
+    .lte('data_hora', fimDia.toISOString())
+    .in('status', ['confirmado', 'pendente']);
+
+  // Marca como ocupados todos os minutos cobertos por agendamentos existentes
+  const minutosOcupados = new Set();
+  (ags || []).forEach(ag => {
+    const t   = new Date(ag.data_hora);
+    const ini = t.getHours() * 60 + t.getMinutes();
+    const dur = ag.servicos?.duracao_min || durServico;
+    for (let m = ini; m < ini + dur; m++) minutosOcupados.add(m);
+  });
+
+  const slots = [];
+  for (let m = inicioMin; m + durServico <= fimMin; m += intervalo) {
+    // Slot disponível se nenhum minuto do intervalo [m, m+durServico) está ocupado
+    let livre = true;
+    for (let t = m; t < m + durServico; t++) {
+      if (minutosOcupados.has(t)) { livre = false; break; }
+    }
+    const hh = String(Math.floor(m / 60)).padStart(2, '0');
+    const mm = String(m % 60).padStart(2, '0');
+    slots.push({ hora: `${hh}:${mm}`, disponivel: livre });
+  }
+  return slots;
+}
+
+// ── STEP 4 — DADOS ────────────────────────────────────────────────────────
+window.mascaraTel = function(el) {
   let v = el.value.replace(/\D/g,'').slice(0,11);
   if (v.length >= 7) v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
   else if (v.length >= 3) v = '(' + v.slice(0,2) + ') ' + v.slice(2);
   else if (v.length >= 1) v = '(' + v;
   el.value = v;
   state.tel = v;
-}
+  atualizarStickyFooter();
+};
 
-function validarForm() {
-  state.nome = document.getElementById('input-nome').value.trim();
+window.validarForm = function() {
+  state.nome = document.getElementById('input-nome')?.value.trim() || '';
   const ok   = state.nome.length >= 2 && state.tel.replace(/\D/g,'').length >= 10;
-  document.getElementById('btn-confirmar').disabled = !ok;
-}
+  const btn  = document.getElementById('btn-confirmar');
+  if (btn) btn.disabled = !ok;
+  atualizarStickyFooter();
+};
 
-// ── STEP 5 — RESUMO ──────────────────────────────────────────────────────
+// ── STEP 5 — RESUMO ───────────────────────────────────────────────────────
 function preencherResumo() {
-  const d = state.data;
+  const d   = state.data;
   const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
   const dataFmt = d ? `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()}` : '—';
-
-  document.getElementById('r-servico').textContent = state.icone + ' ' + state.servico;
-  document.getElementById('r-data').textContent    = dataFmt;
-  document.getElementById('r-hora').textContent    = state.hora;
-  document.getElementById('r-dur').textContent     = state.duracaoMin + ' minutos';
-  document.getElementById('r-nome').textContent    = state.nome;
-  document.getElementById('r-preco').textContent   = 'R$' + state.preco + ',00';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('r-servico', (state.icone || '') + ' ' + (state.servico || ''));
+  set('r-data',    dataFmt);
+  set('r-hora',    state.hora || '—');
+  set('r-dur',     (state.duracaoMin || '—') + ' minutos');
+  set('r-nome',    state.nome);
+  set('r-preco',   state.preco > 0 ? `R$${Number(state.preco).toFixed(2)}` : 'Consultar');
 }
 
-// ── CONFIRMAR ────────────────────────────────────────────────────────────
-function confirmar() {
-  // Em prod: POST para Edge Function lembretes-whatsapp (tipo: confirmacao)
-  // após INSERT no Supabase
-  const d = state.data;
-  const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-  document.getElementById('s-servico').textContent =
-    state.icone + ' ' + state.servico;
-  document.getElementById('s-data').textContent =
-    `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} às ${state.hora}`;
+// ── CONFIRMAR — salva no Supabase ─────────────────────────────────────────
+window.confirmar = async function() {
+  const btn = document.getElementById('btn-finalizar') || document.querySelector('[onclick="confirmar()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Confirmando…'; }
 
-  irPara(6);
-  document.getElementById('sticky-footer').classList.remove('visible');
-}
+  try {
+    const d = state.data;
+    const [hh, mm] = state.hora.split(':').map(Number);
+    const dataHora = new Date(d);
+    dataHora.setHours(hh, mm, 0, 0);
 
-function reiniciar() {
+    const { error } = await supabase.from('agendamentos').insert({
+      prestador_id:  PRESTADOR.id,
+      servico_id:    state.servicoId || null,
+      cliente_nome:  state.nome,
+      cliente_tel:   state.tel,
+      data_hora:     dataHora.toISOString(),
+      status:        'confirmado',
+      cancel_token:  crypto.randomUUID(),
+    });
+
+    if (error) throw error;
+
+    // Upsert na tabela clientes para popular o CRM
+    await supabase.from('clientes').upsert({
+      prestador_id: PRESTADOR.id,
+      nome:         state.nome,
+      telefone:     state.tel,
+    }, { onConflict: 'prestador_id,telefone', ignoreDuplicates: true });
+
+    // Limpa cache do dia para que na próxima visita os slots sejam rebuscados
+    const chave = d.toISOString().slice(0,10);
+    delete slotsCache[chave];
+
+    // Tela de sucesso
+    const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('s-servico',   (state.icone || '') + ' ' + state.servico);
+    set('s-data',      `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} às ${state.hora}`);
+    set('s-prestador', PRESTADOR.nome || '—');
+    window.irPara(6);
+    document.getElementById('sticky-footer')?.classList.remove('visible');
+
+  } catch (err) {
+    console.error('Erro ao confirmar:', err);
+    alert('Erro ao confirmar agendamento. Tente novamente.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
+  }
+};
+
+window.reiniciar = function() {
   Object.assign(state, {
-    step:1, servico:null, duracaoMin:null, preco:null, icone:null,
+    step:1, servicoId:null, servico:null, duracaoMin:null, preco:null, icone:null,
     data:null, dataLabel:null, hora:null, nome:'', tel:''
   });
   document.querySelectorAll('.servico-card').forEach(c => {
     c.classList.remove('selected');
-    c.querySelector('.check-icon').textContent = '';
+    const ch = c.querySelector('.check-icon');
+    if (ch) ch.textContent = '';
   });
-  document.getElementById('input-nome').value = '';
-  document.getElementById('input-tel').value  = '';
-  irPara(1);
-}
+  const nome = document.getElementById('input-nome');
+  const tel  = document.getElementById('input-tel');
+  if (nome) nome.value = '';
+  if (tel)  tel.value  = '';
+  window.irPara(1);
+};
 
-// ── INIT ─────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────
 atualizarStepsNav();
+const ok = await carregarPrestador();
+if (ok) await carregarDisponibilidade();
 </script>
 </body>
 </html>

@@ -550,7 +550,7 @@ body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); m
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
@@ -585,7 +585,7 @@ async function init() {
 async function carregarPerfil() {
   const { data, error } = await supabase
     .from('prestadores')
-    .select('nome, slug, bio, whatsapp, foto_url')
+    .select('nome, slug, bio, whatsapp, foto_url, cidade, endereco')
     .eq('id', userId)
     .single();
   if (error || !data) return;
@@ -594,6 +594,8 @@ async function carregarPerfil() {
   document.getElementById('p-slug').value     = data.slug     ?? '';
   document.getElementById('p-bio').value      = data.bio      ?? '';
   document.getElementById('p-wpp').value      = data.whatsapp ?? '';
+  document.getElementById('p-cidade').value   = data.cidade   ?? '';
+  document.getElementById('p-endereco').value = data.endereco ?? '';
 
   // Avatar
   const circle = document.getElementById('foto-circle');
@@ -642,11 +644,14 @@ async function salvarPerfil() {
       slug:     document.getElementById('p-slug').value.trim(),
       bio:      document.getElementById('p-bio').value.trim(),
       whatsapp: document.getElementById('p-wpp').value.trim(),
-      // cidade e endereço não fazem parte da tabela prestadores
+      cidade:   document.getElementById('p-cidade').value.trim(),
+      endereco: document.getElementById('p-endereco').value.trim(),
     };
     if (foto_url) payload.foto_url = foto_url;
 
     const { error } = await supabase.from('prestadores').update(payload).eq('id', userId);
+    console.log('Update payload:', payload);
+    console.log('Update error:', error);
     if (error) throw error;
     fotoFile = null;
     toast('✓ Perfil salvo!');
@@ -708,14 +713,14 @@ window.renderServicos = function renderServicos() {
         <input class="srv-i mono" value="${durEsc}"   placeholder="min"  data-id="${s.id}" data-field="dur">
         <input class="srv-i mono" value="${precoEsc}" placeholder="R$"   data-id="${s.id}" data-field="preco">
       </div>
-      <div class="toggle-ativo ${s.ativo ? 'on' : ''}" data-sid="${s.id}" onclick="toggleServico(${s.id},this)"></div>
-      <button class="btn-del" onclick="deletarServico(${s.id})">✕</button>
+      <div class="toggle-ativo ${s.ativo ? 'on' : ''}" data-sid="${s.id}" onclick="toggleServico('${s.id}',this)"></div>
+      <button class="btn-del" onclick="deletarServico('${s.id}')">✕</button>
     </div>`;
   }).join('');
   // Adicionar listeners de input
   document.querySelectorAll('#servicos-list .srv-i').forEach(inp => {
     inp.addEventListener('input', function() {
-      const id    = Number(this.dataset.id);
+      const id    = this.dataset.id;
       const field = this.dataset.field;
       const s = servicos.find(x => x.id === id);
       if (s) s[field] = this.value;
@@ -740,7 +745,8 @@ window.deletarServico = function(id) {
 };
 
 window.adicionarServico = function() {
-  servicos.push({ id: ++servId, nome:'', dur:'', preco:'', ativo:true, _novo:true, _deletar:false });
+  const novoId = 'novo-' + Date.now();
+  servicos.push({ id: novoId, nome:'', dur:'', preco:'', ativo:true, _novo:true, _deletar:false });
   renderServicos();
   const inputs = document.querySelectorAll('#servicos-list .srv-i');
   if (inputs.length) inputs[inputs.length - 3].focus();
