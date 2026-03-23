@@ -196,7 +196,10 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 
 <div class="topbar">
   <div class="logo"><div class="logo-dot"></div> AgendaPro</div>
-  <div style="font-size:13px;color:var(--muted)">Ana Cabelos</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-size:13px;color:var(--muted)" id="topbar-nome"></div>
+    <button onclick="history.back()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--ink)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">← Voltar</button>
+  </div>
 </div>
 
 <div class="content">
@@ -268,7 +271,7 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
     <button class="btn-assinar lime" id="btn-assinar-final" onclick="assinar()">
       ✦ Assinar Pro — R$<span id="val-botao">39</span>/mês
     </button>
-    <button class="btn-cancelar" onclick="ocultarUpgrade()">← Voltar</button>
+    <button class="btn-cancelar" onclick="history.back()">← Voltar ao painel</button>
   </div>
 
   <!-- GERENCIAR ASSINATURA (visível só para pro) -->
@@ -297,33 +300,124 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 
 <div class="toast" id="toast"></div>
 
-<script>
-// ── ESTADO SIMULADO (em prod: busca do Supabase) ────────────────────────
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) { window.location.href = '/auth'; }
+const userId = session.user.id;
+
+// ── ESTADO ────────────────────────────────────────────────────────────────
 const PRESTADOR = {
-  plano: 'free',          // 'free' | 'pro'
+  plano: 'free',
   plano_valido_ate: null,
-  agendamentos_mes: 7,    // contador do mês atual
+  asaas_sub_id: null,
+  agendamentos_mes: 0,
   limite_free: 10,
+  nome: '',
 };
 
-const HISTORICO_MOCK = [
-  { icon: '✅', desc: 'Pagamento recebido — Pro mensal',  data: '01/03/2026', val: 'R$39,00' },
-  { icon: '✅', desc: 'Pagamento recebido — Pro mensal',  data: '01/02/2026', val: 'R$39,00' },
-  { icon: '✅', desc: 'Pagamento recebido — Pro mensal',  data: '01/01/2026', val: 'R$39,00' },
-];
-
-let planoSelecionado = 'pro';
+let planoSelecionado  = 'pro';
 let metodoSelecionado = 'PIX';
 
-// ── RENDER STATUS CARD ───────────────────────────────────────────────────
+// ── CARREGAR DADOS REAIS ───────────────────────────────────────────────────
+async function carregarTudo() {
+  await carregarPlanoReal();
+  await Promise.all([contarAgendamentosMes(), carregarHistoricoReal()]);
+  renderStatus();
+}
+
+async function carregarPlanoReal() {
+  const { data, error } = await supabase
+    .from('prestadores')
+    .select('nome, plano, plano_valido_ate, asaas_sub_id')
+    .eq('id', userId)
+    .single();
+  if (error || !data) return;
+
+  PRESTADOR.plano           = data.plano           ?? 'free';
+  PRESTADOR.plano_valido_ate = data.plano_valido_ate ?? null;
+  PRESTADOR.asaas_sub_id    = data.asaas_sub_id    ?? null;
+  PRESTADOR.nome            = data.nome             ?? '';
+
+  // Atualizar topbar
+  const topEl = document.getElementById('topbar-nome');
+  if (topEl) topEl.textContent = PRESTADOR.nome;
+}
+
+async function contarAgendamentosMes() {
+  const agora     = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+  const fimMes    = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+  const { count } = await supabase
+    .from('agendamentos')
+    .select('id', { count: 'exact', head: true })
+    .eq('prestador_id', userId)
+    .gte('data_hora', inicioMes)
+    .lte('data_hora', fimMes)
+    .neq('status', 'cancelado');
+
+  PRESTADOR.agendamentos_mes = count ?? 0;
+}
+
+async function carregarHistoricoReal() {
+  const { data: rows, error } = await supabase
+    .from('pagamentos')
+    .select('evento, data_evento, valor, descricao')
+    .eq('prestador_id', userId)
+    .order('data_evento', { ascending: false })
+    .limit(10);
+
+  const list = document.getElementById('hist-list');
+  if (error || !rows || rows.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--faint);padding:16px 0">Nenhum pagamento registrado ainda.</div>';
+    return;
+  }
+
+  const iconMap = {
+    PAYMENT_RECEIVED: '✅',
+    PAYMENT_REFUNDED: '↩️',
+    PAYMENT_OVERDUE:  '⚠️',
+    PAYMENT_DELETED:  '🗑️',
+    SUBSCRIPTION_CANCELLED: '❌',
+  };
+
+  list.innerHTML = rows.map(r => {
+    const icon = iconMap[r.evento] ?? '💳';
+    const desc = r.descricao || r.evento.replace(/_/g, ' ').toLowerCase();
+    const data = r.data_evento
+      ? new Date(r.data_evento).toLocaleDateString('pt-BR')
+      : '—';
+    const val = r.valor
+      ? `R$${Number(r.valor).toFixed(2).replace('.', ',')}`
+      : '—';
+    return `
+      <div class="hist-item">
+        <div class="hist-icon">${icon}</div>
+        <div class="hist-body">
+          <div class="hist-desc">${desc}</div>
+          <div class="hist-data">${data}</div>
+        </div>
+        <div class="hist-val">${val}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── RENDER STATUS CARD ─────────────────────────────────────────────────────
 function renderStatus() {
   const card = document.getElementById('status-card');
-  const isFree = PRESTADOR.plano === 'free';
-  const uso = Math.min(PRESTADOR.agendamentos_mes, PRESTADOR.limite_free);
-  const pct = (uso / PRESTADOR.limite_free) * 100;
+  const isPro = PRESTADOR.plano === 'pro'
+    && PRESTADOR.plano_valido_ate
+    && new Date(PRESTADOR.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+  const uso    = Math.min(PRESTADOR.agendamentos_mes, PRESTADOR.limite_free);
+  const pct    = Math.min((uso / PRESTADOR.limite_free) * 100, 100);
   const corBarra = pct >= 100 ? 'danger' : pct >= 70 ? 'warning' : 'ok';
 
-  if (isFree) {
+  if (!isPro) {
     card.innerHTML = `
       <div class="status-card free">
         <div class="status-badge free"><div class="dot"></div> Plano Grátis</div>
@@ -338,8 +432,7 @@ function renderStatus() {
             <div class="uso-fill ${corBarra}" style="width:${pct}%"></div>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
     document.getElementById('upgrade-form').style.display = 'block';
     document.getElementById('gerenciar-pro').style.display = 'none';
     if (pct >= 100) document.getElementById('paywall').style.display = 'block';
@@ -354,185 +447,132 @@ function renderStatus() {
         <div class="status-desc">WhatsApp automático, lembrete D-1, histórico de clientes</div>
         <div class="status-meta">
           <div class="meta-item">
-            <div class="meta-label">Próxima cobrança</div>
+            <div class="meta-label">Válido até</div>
             <div class="meta-val">${validoAte}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Valor</div>
             <div class="meta-val">R$39,00</div>
           </div>
-          <div class="meta-item">
-            <div class="meta-label">Método</div>
-            <div class="meta-val">Pix</div>
-          </div>
         </div>
-      </div>
-    `;
+      </div>`;
     document.getElementById('upgrade-form').style.display = 'none';
     document.getElementById('gerenciar-pro').style.display = 'block';
+    document.getElementById('paywall').style.display = 'none';
   }
 }
 
-function renderHistorico() {
-  const list = document.getElementById('hist-list');
-  if (HISTORICO_MOCK.length === 0) {
-    list.innerHTML = '<div style="font-size:13px;color:var(--faint);padding:16px 0">Nenhum pagamento registrado ainda.</div>';
-    return;
-  }
-  list.innerHTML = HISTORICO_MOCK.map(h => `
-    <div class="hist-item">
-      <div class="hist-icon">${h.icon}</div>
-      <div class="hist-body">
-        <div class="hist-desc">${h.desc}</div>
-        <div class="hist-data">${h.data}</div>
-      </div>
-      <div class="hist-val">${h.val}</div>
-    </div>
-  `).join('');
-}
-
-// ── UPGRADE ──────────────────────────────────────────────────────────────
-function mostrarUpgrade() {
+// ── UPGRADE ────────────────────────────────────────────────────────────────
+window.mostrarUpgrade = function() {
   document.getElementById('paywall').style.display = 'none';
   document.getElementById('upgrade-form').style.display = 'block';
   document.getElementById('upgrade-form').scrollIntoView({ behavior: 'smooth' });
-}
-function ocultarUpgrade() {
+};
+
+window.ocultarUpgrade = function() {
   document.getElementById('upgrade-form').style.display = 'none';
-  if (PRESTADOR.agendamentos_mes >= PRESTADOR.limite_free) {
+  const isPro = PRESTADOR.plano === 'pro';
+  if (!isPro && PRESTADOR.agendamentos_mes >= PRESTADOR.limite_free) {
     document.getElementById('paywall').style.display = 'block';
   }
-}
+};
 
-function selecionarPlano(plano, el) {
+window.selecionarPlano = function(plano, el) {
   planoSelecionado = plano;
   document.querySelectorAll('.plano-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
-  const val = plano === 'anual' ? '29' : '39';
-  document.getElementById('val-botao').textContent = val;
-}
+  document.getElementById('val-botao').textContent = plano === 'anual' ? '29' : '39';
+};
 
-function selecionarMetodo(metodo, el) {
+window.selecionarMetodo = function(metodo, el) {
   metodoSelecionado = metodo;
   document.querySelectorAll('.metodo-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
-}
+};
 
-// ── SUPABASE ──────────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://kevqgxmcoxmzbypdjhru.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg';
-
-function getToken() {
-  const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-  if (!key) return null;
-  try { return JSON.parse(localStorage.getItem(key))?.access_token; } catch { return null; }
-}
-
-function getUserId() {
-  const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-  if (!key) return null;
-  try { return JSON.parse(localStorage.getItem(key))?.user?.id; } catch { return null; }
-}
-
-async function callEdge(path, body = {}) {
-  const token = getToken();
-  if (!token) { window.location.href = '/auth'; throw new Error('Sem sessão'); }
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.erro || data.error || 'Erro');
-  return data;
-}
-
-async function carregarPlanoReal() {
-  const token = getToken();
-  const uid   = getUserId();
-  if (!token || !uid) { window.location.href = '/auth'; return; }
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/prestadores?select=plano,plano_valido_ate,asaas_sub_id&id=eq.${uid}`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON } }
-    );
-    const [row] = await res.json();
-    if (row) { PRESTADOR.plano = row.plano; PRESTADOR.plano_valido_ate = row.plano_valido_ate; }
-  } catch (e) { console.warn('carregarPlanoReal:', e); }
-}
-
-async function carregarHistoricoReal() {
-  const token = getToken();
-  if (!token) return;
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/pagamentos?order=data_evento.desc&limit=10`,
-      { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON } }
-    );
-    const rows = await res.json();
-    if (!Array.isArray(rows) || !rows.length) return;
-    HISTORICO_MOCK.length = 0;
-    rows.forEach(r => HISTORICO_MOCK.push({
-      icon: r.evento === 'PAYMENT_RECEIVED' ? '✅' : r.evento === 'PAYMENT_REFUNDED' ? '↩️' : '⚠️',
-      desc: r.evento.replace(/_/g,' ').toLowerCase(),
-      data: new Date(r.data_evento).toLocaleDateString('pt-BR'),
-      val:  r.valor ? `R$${Number(r.valor).toFixed(2).replace('.', ',')}` : '—',
-    }));
-    renderHistorico();
-  } catch (e) { console.warn('carregarHistoricoReal:', e); }
-}
-
-async function assinar() {
+// ── ASSINAR ────────────────────────────────────────────────────────────────
+window.assinar = async function() {
   const btn = document.getElementById('btn-assinar-final');
   btn.disabled = true; btn.textContent = 'Processando…';
+
   try {
-    const data = await callEdge('criar-assinatura', {
-      billing_type: metodoSelecionado,
-      plano:        planoSelecionado,
+    const { data: { session: s } } = await supabase.auth.getSession();
+    const token = s?.access_token;
+
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/criar-assinatura`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ billing_type: metodoSelecionado, plano: planoSelecionado }),
     });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || data.error || 'Erro ao criar assinatura');
+
     if (data.payment_url) {
       window.open(data.payment_url, '_blank');
-      showToast('Link de pagamento aberto! Após pagar, seu plano será ativado.');
+      showToast('Link de pagamento aberto! Após pagar, seu plano será ativado em instantes.');
     } else {
       showToast('Assinatura criada. Verifique seu e-mail para concluir o pagamento.');
     }
-    // Fica verificando até o webhook ativar o plano (máx 60s)
+
+    // Polling até webhook ativar (máx 60s)
     let tentativas = 0;
     const checar = setInterval(async () => {
       tentativas++;
       await carregarPlanoReal();
-      if (PRESTADOR.plano === 'pro' || tentativas > 20) {
+      const isPro = PRESTADOR.plano === 'pro';
+      if (isPro || tentativas > 20) {
         clearInterval(checar);
-        if (PRESTADOR.plano === 'pro') {
-          renderStatus(); renderHistorico(); ocultarUpgrade();
+        if (isPro) {
+          renderStatus();
+          await carregarHistoricoReal();
           showToast('🎉 Plano Pro ativado!');
         }
         btn.disabled = false;
-        btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">39</span>/mês';
+        btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">' + (planoSelecionado === 'anual' ? '29' : '39') + '</span>/mês';
       }
     }, 3000);
+
   } catch (e) {
     showToast('Erro: ' + e.message);
     btn.disabled = false;
     btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">39</span>/mês';
   }
-}
+};
 
-// ── CANCELAMENTO ─────────────────────────────────────────────────────────
-function abrirModalCancelamento() { document.getElementById('modal-overlay').classList.add('open'); }
-function fecharModal()            { document.getElementById('modal-overlay').classList.remove('open'); }
+// ── CANCELAMENTO ───────────────────────────────────────────────────────────
+window.abrirModalCancelamento = function() {
+  document.getElementById('modal-overlay').classList.add('open');
+};
+window.fecharModal = function() {
+  document.getElementById('modal-overlay').classList.remove('open');
+};
 
-async function confirmarCancelamento() {
-  fecharModal();
+window.confirmarCancelamento = async function() {
+  window.fecharModal();
   try {
-    await callEdge('cancelar-assinatura');
-    await carregarPlanoReal();
-    renderStatus(); renderHistorico();
-    showToast('Assinatura cancelada. Acesso Pro até o fim do período pago.');
-  } catch (e) { showToast('Erro ao cancelar: ' + e.message); }
-}
+    const { data: { session: s } } = await supabase.auth.getSession();
+    const token = s?.access_token;
 
-// ── TOAST ────────────────────────────────────────────────────────────────
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/cancelar-assinatura`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.erro || d.error || 'Erro ao cancelar');
+    }
+    await carregarPlanoReal();
+    renderStatus();
+    await carregarHistoricoReal();
+    showToast('Assinatura cancelada. Acesso Pro até o fim do período pago.');
+  } catch (e) {
+    showToast('Erro ao cancelar: ' + e.message);
+  }
+};
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -540,16 +580,12 @@ function showToast(msg) {
   t._t = setTimeout(() => t.classList.remove('show'), 4000);
 }
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-(async () => {
-  await carregarPlanoReal();
-  renderStatus();
-  await carregarHistoricoReal();
-})();
-
+// ── INIT ───────────────────────────────────────────────────────────────────
 document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) fecharModal();
+  if (e.target === e.currentTarget) window.fecharModal();
 });
+
+carregarTudo();
 </script>
 </body>
 </html>

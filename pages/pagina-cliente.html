@@ -388,6 +388,42 @@ body {
 }
 .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
 
+/* ── LIMITE FREE ── */
+.limite-banner {
+  background: var(--warn-l);
+  border: 1.5px solid #f0c896;
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  text-align: center;
+  margin: 24px 0;
+}
+.limite-banner-icon { font-size: 32px; margin-bottom: 12px; }
+.limite-banner h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px; font-weight: 400;
+  color: var(--warn); margin-bottom: 8px;
+}
+.limite-banner p {
+  font-size: 13px; color: var(--warn);
+  line-height: 1.6; margin-bottom: 16px;
+  opacity: .85;
+}
+.limite-banner .btn-upgrade {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity .15s;
+}
+.limite-banner .btn-upgrade:hover { opacity: .85; }
+
 /* ── STICKY FOOTER ── */
 .sticky-footer {
   position: fixed; bottom: 0; left: 0; right: 0;
@@ -635,6 +671,13 @@ async function carregarPrestador() {
 
   SERVICOS = servs || [];
   renderServicos();
+
+  // Verificar limite free logo ao carregar a página
+  const limite = await verificarLimiteFree();
+  if (limite.atingido) {
+    mostrarBannerLimite();
+  }
+
   return true;
 }
 
@@ -989,12 +1032,68 @@ function preencherResumo() {
   set('r-preco',   state.preco > 0 ? `R$${Number(state.preco).toFixed(2)}` : 'Consultar');
 }
 
+// ── VERIFICAR LIMITE FREE ─────────────────────────────────────────────────
+async function verificarLimiteFree() {
+  // Checa se o prestador está no plano free e atingiu 10 agendamentos no mês
+  const { data: prest } = await supabase
+    .from('prestadores')
+    .select('plano, plano_valido_ate')
+    .eq('id', PRESTADOR.id)
+    .single();
+
+  const isPro = prest?.plano === 'pro'
+    && prest?.plano_valido_ate
+    && new Date(prest.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // grace 3 dias
+
+  if (isPro) return { atingido: false };
+
+  // Conta agendamentos do mês atual (não cancelados)
+  const agora    = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+  const fimMes    = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+  const { count } = await supabase
+    .from('agendamentos')
+    .select('id', { count: 'exact', head: true })
+    .eq('prestador_id', PRESTADOR.id)
+    .gte('data_hora', inicioMes)
+    .lte('data_hora', fimMes)
+    .neq('status', 'cancelado');
+
+  return { atingido: (count ?? 0) >= 10, count: count ?? 0 };
+}
+
+function mostrarBannerLimite() {
+  // Esconde os serviços e mostra aviso no lugar
+  const container = document.getElementById('servicos-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="limite-banner">
+        <div class="limite-banner-icon">🔒</div>
+        <h3>Limite do mês atingido</h3>
+        <p>Este profissional atingiu o limite de 10 agendamentos gratuitos este mês.<br>
+           Para continuar agendando, peça para ele fazer o upgrade para o plano Pro.</p>
+      </div>`;
+  }
+  // Desabilita sticky footer
+  document.getElementById('sticky-footer')?.classList.remove('visible');
+}
+
 // ── CONFIRMAR — salva no Supabase ─────────────────────────────────────────
 window.confirmar = async function() {
   const btn = document.getElementById('btn-finalizar') || document.querySelector('[onclick="confirmar()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Confirmando…'; }
 
   try {
+    // Verifica limite free antes de confirmar
+    const limite = await verificarLimiteFree();
+    if (limite.atingido) {
+      mostrarBannerLimite();
+      window.irPara(1);
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
+      return;
+    }
+
     const d = state.data;
     const [hh, mm] = state.hora.split(':').map(Number);
     const dataHora = new Date(d);

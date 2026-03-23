@@ -426,43 +426,15 @@ body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); m
 
       <div class="card">
         <div class="card-header"><div class="card-title">Plano atual</div></div>
-        <div class="card-body">
-          <div class="plano-atual">
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-                <div class="plano-nome">Pro</div>
-                <div class="plano-badge pro">Ativo</div>
-              </div>
-              <div class="plano-det">Próxima cobrança: 01/04/2026 · R$39,00 · Pix</div>
-            </div>
-            <button class="btn-upgrade" onclick="window.location.href='/planos'">Gerenciar →</button>
-          </div>
-
-          <div style="margin-top:16px;padding:12px 14px;background:var(--bg2);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.6">
-            ✅ Agendamentos ilimitados &nbsp;·&nbsp; ✅ WhatsApp automático &nbsp;·&nbsp; ✅ Relatórios &nbsp;·&nbsp; ✅ Histórico de clientes
-          </div>
+        <div class="card-body" id="plano-body">
+          <div style="font-size:13px;color:var(--muted)">Carregando…</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-header"><div class="card-title">Histórico de cobranças</div></div>
-        <div class="card-body" style="padding:0">
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
-            <thead><tr>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--bord);background:var(--bg2)">Data</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--bord);background:var(--bg2)">Descrição</th>
-              <th style="padding:10px 16px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--bord);background:var(--bg2)">Valor</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--bord);background:var(--bg2)">Status</th>
-            </tr></thead>
-            <tbody>
-              ${['01/03/2026','01/02/2026','01/01/2026'].map(d => `<tr style="border-bottom:1px solid var(--bord)">
-                <td style="padding:11px 16px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${d}</td>
-                <td style="padding:11px 16px;font-size:13px">Pro mensal</td>
-                <td style="padding:11px 16px;text-align:right;font-family:'DM Mono',monospace;color:var(--lime-d)">R$39,00</td>
-                <td style="padding:11px 16px"><span style="background:var(--teal-t);color:var(--teal);border:1px solid rgba(93,202,165,.2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">Pago</span></td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
+        <div class="card-body" style="padding:0" id="historico-body">
+          <div style="padding:16px 20px;font-size:13px;color:var(--muted)">Carregando…</div>
         </div>
       </div>
     </div>
@@ -942,24 +914,122 @@ async function carregarPlano() {
     .single();
   if (error || !data) return;
 
-  const isPro = data.plano === 'pro' && data.plano_valido_ate && new Date(data.plano_valido_ate) > new Date();
-  const nomeEl  = document.querySelector('.plano-nome');
-  const badgeEl = document.querySelector('.plano-badge');
-  const detEl   = document.querySelector('.plano-det');
+  const isPro = data.plano === 'pro'
+    && data.plano_valido_ate
+    && new Date(data.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
-  if (nomeEl)  nomeEl.textContent  = isPro ? 'Pro' : 'Free';
-  if (badgeEl) {
-    badgeEl.textContent  = isPro ? 'Ativo' : 'Gratuito';
-    badgeEl.className    = 'plano-badge ' + (isPro ? 'pro' : 'free');
+  const body = document.getElementById('plano-body');
+  if (!body) return;
+
+  if (isPro) {
+    const valido = data.plano_valido_ate
+      ? new Date(data.plano_valido_ate).toLocaleDateString('pt-BR')
+      : '—';
+    body.innerHTML = `
+      <div class="plano-atual">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <div class="plano-nome" style="font-family:'Fraunces',serif;font-size:20px;font-weight:300">Pro</div>
+            <div class="plano-badge pro" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:var(--lime-t);color:var(--lime);border:1px solid rgba(200,240,96,.2)">Ativo</div>
+          </div>
+          <div class="plano-det" style="font-size:12px;color:var(--muted);margin-top:3px">Válido até: ${valido}</div>
+        </div>
+        <button class="btn-upgrade" onclick="window.location.href='/planos'">Gerenciar →</button>
+      </div>
+      <div style="margin-top:16px;padding:12px 14px;background:var(--bg2);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.6">
+        ✅ Agendamentos ilimitados &nbsp;·&nbsp; ✅ WhatsApp automático &nbsp;·&nbsp; ✅ Relatórios &nbsp;·&nbsp; ✅ Histórico de clientes
+      </div>`;
+  } else {
+    // Contar agendamentos do mês para mostrar barra de uso
+    const agora = new Date();
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
+    const fimMes    = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    const { count } = await supabase
+      .from('agendamentos')
+      .select('id', { count: 'exact', head: true })
+      .eq('prestador_id', userId)
+      .gte('data_hora', inicioMes)
+      .lte('data_hora', fimMes)
+      .neq('status', 'cancelado');
+    const uso = count ?? 0;
+    const pct = Math.min((uso / 10) * 100, 100);
+    const cor = pct >= 100 ? '#c84830' : pct >= 70 ? '#d4a820' : 'var(--lime-d)';
+
+    body.innerHTML = `
+      <div class="plano-atual">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:300">Grátis</div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:var(--bg3);color:var(--muted);border:1px solid var(--bord)">Free</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">Até 10 agendamentos por mês</div>
+        </div>
+        <button class="btn-upgrade" onclick="window.location.href='/planos'">Fazer upgrade →</button>
+      </div>
+      <div style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px">
+          <span>Agendamentos este mês</span>
+          <span><strong>${uso}</strong> / 10</span>
+        </div>
+        <div style="background:var(--bg2);height:8px;border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;border-radius:4px;background:${cor};transition:width .5s ease"></div>
+        </div>
+      </div>`;
   }
-  if (detEl) {
-    if (isPro && data.plano_valido_ate) {
-      const valido = new Date(data.plano_valido_ate).toLocaleDateString('pt-BR');
-      detEl.textContent = `Válido até: ${valido}`;
-    } else {
-      detEl.textContent = 'Até 10 agendamentos por mês';
-    }
+
+  // Carregar histórico de pagamentos
+  await carregarHistoricoPlano();
+}
+
+async function carregarHistoricoPlano() {
+  const body = document.getElementById('historico-body');
+  if (!body) return;
+
+  const { data: rows, error } = await supabase
+    .from('pagamentos')
+    .select('evento, data_evento, valor, descricao')
+    .eq('prestador_id', userId)
+    .order('data_evento', { ascending: false })
+    .limit(10);
+
+  if (error || !rows || rows.length === 0) {
+    body.innerHTML = `<div style="padding:16px 20px;font-size:13px;color:var(--muted)">Nenhum pagamento registrado ainda.</div>`;
+    return;
   }
+
+  const iconMap = {
+    PAYMENT_RECEIVED: '✅', PAYMENT_REFUNDED: '↩️',
+    PAYMENT_OVERDUE: '⚠️',  SUBSCRIPTION_CANCELLED: '❌',
+  };
+  const thStyle = `padding:10px 16px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--bord);background:var(--bg2)`;
+
+  body.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>
+        <th style="${thStyle}">Data</th>
+        <th style="${thStyle}">Descrição</th>
+        <th style="${thStyle};text-align:right">Valor</th>
+        <th style="${thStyle}">Status</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => {
+          const icon = iconMap[r.evento] ?? '💳';
+          const desc = r.descricao || r.evento.replace(/_/g,' ').toLowerCase();
+          const data = r.data_evento ? new Date(r.data_evento).toLocaleDateString('pt-BR') : '—';
+          const val  = r.valor ? `R$${Number(r.valor).toFixed(2).replace('.', ',')}` : '—';
+          const isPago = r.evento === 'PAYMENT_RECEIVED';
+          const badgeStyle = isPago
+            ? `background:var(--teal-t);color:var(--teal);border:1px solid rgba(93,202,165,.2)`
+            : `background:var(--rust-t);color:var(--rust);border:1px solid rgba(240,96,72,.2)`;
+          return `<tr style="border-bottom:1px solid var(--bord)">
+            <td style="padding:11px 16px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${data}</td>
+            <td style="padding:11px 16px">${icon} ${desc}</td>
+            <td style="padding:11px 16px;text-align:right;font-family:'DM Mono',monospace;color:var(--lime-d)">${val}</td>
+            <td style="padding:11px 16px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;${badgeStyle}">${isPago ? 'Pago' : 'Ver'}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
 }
 
 // ── SENHA ─────────────────────────────────────────────────────────────────
