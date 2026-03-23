@@ -1,19 +1,15 @@
 // supabase/functions/webhook-asaas/index.ts
 //
-// Recebe TODOS os eventos do Asaas e:
-//   - PAYMENT_RECEIVED   → ativa plano Pro
-//   - PAYMENT_OVERDUE    → marca plano como inadimplente (grace period de 3 dias)
-//   - PAYMENT_DELETED /
-//     SUBSCRIPTION_DELETED → rebaixa para free imediatamente
+// Recebe eventos do Asaas e atualiza o plano do prestador.
 //
-// Configurar no painel do Asaas:
-//   Minha Conta → Integrações → Webhooks → URL da Edge Function
-//   Eventos: todos (ou pelo menos os 4 acima)
-//
-// Segurança: o Asaas envia o header "asaas-access-token" com o valor
-// que você cadastrou no painel. Validamos antes de processar.
+// Segurança: valida o header "asaas-access-token" contra ASAAS_WEBHOOK_TOKEN
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, asaas-access-token",
+};
 
 // Eventos que ATIVAM o plano Pro
 const EVENTOS_ATIVAR = new Set([
@@ -21,7 +17,7 @@ const EVENTOS_ATIVAR = new Set([
   "PAYMENT_CONFIRMED",
 ]);
 
-// Eventos que DESATIVAM (volta ao free)
+// Eventos que DESATIVAM (volta ao free imediatamente)
 const EVENTOS_DESATIVAR = new Set([
   "SUBSCRIPTION_DELETED",
   "PAYMENT_DELETED",
@@ -30,146 +26,178 @@ const EVENTOS_DESATIVAR = new Set([
   "PAYMENT_CHARGEBACK_DISPUTE",
 ]);
 
-// Eventos de inadimplência (grace period — não desativa imediatamente)
+// Eventos de inadimplência (grace period — cron cuida do downgrade)
 const EVENTOS_INADIMPLENTE = new Set([
   "PAYMENT_OVERDUE",
 ]);
 
-// ---------------------------------------------------------------------------
-// Calcula a data de validade do plano baseado no ciclo
-// ---------------------------------------------------------------------------
 function calcularValidadeAte(ciclo: string): Date {
   const d = new Date();
-  if (ciclo === "MONTHLY") d.setMonth(d.getMonth() + 1);
-  else if (ciclo === "YEARLY") d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1); // padrão mensal
+  if (ciclo === "YEARLY") d.setFullYear(d.getFullYear() + 1);
+  else d.setMonth(d.getMonth() + 1); // MONTHLY e padrão
   return d;
 }
 
-// ---------------------------------------------------------------------------
-// Handler HTTP
-// ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
-  // Asaas envia POST
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: CORS });
   }
 
-  // Validação de segurança: token no header
-  const webhookToken = req.headers.get("asaas-access-token");
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405, headers: CORS });
+  }
+
+  // ── Debug: log todos os headers ───────────────────────────────────────
+  console.log("Headers recebidos:");
+  for (const [k, v] of req.headers.entries()) {
+    console.log(`  ${k}: ${v}`);
+  }
+
+  // ── Validação do token ──────────────────────────────────────────────────
+  const webhookToken  = req.headers.get("asaas-access-token");
   const tokenEsperado = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
 
+  console.log("Token esperado:", tokenEsperado ? "setado" : "NULO");
+  console.log("Token recebido:", webhookToken);
+
   if (!tokenEsperado || webhookToken !== tokenEsperado) {
-    console.warn("Webhook com token inválido:", webhookToken);
-    return new Response("Unauthorized", { status: 401 });
+    console.warn("Webhook token inválido");
+    return new Response("Unauthorized", { status: 401, headers: CORS });
   }
 
+  // ── Parse do payload ────────────────────────────────────────────────────
   let payload: any;
   try {
     payload = await req.json();
   } catch {
-    return new Response("Bad Request", { status: 400 });
+    return new Response("Bad Request", { status: 400, headers: CORS });
   }
 
-  const evento   = payload.event as string;
-  const payment  = payload.payment;
-  const sub      = payload.subscription ?? payment?.subscription;
+  const evento  = payload.event as string;
+  const payment = payload.payment;
+  // subscription pode vir como objeto ou como string ID dentro de payment
+  const sub     = payload.subscription ?? payment?.subscription;
+  const subId   = typeof sub === "string" ? sub : sub?.id;
 
-  console.log(`Webhook Asaas: ${evento}`, { paymentId: payment?.id, subId: sub?.id ?? sub });
+  console.log(`Webhook Asaas: ${evento}`, { paymentId: payment?.id, subId });
 
-  // Ignora eventos que não nos interessam
+  // Ignora eventos não mapeados
   const importa =
     EVENTOS_ATIVAR.has(evento) ||
     EVENTOS_DESATIVAR.has(evento) ||
     EVENTOS_INADIMPLENTE.has(evento);
 
   if (!importa) {
-    return Response.json({ ok: true, ignorado: true, evento });
+    return Response.json({ ok: true, ignorado: true, evento }, { headers: CORS });
   }
 
+  // ── Supabase (service role para bypassar RLS) ───────────────────────────
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Resolve o ID da assinatura (pode vir em formatos diferentes)
-  const subId = typeof sub === "string" ? sub : sub?.id;
-  if (!subId) {
-    console.warn("Webhook sem subscription ID, ignorando.");
-    return Response.json({ ok: true, ignorado: true });
+  // ── Localiza o prestador ────────────────────────────────────────────────
+  // Tenta pelo asaas_sub_id primeiro
+  let prestador: any = null;
+
+  if (subId) {
+    const { data } = await supabase
+      .from("prestadores")
+      .select("id, plano, asaas_customer_id")
+      .eq("asaas_sub_id", subId)
+      .maybeSingle();
+    prestador = data;
   }
 
-  // Busca o prestador pelo ID da assinatura
-  const { data: prestador, error: pErr } = await supabase
-    .from("prestadores")
-    .select("id, plano")
-    .eq("asaas_sub_id", subId)
-    .single();
+  // Fallback: tenta pelo asaas_customer_id (útil no primeiro evento da assinatura)
+  if (!prestador && payment?.customer) {
+    const { data } = await supabase
+      .from("prestadores")
+      .select("id, plano, asaas_customer_id")
+      .eq("asaas_customer_id", payment.customer)
+      .maybeSingle();
+    prestador = data;
 
-  if (pErr || !prestador) {
-    // Pode ser uma assinatura de outro produto — ignora silenciosamente
-    console.warn("Prestador não encontrado para sub_id:", subId);
-    return Response.json({ ok: true, ignorado: true });
+    // Se achou pelo customer, salva o subId para próximos eventos
+    if (prestador && subId) {
+      await supabase
+        .from("prestadores")
+        .update({ asaas_sub_id: subId })
+        .eq("id", prestador.id);
+    }
   }
 
-  // Registra o evento no histórico de pagamentos
-  const { error: logErr } = await supabase.from("pagamentos").insert({
-    prestador_id:      prestador.id,
-    asaas_payment_id:  payment?.id ?? null,
+  if (!prestador) {
+    console.warn("Prestador não encontrado — subId:", subId, "customer:", payment?.customer);
+    return Response.json({ ok: true, ignorado: true }, { headers: CORS });
+  }
+
+  // ── Registra no histórico de pagamentos ────────────────────────────────
+  const { error: erroPagamento } = await supabase.from("pagamentos").insert({
+    prestador_id:     prestador.id,
+    asaas_payment_id: payment?.id ?? null,
     evento,
-    valor:             payment?.value ?? null,
-    billing_type:      payment?.billingType ?? null,
-    data_evento:       new Date().toISOString(),
-    payload,
+    valor:            payment?.value ?? null,
+    billing_type:     payment?.billingType ?? null,
+    data_evento:      new Date().toISOString(),
+    payload:          payload,
   });
-  if (logErr) console.error("Erro ao registrar pagamento:", logErr);
 
-  // ── AÇÃO BASEADA NO EVENTO ──────────────────────────────────────────────
+  if (erroPagamento) {
+    console.error("Erro ao salvar pagamento:", erroPagamento.message);
+  } else {
+    console.log("Pagamento registrado:", payment?.id);
+  }
+
+  // ── Ação por evento ────────────────────────────────────────────────────
 
   if (EVENTOS_ATIVAR.has(evento)) {
-    // Pagamento recebido → ativa Pro até o próximo ciclo
-    const ciclo = payment?.subscription?.cycle ?? "MONTHLY";
+    const ciclo     = payment?.subscription?.cycle ?? sub?.cycle ?? "MONTHLY";
     const validoAte = calcularValidadeAte(ciclo);
 
     const { error } = await supabase
       .from("prestadores")
       .update({
-        plano:           "pro",
-        plano_valido_ate: validoAte.toISOString(),
-        trial_usado:     true,
+        plano:            "pro",
+        plano_valido_ate:  validoAte.toISOString(),
+        trial_usado:      true,
       })
       .eq("id", prestador.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao ativar Pro:", error);
+      return Response.json({ erro: "Erro ao ativar plano" }, { status: 500, headers: CORS });
+    }
 
-    console.log(`✅ Plano Pro ativado para ${prestador.id} até ${validoAte.toISOString()}`);
-    return Response.json({ ok: true, acao: "plano_ativado", valido_ate: validoAte });
+    console.log(`✅ Pro ativado para ${prestador.id} até ${validoAte.toISOString()}`);
+    return Response.json({ ok: true, acao: "plano_ativado", valido_ate: validoAte }, { headers: CORS });
   }
 
   if (EVENTOS_INADIMPLENTE.has(evento)) {
-    // Vencido → grace period de 3 dias antes de bloquear
-    // (cron job separado verifica plano_valido_ate e faz o downgrade)
-    // Aqui apenas logamos — não rebaixamos ainda
-    console.log(`⚠️  Pagamento vencido para ${prestador.id}, grace period ativo`);
-    return Response.json({ ok: true, acao: "grace_period_iniciado" });
+    // Não desativa agora — cron verifica plano_valido_ate com grace period de 3 dias
+    console.log(`⚠️ Inadimplente: ${prestador.id} — aguarda cron`);
+    return Response.json({ ok: true, acao: "grace_period_iniciado" }, { headers: CORS });
   }
 
   if (EVENTOS_DESATIVAR.has(evento)) {
-    // Cancelamento ou estorno → rebaixa para free imediatamente
     const { error } = await supabase
       .from("prestadores")
       .update({
         plano:            "free",
         plano_valido_ate:  null,
-        asaas_sub_id:      null,
+        asaas_sub_id:     null,
       })
       .eq("id", prestador.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao rebaixar plano:", error);
+      return Response.json({ erro: "Erro ao rebaixar plano" }, { status: 500, headers: CORS });
+    }
 
-    console.log(`🔴 Plano rebaixado para free: ${prestador.id} (evento: ${evento})`);
-    return Response.json({ ok: true, acao: "plano_rebaixado" });
+    console.log(`🔴 Rebaixado para free: ${prestador.id} (${evento})`);
+    return Response.json({ ok: true, acao: "plano_rebaixado" }, { headers: CORS });
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { headers: CORS });
 });
