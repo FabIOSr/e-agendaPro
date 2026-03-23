@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendar — Ana Cabelos</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #faf9f6;
+  --bg2:     #f2f0ea;
+  --border:  #e4e0d6;
+  --border2: #ccc8bc;
+  --text:    #1a1a17;
+  --muted:   #7a7669;
+  --faint:   #b8b4a8;
+  --accent:  #2d5a27;
+  --accent-l:#eef4ec;
+  --accent-m:#c8dfc4;
+  --warn:    #8a4a10;
+  --warn-l:  #fdf3ea;
+  --radius:  14px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* ── HERO / PERFIL ── */
+.hero {
+  background: var(--text);
+  color: var(--bg);
+  padding: 40px 24px 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 120%, #3d7a35 0%, transparent 70%);
+  opacity: .35;
+}
+.hero-inner { position: relative; z-index: 1; }
+
+.avatar-wrap {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--accent-m);
+  border: 3px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Instrument Serif', serif;
+  font-size: 30px;
+  color: var(--accent);
+  margin: 0 auto 14px;
+  overflow: hidden;
+}
+.hero h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -.3px;
+  margin-bottom: 6px;
+}
+.hero-bio {
+  font-size: 13px;
+  color: rgba(250,249,246,.6);
+  max-width: 280px;
+  margin: 0 auto 14px;
+  line-height: 1.55;
+}
+.hero-tags { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.hero-tag {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: rgba(250,249,246,.7);
+}
+
+/* ── STEPS NAV ── */
+.steps-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 20px 24px 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.step-item {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  flex: 1;
+}
+.step-circle {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500; color: var(--faint);
+  transition: all .3s;
+}
+.step-circle.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+.step-circle.done   { border-color: var(--accent); background: var(--accent-l); color: var(--accent); }
+.step-label { font-size: 10px; color: var(--faint); text-align: center; transition: color .3s; }
+.step-label.active { color: var(--accent); font-weight: 500; }
+.step-connector {
+  flex: 1; height: 1px; background: var(--border);
+  margin-bottom: 18px; max-width: 40px;
+  position: relative; top: -9px;
+}
+.step-connector.done { background: var(--accent-m); }
+
+/* ── CONTENT WRAPPER ── */
+.content {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ── SEÇÃO ── */
+.section {
+  display: none;
+  animation: fadein .25s ease;
+}
+.section.active { display: block; }
+@keyframes fadein { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+.section-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 24px 0 12px;
+}
+
+/* ── SERVIÇOS ── */
+.servico-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+  position: relative;
+  overflow: hidden;
+}
+.servico-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--border2);
+  transition: background .2s;
+}
+.servico-card:hover { border-color: var(--accent-m); box-shadow: 0 2px 12px rgba(0,0,0,.06); transform: translateY(-1px); }
+.servico-card:hover::before { background: var(--accent); }
+.servico-card.selected { border-color: var(--accent); box-shadow: 0 2px 16px rgba(45,90,39,.12); }
+.servico-card.selected::before { background: var(--accent); }
+
+.servico-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.servico-card.selected .servico-icon { background: var(--accent-l); }
+
+.servico-info { flex: 1; min-width: 0; }
+.servico-nome { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
+.servico-meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; }
+.servico-preco {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px; font-weight: 500;
+  color: var(--accent);
+}
+
+.check-icon {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  flex-shrink: 0;
+  transition: all .2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.servico-card.selected .check-icon {
+  background: var(--accent); border-color: var(--accent); color: white; font-size: 11px;
+}
+
+/* ── CALENDÁRIO ── */
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.cal-month { font-family: 'Instrument Serif', serif; font-size: 20px; }
+.cal-nav button {
+  background: none; border: 1.5px solid var(--border);
+  color: var(--muted); width: 32px; height: 32px;
+  border-radius: 8px; cursor: pointer; font-size: 14px;
+  transition: border-color .15s, color .15s;
+}
+.cal-nav button:hover { border-color: var(--border2); color: var(--text); }
+
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 3px; text-align: center;
+}
+.cal-day-name {
+  font-size: 11px; color: var(--faint); padding: 4px 0 8px;
+  font-weight: 500;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  font-size: 13px; color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.cal-day:hover:not(.disabled):not(.empty) { background: var(--bg2); color: var(--text); }
+.cal-day.today { color: var(--accent); font-weight: 600; }
+.cal-day.today::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 3px; height: 3px; background: var(--accent); border-radius: 50%;
+}
+.cal-day.selected { background: var(--accent) !important; color: white !important; font-weight: 600; }
+.cal-day.selected::after { display: none; }
+.cal-day.disabled { color: var(--faint); cursor: default; opacity: .45; }
+.cal-day.empty { cursor: default; }
+
+/* ── SLOTS ── */
+.slots-header { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.slots-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.slot {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 13px;
+  font-family: 'DM Mono', monospace;
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--text);
+}
+.slot:hover { border-color: var(--accent-m); background: var(--accent-l); }
+.slot.selected { border-color: var(--accent); background: var(--accent); color: white; font-weight: 500; }
+.slot.ocupado {
+  background: var(--bg2); border-color: var(--border);
+  color: var(--faint); cursor: default; text-decoration: line-through;
+  font-size: 11px;
+}
+
+.slots-empty {
+  text-align: center; padding: 32px 0;
+  color: var(--muted); font-size: 14px;
+}
+
+/* ── FORMULÁRIO ── */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 6px; display: block; }
+.form-input {
+  width: 100%;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--faint); }
+
+/* ── RESUMO ── */
+.resumo-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.resumo-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.resumo-row:last-child { border-bottom: none; padding-bottom: 0; }
+.resumo-row-label { color: var(--muted); }
+.resumo-row-val   { font-weight: 500; }
+.resumo-total { font-size: 16px; }
+.resumo-total .resumo-row-val { color: var(--accent); font-family: 'DM Mono', monospace; }
+
+.aviso-box {
+  background: var(--warn-l);
+  border: 1px solid #f0c896;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--warn);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+
+/* ── CONFIRMAÇÃO ── */
+.success-wrap {
+  text-align: center;
+  padding: 48px 24px 0;
+}
+.success-icon {
+  width: 72px; height: 72px;
+  background: var(--accent-l);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  margin: 0 auto 20px;
+  animation: pop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.success-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px; font-weight: 400;
+  margin-bottom: 8px;
+}
+.success-sub { font-size: 14px; color: var(--muted); max-width: 280px; margin: 0 auto 28px; line-height: 1.6; }
+
+.success-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+/* ── BOTÃO PRIMÁRIO ── */
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  margin-top: 8px;
+}
+.btn-primary:hover { opacity: .9; }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { opacity: .35; cursor: default; }
+
+.btn-ghost {
+  width: 100%;
+  background: none;
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: border-color .15s, color .15s;
+}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+/* ── STICKY FOOTER ── */
+.sticky-footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(250,249,246,.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  z-index: 50;
+  display: none;
+}
+.sticky-footer.visible { display: block; }
+.sticky-inner { max-width: 480px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+.sticky-summary { flex: 1; min-width: 0; }
+.sticky-servico { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sticky-detail  { font-size: 11px; color: var(--muted); }
+.sticky-btn {
+  background: var(--accent); color: white; border: none;
+  border-radius: 10px; padding: 10px 18px;
+  font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: opacity .15s;
+}
+.sticky-btn:hover { opacity: .9; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="avatar-wrap">A</div>
+    <h1>Ana Cabelos</h1>
+    <p class="hero-bio">Especialista em coloração e tratamentos capilares. Atendimento personalizado em São Paulo.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">✂️ Cortes</span>
+      <span class="hero-tag">🎨 Coloração</span>
+      <span class="hero-tag">💆 Tratamentos</span>
+    </div>
+  </div>
+</div>
+
+<!-- STEPS NAV -->
+<div class="steps-nav">
+  <div class="step-item">
+    <div class="step-circle active" id="sc-1">1</div>
+    <div class="step-label active" id="sl-1">Serviço</div>
+  </div>
+  <div class="step-connector" id="conn-1"></div>
+  <div class="step-item">
+    <div class="step-circle" id="sc-2">2</div>
+    <div class="step-label" id="sl-2">Data</div>
+  </div>
+  <div class="step-connector" id="conn-2"></div>
+  <div class="step-item">
+    <div class="step-circle" id="sc-3">3</div>
+    <div class="step-label" id="sl-3">Horário</div>
+  </div>
+  <div class="step-connector" id="conn-3"></div>
+  <div class="step-item">
+    <div class="step-circle" id="sc-4">4</div>
+    <div class="step-label" id="sl-4">Seus dados</div>
+  </div>
+  <div class="step-connector" id="conn-4"></div>
+  <div class="step-item">
+    <div class="step-circle" id="sc-5">5</div>
+    <div class="step-label" id="sl-5">Confirmar</div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- STEP 1: SERVIÇOS -->
+  <div class="section active" id="step-1">
+    <div class="section-title">Escolha o serviço</div>
+
+    <div class="servico-card" onclick="selecionarServico(this, 'Corte + escova', 60, 90, '✂️')">
+      <div class="servico-icon">✂️</div>
+      <div class="servico-info">
+        <div class="servico-nome">Corte + escova</div>
+        <div class="servico-meta"><span>60 min</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="servico-preco">R$90</div>
+        <div class="check-icon"></div>
+      </div>
+    </div>
+
+    <div class="servico-card" onclick="selecionarServico(this, 'Tintura', 120, 160, '🎨')">
+      <div class="servico-icon">🎨</div>
+      <div class="servico-info">
+        <div class="servico-nome">Tintura</div>
+        <div class="servico-meta"><span>120 min</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="servico-preco">R$160</div>
+        <div class="check-icon"></div>
+      </div>
+    </div>
+
+    <div class="servico-card" onclick="selecionarServico(this, 'Escova progressiva', 90, 200, '💆')">
+      <div class="servico-icon">💆</div>
+      <div class="servico-info">
+        <div class="servico-nome">Escova progressiva</div>
+        <div class="servico-meta"><span>90 min</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="servico-preco">R$200</div>
+        <div class="check-icon"></div>
+      </div>
+    </div>
+
+    <div class="servico-card" onclick="selecionarServico(this, 'Corte masculino', 30, 45, '💈')">
+      <div class="servico-icon">💈</div>
+      <div class="servico-info">
+        <div class="servico-nome">Corte masculino</div>
+        <div class="servico-meta"><span>30 min</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="servico-preco">R$45</div>
+        <div class="check-icon"></div>
+      </div>
+    </div>
+
+    <div class="servico-card" onclick="selecionarServico(this, 'Hidratação profunda', 60, 120, '🧴')">
+      <div class="servico-icon">🧴</div>
+      <div class="servico-info">
+        <div class="servico-nome">Hidratação profunda</div>
+        <div class="servico-meta"><span>60 min</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="servico-preco">R$120</div>
+        <div class="check-icon"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: DATA -->
+  <div class="section" id="step-2">
+    <div class="section-title">Escolha a data</div>
+    <div style="background:white;border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;">
+      <div class="cal-header">
+        <div class="cal-month" id="cal-month"></div>
+        <div class="cal-nav" style="display:flex;gap:6px">
+          <button onclick="mudarMes(-1)">‹</button>
+          <button onclick="mudarMes(1)">›</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <button class="btn-ghost" onclick="irPara(1)">← Voltar</button>
+  </div>
+
+  <!-- STEP 3: HORÁRIO -->
+  <div class="section" id="step-3">
+    <div class="section-title">Escolha o horário</div>
+    <div class="slots-header" id="slots-header"></div>
+    <div class="slots-grid" id="slots-grid"></div>
+    <button class="btn-ghost" onclick="irPara(2)" style="margin-top:16px">← Voltar</button>
+  </div>
+
+  <!-- STEP 4: DADOS -->
+  <div class="section" id="step-4">
+    <div class="section-title">Seus dados</div>
+    <div class="form-group">
+      <label class="form-label">Nome completo</label>
+      <input class="form-input" id="input-nome" placeholder="Como você se chama?" oninput="validarForm()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">WhatsApp</label>
+      <input class="form-input" id="input-tel" placeholder="(11) 99999-0000" oninput="mascaraTel(this);validarForm()">
+    </div>
+    <div class="aviso-box">
+      📲 Você receberá a confirmação e um lembrete 1 dia antes pelo WhatsApp.
+    </div>
+    <button class="btn-primary" id="btn-confirmar" disabled onclick="irPara(5)">Ver resumo →</button>
+    <button class="btn-ghost" onclick="irPara(3)">← Voltar</button>
+  </div>
+
+  <!-- STEP 5: RESUMO -->
+  <div class="section" id="step-5">
+    <div class="section-title">Confirme seu agendamento</div>
+    <div class="resumo-card">
+      <div class="resumo-row">
+        <span class="resumo-row-label">Serviço</span>
+        <span class="resumo-row-val" id="r-servico">—</span>
+      </div>
+      <div class="resumo-row">
+        <span class="resumo-row-label">Data</span>
+        <span class="resumo-row-val" id="r-data">—</span>
+      </div>
+      <div class="resumo-row">
+        <span class="resumo-row-label">Horário</span>
+        <span class="resumo-row-val" id="r-hora">—</span>
+      </div>
+      <div class="resumo-row">
+        <span class="resumo-row-label">Duração</span>
+        <span class="resumo-row-val" id="r-dur">—</span>
+      </div>
+      <div class="resumo-row">
+        <span class="resumo-row-label">Cliente</span>
+        <span class="resumo-row-val" id="r-nome">—</span>
+      </div>
+      <div class="resumo-row resumo-total">
+        <span class="resumo-row-label">Total</span>
+        <span class="resumo-row-val" id="r-preco">—</span>
+      </div>
+    </div>
+    <div class="aviso-box">
+      ⚠️ O pagamento é feito presencialmente no dia do atendimento.
+    </div>
+    <button class="btn-primary" onclick="confirmar()">Confirmar agendamento</button>
+    <button class="btn-ghost" onclick="irPara(4)">← Voltar</button>
+  </div>
+
+  <!-- STEP 6: SUCESSO -->
+  <div class="section" id="step-6">
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Agendado!</div>
+      <p class="success-sub">Você vai receber a confirmação no WhatsApp em instantes. Até lá! 😊</p>
+
+      <div class="success-card">
+        <div class="resumo-row"><span class="resumo-row-label">Serviço</span><span class="resumo-row-val" id="s-servico">—</span></div>
+        <div class="resumo-row"><span class="resumo-row-label">Data e hora</span><span class="resumo-row-val" id="s-data">—</span></div>
+        <div class="resumo-row"><span class="resumo-row-label">Com</span><span class="resumo-row-val">Ana Cabelos</span></div>
+        <div class="resumo-row"><span class="resumo-row-label">Endereço</span><span class="resumo-row-val" style="font-size:13px;text-align:right">Rua das Flores, 142<br>Vila Mariana, SP</span></div>
+      </div>
+
+      <button class="btn-ghost" onclick="reiniciar()">Fazer outro agendamento</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- STICKY FOOTER -->
+<div class="sticky-footer" id="sticky-footer">
+  <div class="sticky-inner">
+    <div class="sticky-summary">
+      <div class="sticky-servico" id="sf-servico"></div>
+      <div class="sticky-detail"  id="sf-detail"></div>
+    </div>
+    <button class="sticky-btn" id="sf-btn" onclick="avancarStep()"></button>
+  </div>
+</div>
+
+<script>
+// ── ESTADO ───────────────────────────────────────────────────────────────
+const state = {
+  step: 1,
+  servico: null, duracaoMin: null, preco: null, icone: null,
+  data: null, dataLabel: null,
+  hora: null,
+  nome: '', tel: '',
+};
+
+// Calendário
+let calAno  = new Date().getFullYear();
+let calMes  = new Date().getMonth();
+
+// Slots simulados (em prod: Edge Function horarios-disponiveis)
+const SLOTS_DIA = [
+  { hora: '09:00', disp: true  },
+  { hora: '09:30', disp: true  },
+  { hora: '10:00', disp: false },
+  { hora: '10:30', disp: false },
+  { hora: '11:00', disp: true  },
+  { hora: '11:30', disp: false },
+  { hora: '12:00', disp: false }, // almoço
+  { hora: '12:30', disp: false }, // almoço
+  { hora: '13:00', disp: true  },
+  { hora: '13:30', disp: true  },
+  { hora: '14:00', disp: true  },
+  { hora: '14:30', disp: false },
+  { hora: '15:00', disp: false },
+  { hora: '15:30', disp: false },
+  { hora: '16:00', disp: true  },
+  { hora: '16:30', disp: false },
+  { hora: '17:00', disp: true  },
+  { hora: '17:30', disp: true  },
+];
+
+// ── NAVEGAÇÃO ────────────────────────────────────────────────────────────
+function irPara(n) {
+  document.getElementById('step-' + state.step).classList.remove('active');
+  state.step = n;
+  document.getElementById('step-' + n).classList.add('active');
+  atualizarStepsNav();
+  atualizarStickyFooter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (n === 2) renderCalendario();
+  if (n === 3) renderSlots();
+  if (n === 5) preencherResumo();
+}
+
+function avancarStep() {
+  if (state.step < 5) irPara(state.step + 1);
+}
+
+function atualizarStepsNav() {
+  for (let i = 1; i <= 5; i++) {
+    const circ  = document.getElementById('sc-' + i);
+    const label = document.getElementById('sl-' + i);
+    if (i < state.step) {
+      circ.className  = 'step-circle done';
+      circ.textContent = '✓';
+      label.className = 'step-label';
+    } else if (i === state.step) {
+      circ.className  = 'step-circle active';
+      circ.textContent = i;
+      label.className = 'step-label active';
+    } else {
+      circ.className  = 'step-circle';
+      circ.textContent = i;
+      label.className = 'step-label';
+    }
+    if (i < 5) {
+      document.getElementById('conn-' + i).className =
+        'step-connector' + (i < state.step ? ' done' : '');
+    }
+  }
+}
+
+function atualizarStickyFooter() {
+  const footer = document.getElementById('sticky-footer');
+  const s = state;
+
+  if (s.step === 6) { footer.classList.remove('visible'); return; }
+  if (s.step === 1 && !s.servico) { footer.classList.remove('visible'); return; }
+
+  footer.classList.add('visible');
+
+  const sfServico = document.getElementById('sf-servico');
+  const sfDetail  = document.getElementById('sf-detail');
+  const sfBtn     = document.getElementById('sf-btn');
+
+  if (s.servico) {
+    sfServico.textContent = s.icone + ' ' + s.servico;
+    const parts = [];
+    if (s.dataLabel) parts.push(s.dataLabel);
+    if (s.hora) parts.push(s.hora);
+    if (s.preco) parts.push('R$' + s.preco);
+    sfDetail.textContent = parts.join(' · ');
+  }
+
+  const labels = { 1:'Escolher data →', 2:'Ver horários →', 3:'Continuar →', 4:'Ver resumo →', 5:'Confirmar' };
+  sfBtn.textContent = labels[s.step] || 'Continuar →';
+}
+
+// ── STEP 1 — SERVIÇOS ────────────────────────────────────────────────────
+function selecionarServico(el, nome, dur, preco, icone) {
+  document.querySelectorAll('.servico-card').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.check-icon').textContent = '';
+  });
+  el.classList.add('selected');
+  el.querySelector('.check-icon').textContent = '✓';
+  state.servico    = nome;
+  state.duracaoMin = dur;
+  state.preco      = preco;
+  state.icone      = icone;
+  atualizarStickyFooter();
+}
+
+// ── STEP 2 — CALENDÁRIO ──────────────────────────────────────────────────
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_S = ['D','S','T','Q','Q','S','S'];
+
+function renderCalendario() {
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  document.getElementById('cal-month').textContent = MESES[calMes] + ' ' + calAno;
+
+  DIAS_S.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-day-name'; el.textContent = d; grid.appendChild(el);
+  });
+
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const primeiroDia = new Date(calAno, calMes, 1).getDay();
+  const totalDias   = new Date(calAno, calMes + 1, 0).getDate();
+  // Domingos bloqueados (dia 0) — prestador não atende
+  const diasOff = new Set([0]);
+
+  for (let i = 0; i < primeiroDia; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty'; grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= totalDias; d++) {
+    const data = new Date(calAno, calMes, d);
+    const el = document.createElement('div');
+    el.textContent = d;
+    const passado = data < hoje;
+    const off     = diasOff.has(data.getDay());
+    el.className  = 'cal-day' + (passado || off ? ' disabled' : '')
+      + (data.toDateString() === hoje.toDateString() ? ' today' : '');
+
+    if (state.data && data.toDateString() === state.data.toDateString())
+      el.classList.add('selected');
+
+    if (!passado && !off) {
+      el.onclick = () => {
+        state.data      = data;
+        state.dataLabel = `${d} de ${MESES[calMes].toLowerCase().slice(0,3)}`;
+        state.hora      = null;
+        renderCalendario();
+        atualizarStickyFooter();
+        setTimeout(() => irPara(3), 200);
+      };
+    }
+    grid.appendChild(el);
+  }
+}
+
+function mudarMes(delta) {
+  calMes += delta;
+  if (calMes > 11) { calMes = 0;  calAno++; }
+  if (calMes < 0)  { calMes = 11; calAno--; }
+  renderCalendario();
+}
+
+// ── STEP 3 — SLOTS ───────────────────────────────────────────────────────
+function renderSlots() {
+  const grid   = document.getElementById('slots-grid');
+  const header = document.getElementById('slots-header');
+  grid.innerHTML = '';
+
+  const d   = state.data;
+  const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  header.textContent = d
+    ? `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} — ${state.duracaoMin} min`
+    : '';
+
+  const disponiveis = SLOTS_DIA.filter(s => s.disp);
+  if (disponiveis.length === 0) {
+    grid.innerHTML = '<div class="slots-empty" style="grid-column:1/-1">😔 Sem horários disponíveis neste dia.</div>';
+    return;
+  }
+
+  SLOTS_DIA.forEach(sl => {
+    const el = document.createElement('div');
+    el.className = 'slot' + (!sl.disp ? ' ocupado' : '');
+    el.textContent = sl.hora;
+    if (state.hora === sl.hora) el.classList.add('selected');
+
+    if (sl.disp) {
+      el.onclick = () => {
+        state.hora = sl.hora;
+        document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+        atualizarStickyFooter();
+        setTimeout(() => irPara(4), 160);
+      };
+    }
+    grid.appendChild(el);
+  });
+}
+
+// ── STEP 4 — DADOS ───────────────────────────────────────────────────────
+function mascaraTel(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if (v.length >= 7) v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+  else if (v.length >= 3) v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+  else if (v.length >= 1) v = '(' + v;
+  el.value = v;
+  state.tel = v;
+}
+
+function validarForm() {
+  state.nome = document.getElementById('input-nome').value.trim();
+  const ok   = state.nome.length >= 2 && state.tel.replace(/\D/g,'').length >= 10;
+  document.getElementById('btn-confirmar').disabled = !ok;
+}
+
+// ── STEP 5 — RESUMO ──────────────────────────────────────────────────────
+function preencherResumo() {
+  const d = state.data;
+  const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  const dataFmt = d ? `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()}` : '—';
+
+  document.getElementById('r-servico').textContent = state.icone + ' ' + state.servico;
+  document.getElementById('r-data').textContent    = dataFmt;
+  document.getElementById('r-hora').textContent    = state.hora;
+  document.getElementById('r-dur').textContent     = state.duracaoMin + ' minutos';
+  document.getElementById('r-nome').textContent    = state.nome;
+  document.getElementById('r-preco').textContent   = 'R$' + state.preco + ',00';
+}
+
+// ── CONFIRMAR ────────────────────────────────────────────────────────────
+function confirmar() {
+  // Em prod: POST para Edge Function lembretes-whatsapp (tipo: confirmacao)
+  // após INSERT no Supabase
+  const d = state.data;
+  const sem = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  document.getElementById('s-servico').textContent =
+    state.icone + ' ' + state.servico;
+  document.getElementById('s-data').textContent =
+    `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} às ${state.hora}`;
+
+  irPara(6);
+  document.getElementById('sticky-footer').classList.remove('visible');
+}
+
+function reiniciar() {
+  Object.assign(state, {
+    step:1, servico:null, duracaoMin:null, preco:null, icone:null,
+    data:null, dataLabel:null, hora:null, nome:'', tel:''
+  });
+  document.querySelectorAll('.servico-card').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.check-icon').textContent = '';
+  });
+  document.getElementById('input-nome').value = '';
+  document.getElementById('input-tel').value  = '';
+  irPara(1);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+atualizarStepsNav();
+</script>
+</body>
+</html>

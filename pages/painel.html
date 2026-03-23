@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda — Ana Cabelos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f0f0f;
+  --bg2:       #181818;
+  --bg3:       #222222;
+  --border:    #2e2e2e;
+  --border2:   #3a3a3a;
+  --text:      #f0ede8;
+  --muted:     #888;
+  --faint:     #444;
+  --accent:    #c8f060;
+  --accent2:   #7dd3a8;
+  --warn:      #f0a060;
+  --danger:    #f06060;
+  --blue:      #60b0f0;
+  --purple:    #b060f0;
+  --hour-h:    64px;
+  --sidebar-w: 240px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.3px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(.75); }
+}
+
+.topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.date-nav button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s, color .15s;
+}
+.date-nav button:hover { border-color: var(--border2); color: var(--text); }
+.date-label {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 180px;
+  text-align: center;
+  cursor: pointer;
+}
+.date-label .weekday { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 5px; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background .15s, color .15s;
+}
+.nav-link:hover { background: var(--bg3); color: var(--text); }
+.nav-link.active { background: var(--bg3); color: var(--text); }
+.btn-logout {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  padding: 4px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.btn-logout:hover { border-color: var(--border2); color: var(--text); }
+.avatar {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #0f0f0f;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-new {
+  background: var(--accent);
+  color: #0f0f0f;
+  border: none;
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  transition: opacity .15s;
+}
+.btn-new:hover { opacity: .85; }
+
+/* ── LAYOUT ── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 56px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 10px;
+}
+
+/* mini calendário */
+.mini-cal { font-size: 12px; }
+.mini-cal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px; color: var(--muted);
+}
+.mini-cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 1px; text-align: center;
+}
+.mini-cal-grid .day-name {
+  font-size: 10px; color: var(--faint); padding: 3px 0;
+}
+.mini-cal-grid .day {
+  padding: 4px 0; border-radius: 5px; cursor: pointer;
+  color: var(--muted); transition: background .1s, color .1s;
+  font-variant-numeric: tabular-nums;
+}
+.mini-cal-grid .day:hover { background: var(--bg3); color: var(--text); }
+.mini-cal-grid .day.today { background: var(--accent); color: #0f0f0f; font-weight: 600; }
+.mini-cal-grid .day.selected { background: var(--bg3); color: var(--text); outline: 1px solid var(--border2); }
+.mini-cal-grid .day.has-event::after {
+  content: ''; display: block; width: 3px; height: 3px;
+  background: var(--accent2); border-radius: 50%; margin: 1px auto 0;
+}
+
+/* stats */
+.stats { display: flex; flex-direction: column; gap: 8px; }
+.stat {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.stat-label { font-size: 12px; color: var(--muted); }
+.stat-val { font-size: 15px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.stat-val.green { color: var(--accent2); }
+.stat-val.yellow { color: var(--accent); }
+
+/* serviços */
+.servicos-list { display: flex; flex-direction: column; gap: 6px; }
+.servico-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted); cursor: pointer;
+  padding: 4px 0;
+}
+.servico-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.servico-item:hover .servico-item-name { color: var(--text); }
+.servico-item-name { flex: 1; }
+.servico-item-dur { font-family: 'DM Mono', monospace; font-size: 11px; }
+
+/* ── AGENDA PRINCIPAL ── */
+.agenda-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.agenda-grid {
+  display: flex;
+  position: relative;
+  padding-bottom: 32px;
+}
+
+/* coluna de horas */
+.time-col {
+  width: 52px;
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.time-slot {
+  height: var(--hour-h);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-right: 10px;
+  padding-top: 6px;
+}
+.time-label {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--faint);
+}
+.time-label.now { color: var(--accent); }
+
+/* coluna de eventos */
+.events-col {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* linhas de hora */
+.hour-line {
+  position: absolute;
+  left: 0; right: 0;
+  border-top: 1px solid var(--border);
+  pointer-events: none;
+  z-index: 0;
+}
+.hour-line.half {
+  border-top: 1px dashed var(--faint);
+  opacity: .4;
+}
+
+/* linha do horário atual */
+.now-line {
+  position: absolute;
+  left: -4px; right: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+.now-line::before {
+  content: '';
+  position: absolute;
+  left: 0; top: -3px;
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.now-line::after {
+  content: '';
+  position: absolute;
+  left: 6px; right: 0;
+  top: -0.5px;
+  height: 1px;
+  background: var(--accent);
+}
+
+/* bloqueios */
+.bloqueio {
+  position: absolute;
+  left: 6px; right: 6px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgba(255,255,255,.03) 4px,
+    rgba(255,255,255,.03) 8px
+  );
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 7px;
+  cursor: default;
+  overflow: hidden;
+  z-index: 1;
+}
+.bloqueio-icon { font-size: 13px; flex-shrink: 0; }
+.bloqueio-nome { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bloqueio-dur  { font-size: 10px; color: var(--faint); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+/* agendamentos */
+.agendamento {
+  position: absolute;
+  left: 6px; right: 6px;
+  border-radius: 8px;
+  border-left: 3px solid;
+  padding: 8px 10px;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 5;
+  transition: filter .15s, transform .1s;
+}
+.agendamento:hover { filter: brightness(1.15); transform: translateX(1px); }
+
+.ag-service { font-size: 12px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-client  { font-size: 11px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-time    { font-size: 10px; font-family: 'DM Mono', monospace; opacity: .6; margin-top: 3px; }
+.ag-badge   { position: absolute; top: 7px; right: 8px; font-size: 10px; font-weight: 600; background: rgba(0,0,0,.3); border-radius: 4px; padding: 1px 5px; }
+
+/* cores por categoria */
+.ag-corte    { background: #1a2d1a; border-color: var(--accent2); color: #b0e8cc; }
+.ag-tintura  { background: #2a1a2d; border-color: var(--purple);  color: #d0a0f0; }
+.ag-escova   { background: #1a2330; border-color: var(--blue);    color: #90c8f0; }
+.ag-barba    { background: #2d1f1a; border-color: var(--warn);    color: #f0c098; }
+
+/* tooltip / modal de detalhe */
+.detail-panel {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(.95);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  width: 320px;
+  padding: 20px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+}
+.detail-panel.open {
+  opacity: 1;
+  pointer-events: all;
+  transform: translate(-50%, -50%) scale(1);
+}
+.detail-overlay {
+  position: fixed; inset: 0;
+  z-index: 199;
+  display: none;
+}
+.detail-overlay.open { display: block; }
+
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.detail-title { font-size: 16px; font-weight: 600; }
+.detail-close {
+  background: var(--bg3); border: none; color: var(--muted);
+  width: 26px; height: 26px; border-radius: 6px; font-size: 15px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: color .15s;
+}
+.detail-close:hover { color: var(--text); }
+
+.detail-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; }
+.detail-row-icon { font-size: 14px; margin-top: 1px; }
+.detail-row-label { font-size: 11px; color: var(--muted); }
+.detail-row-val   { font-size: 13px; font-weight: 500; }
+
+.detail-actions { display: flex; gap: 8px; margin-top: 18px; }
+.btn-cancel {
+  flex: 1; padding: 9px; border-radius: 8px;
+  background: rgba(240,96,96,.12); border: 1px solid rgba(240,96,96,.3);
+  color: var(--danger); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .15s; font-family: 'DM Sans', sans-serif;
+}
+.btn-cancel:hover { background: rgba(240,96,96,.22); }
+.btn-conclude {
+  flex: 1; padding: 9px; border-radius: 8px;
+  background: rgba(200,240,96,.12); border: 1px solid rgba(200,240,96,.3);
+  color: var(--accent); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .15s; font-family: 'DM Sans', sans-serif;
+}
+.btn-conclude:hover { background: rgba(200,240,96,.22); }
+
+/* bloqueio modal */
+.btn-bloqueio {
+  width: 100%; padding: 9px; border-radius: 8px; margin-top: 8px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color .15s, color .15s;
+}
+.btn-bloqueio:hover { border-color: var(--border2); color: var(--text); }
+
+.empty-day {
+  position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+.empty-day p { font-size: 13px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    AgendaPro
+  </div>
+  <div class="topbar-center">
+    <div class="date-nav" style="display:flex;align-items:center;gap:6px">
+      <button onclick="mudarDia(-1)">‹</button>
+      <div class="date-label" id="date-label">
+        <span id="date-text"></span>
+        <span class="weekday" id="weekday-text"></span>
+      </div>
+      <button onclick="mudarDia(1)">›</button>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <nav class="nav-links">
+      <a href="/painel" class="nav-link active">📅 Agenda</a>
+      <a href="/clientes" class="nav-link">👥 Clientes</a>
+      <a href="/relatorio" class="nav-link">📊 Relatórios</a>
+      <a href="/configuracoes" class="nav-link">⚙️ Config</a>
+      <a href="/planos" class="nav-link">⭐ Plano</a>
+    </nav>
+    <button class="btn-new" onclick="abrirNovoAgendamento()">+ Novo</button>
+    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+    <div class="avatar" id="avatar-initials" title="Meu perfil">AC</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label" id="sidebar-mes-label">—</div>
+      <div class="mini-cal">
+        <div class="mini-cal-header">
+          <span style="cursor:pointer;padding:2px 6px" onclick="mudarMesCal(-1)">‹</span>
+          <span style="color:var(--text);font-weight:500" id="mini-cal-mes-label">—</span>
+          <span style="cursor:pointer;padding:2px 6px" onclick="mudarMesCal(1)">›</span>
+        </div>
+        <div class="mini-cal-grid" id="mini-cal"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Hoje</div>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-label">Agendamentos</span>
+          <span class="stat-val yellow" id="stat-count">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Receita prevista</span>
+          <span class="stat-val green" id="stat-receita">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Próximo horário</span>
+          <span class="stat-val" id="stat-proximo" style="font-size:13px">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Serviços</div>
+      <div class="servicos-list">
+        <div class="servico-item"><div class="servico-dot" style="background:var(--accent2)"></div><span class="servico-item-name">Corte + escova</span><span class="servico-item-dur">60min</span></div>
+        <div class="servico-item"><div class="servico-dot" style="background:var(--purple)"></div><span class="servico-item-name">Tintura</span><span class="servico-item-dur">120min</span></div>
+        <div class="servico-item"><div class="servico-dot" style="background:var(--blue)"></div><span class="servico-item-name">Escova progressiva</span><span class="servico-item-dur">90min</span></div>
+        <div class="servico-item"><div class="servico-dot" style="background:var(--warn)"></div><span class="servico-item-name">Corte masculino</span><span class="servico-item-dur">30min</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="btn-bloqueio" onclick="abrirNovoBloqueio()">
+        <span>⛔</span> Adicionar bloqueio
+      </button>
+    </div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="agenda-wrap" id="agenda-wrap">
+    <div class="agenda-grid" id="agenda-grid">
+
+      <!-- coluna de horas -->
+      <div class="time-col" id="time-col"></div>
+
+      <!-- coluna de eventos -->
+      <div class="events-col" id="events-col"></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="overlay" onclick="fecharDetalhe()"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header">
+    <div class="detail-title" id="dp-title"></div>
+    <button class="detail-close" onclick="fecharDetalhe()">✕</button>
+  </div>
+  <div id="dp-body"></div>
+  <div class="detail-actions" id="dp-actions"></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+// ── PROTEÇÃO DE ROTA ─────────────────────────────────────────────────────
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) { window.location.href = '/auth'; }
+const userId = session.user.id;
+
+// ── LOGOUT ───────────────────────────────────────────────────────────────
+window.fazerLogout = async () => {
+  await supabase.auth.signOut();
+  window.location.href = '/auth';
+};
+
+// ── AVATAR / NOME DO PRESTADOR ───────────────────────────────────────────
+const { data: prestador } = await supabase
+  .from('prestadores')
+  .select('nome, slug')
+  .eq('id', userId)
+  .maybeSingle();
+
+const nomePrestador = prestador?.nome
+  || session.user.user_metadata?.nome_completo
+  || session.user.email
+  || 'Prestador';
+
+const iniciais = nomePrestador.split(' ').slice(0,2).map(p => p[0].toUpperCase()).join('');
+const avatarEl = document.getElementById('avatar-initials');
+if (avatarEl) avatarEl.textContent = iniciais;
+document.title = `Agenda — ${nomePrestador}`;
+
+// ── CONSTANTES ────────────────────────────────────────────────────────────
+const HORA_INICIO = 8;
+const HORA_FIM    = 19;
+const HORAS       = HORA_FIM - HORA_INICIO;
+const HOUR_H      = 64;
+
+// Hoje como referência
+const hoje = new Date();
+hoje.setHours(0,0,0,0);
+let diaAtual = new Date(hoje);
+
+// Mini-cal tem mês próprio (independente do diaAtual para navegação)
+let calMes = hoje.getMonth();
+let calAno = hoje.getFullYear();
+
+// Cache de dados por dia
+const dadosPorDia = {};
+
+// ── BUSCAR DADOS DO SUPABASE ──────────────────────────────────────────────
+async function buscarDadosDia(d) {
+  const chave = d.toISOString().slice(0,10);
+  if (dadosPorDia[chave]) return dadosPorDia[chave];
+
+  const inicioDia = new Date(d); inicioDia.setHours(0,0,0,0);
+  const fimDia    = new Date(d); fimDia.setHours(23,59,59,999);
+
+  // Buscar agendamentos confirmados do dia
+  const { data: agRaw } = await supabase
+    .from('agendamentos')
+    .select('id, cliente_nome, cliente_tel, data_hora, status, servicos(nome, duracao_min, preco)')
+    .eq('prestador_id', userId)
+    .gte('data_hora', inicioDia.toISOString())
+    .lte('data_hora', fimDia.toISOString())
+    .in('status', ['confirmado', 'pendente'])
+    .order('data_hora');
+
+  // Buscar bloqueios do dia
+  const { data: blRaw } = await supabase
+    .from('bloqueios')
+    .select('id, motivo, inicio, fim')
+    .eq('prestador_id', userId)
+    .lt('inicio', fimDia.toISOString())
+    .gt('fim', inicioDia.toISOString());
+
+  // Normaliza agendamentos para o formato interno
+  const ag = (agRaw || []).map(a => {
+    const dt   = new Date(a.data_hora);
+    const hora = dt.getHours() + dt.getMinutes() / 60;
+    const dur  = a.servicos?.duracao_min || 60;
+    return {
+      id:       a.id,
+      tipo:     'ag',
+      servico:  a.servicos?.nome || 'Serviço',
+      cliente:  a.cliente_nome || 'Cliente',
+      tel:      a.cliente_tel  || '',
+      hora,
+      dur,
+      preco:    a.servicos?.preco || 0,
+      cat:      'default',
+      status:   a.status,
+    };
+  });
+
+  // Normaliza bloqueios
+  const bl = (blRaw || []).map(b => {
+    const inicio = new Date(b.inicio);
+    const fim    = new Date(b.fim);
+    const hora   = inicio.getHours() + inicio.getMinutes() / 60;
+    const dur    = (fim - inicio) / 60000;
+    return {
+      id:   b.id,
+      tipo: 'bl',
+      nome: b.motivo || 'Bloqueio',
+      icon: '🚫',
+      hora,
+      dur,
+    };
+  });
+
+  dadosPorDia[chave] = { ag, bl };
+  return dadosPorDia[chave];
+}
+
+// ── RENDER AGENDA ─────────────────────────────────────────────────────────
+async function renderAgenda() {
+  const timecol   = document.getElementById('time-col');
+  const eventscol = document.getElementById('events-col');
+  timecol.innerHTML   = '';
+  eventscol.innerHTML = '';
+  eventscol.style.height = (HORAS * HOUR_H) + 'px';
+
+  // Loading overlay por cima (não dentro do eventscol para não atrapalhar as linhas)
+  const loadingEl = document.createElement('div');
+  loadingEl.id = 'agenda-loading';
+  loadingEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;background:var(--bg);z-index:5;pointer-events:none';
+  loadingEl.textContent = 'Carregando…';
+  eventscol.style.position = 'relative';
+  eventscol.appendChild(loadingEl);
+
+  // Linhas de hora e labels
+  for (let i = 0; i <= HORAS; i++) {
+    const h = HORA_INICIO + i;
+    const y = i * HOUR_H;
+    const lbl = document.createElement('div');
+    lbl.className = 'time-slot';
+    lbl.style.height = HOUR_H + 'px';
+    const isNowHour = (new Date().getHours() === h) && isToday();
+    lbl.innerHTML = `<span class="time-label${isNowHour?' now':''}">${String(h).padStart(2,'0')}:00</span>`;
+    timecol.appendChild(lbl);
+
+    if (i < HORAS) {
+      const line = document.createElement('div');
+      line.className = 'hour-line';
+      line.style.top = y + 'px';
+      eventscol.appendChild(line);
+      const half = document.createElement('div');
+      half.className = 'hour-line half';
+      half.style.top = (y + HOUR_H/2) + 'px';
+      eventscol.appendChild(half);
+    }
+  }
+
+  // Linha do horário atual
+  if (isToday()) {
+    const now     = new Date();
+    const minutos = (now.getHours() - HORA_INICIO) * 60 + now.getMinutes();
+    if (minutos >= 0 && minutos <= HORAS * 60) {
+      const nl = document.createElement('div');
+      nl.className = 'now-line';
+      nl.style.top = (minutos / 60 * HOUR_H) + 'px';
+      eventscol.appendChild(nl);
+      setTimeout(() => {
+        const wrap = document.getElementById('agenda-wrap');
+        wrap.scrollTop = Math.max(0, (minutos / 60 * HOUR_H) - 120);
+      }, 50);
+    }
+  } else {
+    setTimeout(() => { document.getElementById('agenda-wrap').scrollTop = 0; }, 50);
+  }
+
+  // Busca dados reais
+  const dados = await buscarDadosDia(diaAtual);
+
+  // Remove loading overlay
+  document.getElementById('agenda-loading')?.remove();
+
+  // Bloqueios
+  dados.bl.forEach(bl => {
+    const top = (bl.hora - HORA_INICIO) * HOUR_H;
+    const h   = (bl.dur / 60) * HOUR_H;
+    const el  = document.createElement('div');
+    el.className = 'bloqueio';
+    el.style.cssText = `top:${top}px;height:${h - 3}px`;
+    el.innerHTML = `
+      <span class="bloqueio-icon">${bl.icon}</span>
+      <span class="bloqueio-nome">${bl.nome}</span>
+      <span class="bloqueio-dur">${bl.dur}min</span>
+    `;
+    eventscol.appendChild(el);
+  });
+
+  // Agendamentos
+  const cores = ['accent2','purple','blue','warn','green'];
+  dados.ag.forEach((ag, idx) => {
+    const top    = (ag.hora - HORA_INICIO) * HOUR_H;
+    const h      = (ag.dur / 60) * HOUR_H;
+    const horaFim = ag.hora + ag.dur / 60;
+    const el     = document.createElement('div');
+    el.className = `agendamento ag-${ag.cat}`;
+    el.style.cssText = `top:${top + 2}px;height:${h - 5}px`;
+    el.style.animationDelay = (idx * 0.05) + 's';
+    el.innerHTML = `
+      <div class="ag-service">${ag.servico}</div>
+      <div class="ag-client">${ag.cliente}</div>
+      ${h > 50 ? `<div class="ag-time">${fmtHora(ag.hora)} – ${fmtHora(horaFim)}</div>` : ''}
+      ${h > 50 ? `<div class="ag-badge">R$${ag.preco}</div>` : ''}
+    `;
+    el.onclick = () => abrirDetalhe(ag);
+    eventscol.appendChild(el);
+  });
+
+  // Nenhum agendamento
+  if (dados.ag.length === 0 && dados.bl.length === 0) {
+    const vazio = document.createElement('div');
+    vazio.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted);font-size:13px;pointer-events:none';
+    vazio.innerHTML = '<div style="font-size:28px;margin-bottom:8px">📭</div>Nenhum agendamento para este dia';
+    eventscol.appendChild(vazio);
+  }
+
+  // Stats sidebar
+  const total   = dados.ag.length;
+  const receita = dados.ag.reduce((s, a) => s + Number(a.preco), 0);
+  const agora   = new Date();
+  const agoraH  = agora.getHours() + agora.getMinutes() / 60;
+  const proximo = dados.ag.filter(a => a.hora > agoraH).sort((a,b) => a.hora - b.hora)[0];
+
+  document.getElementById('stat-count').textContent   = total;
+  document.getElementById('stat-receita').textContent = `R$${receita.toFixed(0)}`;
+  document.getElementById('stat-proximo').textContent = proximo
+    ? `${fmtHora(proximo.hora)} — ${proximo.cliente.split(' ')[0]}`
+    : (total > 0 ? 'Todos concluídos' : 'Nenhum');
+
+  atualizarDateLabel();
+}
+
+// ── DETALHE ───────────────────────────────────────────────────────────────
+window.abrirDetalhe = function(ag) {
+  const horaFim = ag.hora + ag.dur / 60;
+  document.getElementById('dp-title').textContent = ag.servico;
+  document.getElementById('dp-body').innerHTML = `
+    <div class="detail-row">
+      <div class="detail-row-icon">👤</div>
+      <div><div class="detail-row-label">Cliente</div><div class="detail-row-val">${ag.cliente}</div></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-row-icon">📞</div>
+      <div><div class="detail-row-label">Telefone</div><div class="detail-row-val">${ag.tel || '—'}</div></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-row-icon">🕐</div>
+      <div><div class="detail-row-label">Horário</div><div class="detail-row-val">${fmtHora(ag.hora)} – ${fmtHora(horaFim)} (${ag.dur}min)</div></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-row-icon">💰</div>
+      <div><div class="detail-row-label">Valor</div><div class="detail-row-val">R$${Number(ag.preco).toFixed(2)}</div></div>
+    </div>
+  `;
+  document.getElementById('dp-actions').innerHTML = `
+    <button class="btn-cancel"   onclick="fecharDetalhe()">✕ Fechar</button>
+    <button class="btn-conclude" onclick="marcarConcluido('${ag.id}')">✓ Concluir</button>
+  `;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+};
+
+window.marcarConcluido = async function(agId) {
+  await supabase.from('agendamentos').update({ status: 'concluido' }).eq('id', agId);
+  // Limpa cache do dia e re-renderiza
+  const chave = diaAtual.toISOString().slice(0,10);
+  delete dadosPorDia[chave];
+  fecharDetalhe();
+  renderAgenda();
+};
+
+window.fecharDetalhe = function() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('detail-panel').classList.remove('open');
+};
+
+window.abrirNovoAgendamento = function() {
+  document.getElementById('dp-title').textContent = 'Novo agendamento';
+  document.getElementById('dp-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div class="detail-row-label" style="margin-bottom:4px">Cliente</div>
+        <input id="novo-cliente" placeholder="Nome do cliente" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+      <div>
+        <div class="detail-row-label" style="margin-bottom:4px">Telefone</div>
+        <input id="novo-tel" placeholder="(11) 99999-0000" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+      <div>
+        <div class="detail-row-label" style="margin-bottom:4px">Serviço</div>
+        <select id="novo-servico" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <option value="">Carregando serviços…</option>
+        </select>
+      </div>
+      <div>
+        <div class="detail-row-label" style="margin-bottom:4px">Horário</div>
+        <input type="time" id="novo-hora" value="09:00" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none">
+      </div>
+      <div id="novo-erro" style="color:#e05;font-size:12px;display:none"></div>
+    </div>
+  `;
+  document.getElementById('dp-actions').innerHTML = `
+    <button class="btn-cancel"   onclick="fecharDetalhe()">Cancelar</button>
+    <button class="btn-conclude" onclick="salvarNovoAgendamento()">Confirmar</button>
+  `;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+  // Carrega serviços reais
+  carregarServicosNoSelect();
+};
+
+async function carregarServicosNoSelect() {
+  const { data: servicos } = await supabase
+    .from('servicos')
+    .select('id, nome, duracao_min, preco')
+    .eq('prestador_id', userId)
+    .eq('ativo', true);
+  const sel = document.getElementById('novo-servico');
+  if (!sel) return;
+  sel.innerHTML = (servicos || []).map(s =>
+    `<option value="${s.id}" data-dur="${s.duracao_min}" data-preco="${s.preco}">${s.nome} — ${s.duracao_min}min — R$${s.preco}</option>`
+  ).join('') || '<option>Nenhum serviço cadastrado</option>';
+}
+
+window.salvarNovoAgendamento = async function() {
+  const cliente = document.getElementById('novo-cliente')?.value.trim();
+  const tel     = document.getElementById('novo-tel')?.value.trim();
+  const sel     = document.getElementById('novo-servico');
+  const hora    = document.getElementById('novo-hora')?.value;
+  const erroEl  = document.getElementById('novo-erro');
+
+  if (!cliente || !hora || !sel?.value) {
+    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = 'Preencha todos os campos obrigatórios.'; }
+    return;
+  }
+
+  const servicoId = sel.value;
+  const [hh, mm]  = hora.split(':').map(Number);
+  const dataHora  = new Date(diaAtual);
+  dataHora.setHours(hh, mm, 0, 0);
+
+  const { error } = await supabase.from('agendamentos').insert({
+    prestador_id:  userId,
+    servico_id:    servicoId,
+    cliente_nome:  cliente,
+    cliente_tel:   tel || null,
+    data_hora:     dataHora.toISOString(),
+    status:        'confirmado',
+    cancel_token:  crypto.randomUUID(),
+  });
+
+  if (error) {
+    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = 'Erro ao salvar: ' + error.message; }
+    return;
+  }
+
+  const chave = diaAtual.toISOString().slice(0,10);
+  delete dadosPorDia[chave];
+  fecharDetalhe();
+  renderAgenda();
+};
+
+window.abrirNovoBloqueio = function() {
+  document.getElementById('dp-title').textContent = 'Novo bloqueio';
+  document.getElementById('dp-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div class="detail-row-label" style="margin-bottom:4px">Motivo</div>
+        <input id="bl-motivo" placeholder="Ex: Almoço, Férias, Reunião..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <div class="detail-row-label" style="margin-bottom:4px">Início</div>
+          <input type="time" id="bl-inicio" value="12:00" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none">
+        </div>
+        <div style="flex:1">
+          <div class="detail-row-label" style="margin-bottom:4px">Fim</div>
+          <input type="time" id="bl-fim" value="13:00" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('dp-actions').innerHTML = `
+    <button class="btn-cancel"   onclick="fecharDetalhe()">Cancelar</button>
+    <button class="btn-conclude" onclick="salvarBloqueio()">Salvar bloqueio</button>
+  `;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+};
+
+window.salvarBloqueio = async function() {
+  const motivo  = document.getElementById('bl-motivo')?.value.trim() || 'Bloqueio';
+  const hrInicio = document.getElementById('bl-inicio')?.value || '12:00';
+  const hrFim    = document.getElementById('bl-fim')?.value    || '13:00';
+
+  const inicio = new Date(diaAtual); const [hi, mi] = hrInicio.split(':').map(Number); inicio.setHours(hi, mi, 0, 0);
+  const fim    = new Date(diaAtual); const [hf, mf] = hrFim.split(':').map(Number);    fim.setHours(hf, mf, 0, 0);
+
+  await supabase.from('bloqueios').insert({ prestador_id: userId, motivo, inicio: inicio.toISOString(), fim: fim.toISOString() });
+  const chave = diaAtual.toISOString().slice(0,10);
+  delete dadosPorDia[chave];
+  fecharDetalhe();
+  renderAgenda();
+};
+
+// ── NAVEGAÇÃO DE DATA ─────────────────────────────────────────────────────
+window.mudarDia = function(delta) {
+  diaAtual = new Date(diaAtual);
+  diaAtual.setDate(diaAtual.getDate() + delta);
+  // Sincroniza o mini-cal para o mês do dia atual
+  calMes = diaAtual.getMonth();
+  calAno = diaAtual.getFullYear();
+  renderAgenda();
+  renderMiniCal();
+};
+
+// Navegação do mini-cal (mês independente)
+window.mudarMesCal = function(delta) {
+  calMes += delta;
+  if (calMes > 11) { calMes = 0;  calAno++; }
+  if (calMes < 0)  { calMes = 11; calAno--; }
+  renderMiniCal();
+};
+
+function isToday() {
+  return diaAtual.toDateString() === hoje.toDateString();
+}
+
+function atualizarDateLabel() {
+  const diasSemana = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const d   = diaAtual;
+  const txt = isToday() ? `Hoje, ${d.getDate()} de ${meses[d.getMonth()]}` : `${d.getDate()} de ${meses[d.getMonth()]}`;
+  document.getElementById('date-text').textContent   = txt;
+  document.getElementById('weekday-text').textContent = diasSemana[d.getDay()];
+}
+
+// ── MINI CALENDÁRIO ───────────────────────────────────────────────────────
+function renderMiniCal() {
+  const cal = document.getElementById('mini-cal');
+  if (!cal) return;
+  cal.innerHTML = '';
+  const dias = ['D','S','T','Q','Q','S','S'];
+  dias.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'day-name';
+    el.textContent = d;
+    cal.appendChild(el);
+  });
+  const mesesCurtos  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mesesLongos  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // Atualiza os dois labels pelo ID (sem querySelector frágil)
+  const sidebarLabel  = document.getElementById('sidebar-mes-label');
+  const miniCalLabel  = document.getElementById('mini-cal-mes-label');
+  if (sidebarLabel) sidebarLabel.textContent = `${mesesLongos[calMes]} ${calAno}`;
+  if (miniCalLabel) miniCalLabel.textContent  = mesesCurtos[calMes];
+
+  const primeiroDia = new Date(calAno, calMes, 1).getDay();
+  const totalDias   = new Date(calAno, calMes + 1, 0).getDate();
+
+  for (let i = 0; i < primeiroDia; i++) cal.appendChild(document.createElement('div'));
+  for (let d = 1; d <= totalDias; d++) {
+    const el = document.createElement('div');
+    el.className = 'day';
+    el.textContent = d;
+    const dataD = new Date(calAno, calMes, d);
+    if (dataD.toDateString() === hoje.toDateString()) el.classList.add('today');
+    if (dataD.toDateString() === diaAtual.toDateString()) el.classList.add('selected');
+    el.onclick = () => {
+      diaAtual = new Date(calAno, calMes, d);
+      renderAgenda();
+      renderMiniCal();
+    };
+    cal.appendChild(el);
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function fmtHora(h) {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+renderMiniCal();
+renderAgenda();
+setInterval(() => { if (isToday()) renderAgenda(); }, 60_000);
+
+</script>
+</body>
+</html>

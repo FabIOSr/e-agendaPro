@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Guia de Deploy</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#0e0d0a; --bg2:#141310; --bg3:#1c1a16; --bg4:#242118;
+  --bord:#2a2724; --bord2:#383430;
+  --text:#f0ede6; --muted:#8a8778; --faint:#3e3c36;
+  --lime:#c8f060; --lime-d:#8ab830; --lime-ink:#1a2a08; --lime-t:rgba(200,240,96,.1);
+  --teal:#5DCAA5; --amber:#EF9F27; --blue:#60a8f0; --rust:#f06048;
+}
+html { scroll-behavior:smooth; }
+body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  height:54px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px; border-bottom:1px solid var(--bord);
+  position:sticky; top:0; z-index:50;
+  background:rgba(14,13,10,.95); backdrop-filter:blur(12px);
+}
+.logo { font-family:'Fraunces',serif; font-size:17px; font-weight:400; display:flex; align-items:center; gap:7px; }
+.logo-dot { width:7px; height:7px; background:var(--lime); border-radius:50%; }
+.progress-bar { height:2px; background:var(--lime-t); position:fixed; top:54px; left:0; right:0; z-index:49; }
+.progress-fill { height:100%; background:var(--lime); transition:width .2s; }
+
+/* ── LAYOUT ── */
+.layout { display:flex; max-width:1000px; margin:0 auto; padding:32px 24px 80px; gap:32px; }
+@media (max-width:700px) { .layout { flex-direction:column; } }
+
+/* sidebar */
+.sidebar { width:220px; flex-shrink:0; position:sticky; top:78px; height:fit-content; }
+.sidebar-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--faint); margin-bottom:10px; }
+.nav-item {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 10px; border-radius:7px; font-size:12px; font-weight:500;
+  color:var(--muted); cursor:pointer; transition:all .15s; margin-bottom:2px;
+}
+.nav-item:hover { background:var(--bg3); color:var(--text); }
+.nav-item.active { background:var(--bg3); color:var(--text); border:1px solid var(--bord2); }
+.nav-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+@media (max-width:700px) { .sidebar { position:static; width:100%; } }
+
+/* main */
+.main { flex:1; min-width:0; }
+
+/* fases */
+.phase {
+  margin-bottom:48px; scroll-margin-top:80px;
+}
+.phase-header {
+  display:flex; align-items:center; gap:14px; margin-bottom:20px;
+  padding-bottom:16px; border-bottom:1px solid var(--bord);
+}
+.phase-num {
+  width:40px; height:40px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Fraunces',serif; font-size:18px; font-weight:300;
+  border:1.5px solid var(--bord2); color:var(--muted);
+}
+.phase-num.done { background:var(--lime-t); border-color:rgba(200,240,96,.3); color:var(--lime); }
+.phase-title  { font-family:'Fraunces',serif; font-size:22px; font-weight:300; }
+.phase-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+/* step cards */
+.step {
+  background:var(--bg3); border:1px solid var(--bord);
+  border-radius:12px; margin-bottom:12px; overflow:hidden;
+}
+.step-header {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:16px; cursor:pointer; transition:background .15s;
+}
+.step-header:hover { background:var(--bg4); }
+.step-n {
+  width:24px; height:24px; border-radius:50%; flex-shrink:0;
+  background:var(--bg2); border:1px solid var(--bord2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:var(--muted); margin-top:1px;
+}
+.step-n.done { background:var(--lime-t); border-color:rgba(200,240,96,.3); color:var(--lime); }
+.step-title { font-size:14px; font-weight:500; margin-bottom:3px; }
+.step-desc  { font-size:12px; color:var(--muted); line-height:1.5; }
+.step-body  { padding:0 16px 16px 52px; display:none; }
+.step.open .step-body { display:block; animation:fadein .2s ease; }
+@keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+.step-chevron { margin-left:auto; font-size:12px; color:var(--faint); transition:transform .2s; flex-shrink:0; margin-top:3px; }
+.step.open .step-chevron { transform:rotate(180deg); }
+
+/* code block */
+pre {
+  background:var(--bg2); border:1px solid var(--bord);
+  border-radius:8px; padding:14px; font-family:'DM Mono',monospace;
+  font-size:12px; color:var(--text); overflow-x:auto;
+  margin:10px 0; line-height:1.7; white-space:pre;
+}
+code { font-family:'DM Mono',monospace; font-size:12px; }
+.inline-code {
+  background:var(--bg2); border:1px solid var(--bord);
+  border-radius:4px; padding:1px 6px;
+  font-family:'DM Mono',monospace; font-size:12px; color:var(--lime);
+}
+
+/* alerta / dica */
+.tip {
+  background:var(--lime-t); border:1px solid rgba(200,240,96,.2);
+  border-radius:8px; padding:11px 14px;
+  font-size:12px; color:rgba(200,240,96,.8); line-height:1.6; margin:10px 0;
+  display:flex; gap:8px;
+}
+.warn {
+  background:rgba(239,159,39,.1); border:1px solid rgba(239,159,39,.2);
+  border-radius:8px; padding:11px 14px;
+  font-size:12px; color:var(--amber); line-height:1.6; margin:10px 0;
+  display:flex; gap:8px;
+}
+.info {
+  background:rgba(96,168,240,.08); border:1px solid rgba(96,168,240,.2);
+  border-radius:8px; padding:11px 14px;
+  font-size:12px; color:var(--blue); line-height:1.6; margin:10px 0;
+  display:flex; gap:8px;
+}
+
+/* cópia de código */
+.code-wrap { position:relative; }
+.btn-copy {
+  position:absolute; top:8px; right:8px;
+  background:var(--bg3); border:1px solid var(--bord2);
+  color:var(--muted); border-radius:6px; padding:4px 10px;
+  font-size:11px; font-family:'Syne',sans-serif; cursor:pointer;
+  transition:all .15s;
+}
+.btn-copy:hover { color:var(--text); border-color:var(--lime-d); }
+
+/* tag de serviço */
+.svc-tag {
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--bg2); border:1px solid var(--bord2);
+  border-radius:6px; padding:3px 8px; font-size:11px; color:var(--muted); margin:2px;
+}
+
+/* checklist */
+.checklist { display:flex; flex-direction:column; gap:6px; margin:10px 0; }
+.check-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--muted); }
+.check-item input[type=checkbox] { margin-top:2px; flex-shrink:0; accent-color:var(--lime); cursor:pointer; }
+.check-item label { cursor:pointer; line-height:1.5; }
+
+/* section divider */
+.section-sep { height:1px; background:var(--bord); margin:32px 0; }
+
+/* botão de ir para próximo */
+.btn-next-phase {
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--lime); color:var(--lime-ink); border:none;
+  border-radius:10px; padding:11px 20px; font-size:13px; font-weight:700;
+  font-family:'Syne',sans-serif; cursor:pointer; transition:background .15s; margin-top:8px;
+}
+.btn-next-phase:hover { background:#b8e050; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>AgendaPro — Guia de Deploy</div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+<div class="layout">
+
+  <!-- SIDEBAR NAV -->
+  <div class="sidebar">
+    <div class="sidebar-title">Fases do deploy</div>
+    <div class="nav-item active" id="nav-1" onclick="scrollTo('fase-1')">
+      <div class="nav-dot" style="background:var(--lime)"></div> Supabase — Banco
+    </div>
+    <div class="nav-item" id="nav-2" onclick="scrollTo('fase-2')">
+      <div class="nav-dot" style="background:var(--teal)"></div> Supabase — Auth
+    </div>
+    <div class="nav-item" id="nav-3" onclick="scrollTo('fase-3')">
+      <div class="nav-dot" style="background:var(--blue)"></div> Edge Functions
+    </div>
+    <div class="nav-item" id="nav-4" onclick="scrollTo('fase-4')">
+      <div class="nav-dot" style="background:var(--amber)"></div> Secrets
+    </div>
+    <div class="nav-item" id="nav-5" onclick="scrollTo('fase-5')">
+      <div class="nav-dot" style="background:var(--rust)"></div> Firebase Hosting
+    </div>
+    <div class="nav-item" id="nav-6" onclick="scrollTo('fase-6')">
+      <div class="nav-dot" style="background:var(--muted)"></div> Domínio + DNS
+    </div>
+    <div class="nav-item" id="nav-7" onclick="scrollTo('fase-7')">
+      <div class="nav-dot" style="background:var(--lime)"></div> Checklist final
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- INTRO -->
+    <div style="margin-bottom:36px">
+      <div style="font-family:'Fraunces',serif;font-size:30px;font-weight:300;letter-spacing:-.02em;margin-bottom:8px">
+        Do código ao ar em <em style="color:var(--muted)">~45 minutos</em>
+      </div>
+      <p style="font-size:14px;color:var(--muted);line-height:1.7;max-width:560px">
+        Este guia cobre tudo desde criar a conta no Supabase até seu app funcionando com domínio próprio no Firebase Hosting. Siga as fases em ordem — cada uma depende da anterior.
+      </p>
+      <div class="info" style="margin-top:16px">
+        <span>ℹ️</span>
+        <span>Tempo estimado: <strong>~45 min</strong> na primeira vez. Deploys futuros: menos de 5 min.</span>
+      </div>
+    </div>
+
+    <!-- ══ FASE 1: SUPABASE BANCO ══ -->
+    <div class="phase" id="fase-1">
+      <div class="phase-header">
+        <div class="phase-num done">1</div>
+        <div>
+          <div class="phase-title">Supabase — Banco de dados</div>
+          <div class="phase-subtitle">Criar projeto, rodar migrations e configurar RLS</div>
+        </div>
+      </div>
+
+      <div class="step open" id="s1-1">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n done">1</div>
+          <div>
+            <div class="step-title">Criar conta e projeto no Supabase</div>
+            <div class="step-desc">Leva menos de 2 minutos. É gratuito para começar.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <ol style="padding-left:16px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);line-height:1.6">
+            <li>Acesse <strong style="color:var(--text)">supabase.com</strong> → clique em <span class="inline-code">Start your project</span></li>
+            <li>Faça login com GitHub (recomendado) ou e-mail</li>
+            <li>Clique em <span class="inline-code">New project</span></li>
+            <li>Escolha um nome (ex: <span class="inline-code">agendapro</span>), uma senha forte para o banco e a região <strong style="color:var(--text)">South America (São Paulo)</strong></li>
+            <li>Clique em <span class="inline-code">Create new project</span> e aguarde ~2 minutos</li>
+          </ol>
+          <div class="tip" style="margin-top:12px"><span>💡</span><span>Guarde a senha do banco — você vai precisar dela para conexões diretas (ex: Prisma, DBeaver).</span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s1-2">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-title">Copiar credenciais do projeto</div>
+            <div class="step-desc">Você vai precisar da URL e das chaves para configurar o front-end.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">No painel do Supabase, vá em <strong style="color:var(--text)">Settings → API</strong> e copie:</p>
+          <ul style="padding-left:16px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)">
+            <li><span class="inline-code">Project URL</span> — ex: <code>https://xyzabc.supabase.co</code></li>
+            <li><span class="inline-code">anon public</span> — chave pública usada no front-end</li>
+            <li><span class="inline-code">service_role</span> — chave secreta usada nas Edge Functions (<strong style="color:var(--rust)">nunca expor no front</strong>)</li>
+          </ul>
+          <div class="warn" style="margin-top:10px"><span>⚠️</span><span>A <code>service_role</code> tem acesso total ao banco, ignorando RLS. Só use em Edge Functions com variável de ambiente.</span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s1-3">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">3</div>
+          <div>
+            <div class="step-title">Rodar as migrations (8 arquivos, em ordem)</div>
+            <div class="step-desc">Cria todas as tabelas, funções, triggers e políticas RLS.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+            No painel Supabase vá em <strong style="color:var(--text)">SQL Editor → New query</strong>. Cole e execute cada arquivo abaixo <strong style="color:var(--text)">na ordem indicada</strong> (um de cada vez):
+          </p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">01</span>
+              <span style="color:var(--text)">01_auth.sql</span>
+              <span style="color:var(--muted);flex:1">Trigger de criação de perfil + RLS</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">02</span>
+              <span style="color:var(--text)">02_assinaturas.sql</span>
+              <span style="color:var(--muted);flex:1">Tabela pagamentos + colunas Asaas</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">03</span>
+              <span style="color:var(--text)">03_cron_downgrade.sql</span>
+              <span style="color:var(--muted);flex:1">Cron de downgrade + função verifica_plano_ativo</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">04</span>
+              <span style="color:var(--text)">04_cancel_token.sql</span>
+              <span style="color:var(--muted);flex:1">cancel_token nos agendamentos</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">05</span>
+              <span style="color:var(--text)">05_avaliacoes_gcal.sql</span>
+              <span style="color:var(--muted);flex:1">Tabelas avaliacoes + google_calendar_tokens</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">06</span>
+              <span style="color:var(--text)">06_crm_clientes.sql</span>
+              <span style="color:var(--muted);flex:1">Tabela clientes + view crm_clientes</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">07</span>
+              <span style="color:var(--text)">07_receita_functions.sql</span>
+              <span style="color:var(--muted);flex:1">Funções SQL do relatório de receita</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px">
+              <span style="color:var(--lime);font-family:'DM Mono',monospace;font-weight:700;width:20px">08</span>
+              <span style="color:var(--text)">08_avaliacao_batch.sql</span>
+              <span style="color:var(--muted);flex:1">Flag avaliacao_solicitada + cron batch</span>
+              <input type="checkbox" onchange="marcarStep(this)" style="accent-color:var(--lime)">
+            </div>
+          </div>
+          <div class="tip" style="margin-top:12px"><span>💡</span><span>Se der erro em alguma migration, leia a mensagem. O erro mais comum é rodar fora de ordem. Sempre execute na sequência 01 → 08.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FASE 2: AUTH ══ -->
+    <div class="phase" id="fase-2">
+      <div class="phase-header">
+        <div class="phase-num">2</div>
+        <div>
+          <div class="phase-title">Supabase — Autenticação</div>
+          <div class="phase-subtitle">Configurar login com e-mail e Google OAuth</div>
+        </div>
+      </div>
+
+      <div class="step" id="s2-1">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">1</div>
+          <div>
+            <div class="step-title">Configurar URL do site</div>
+            <div class="step-desc">Informa ao Supabase para onde redirecionar após login.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Vá em <strong style="color:var(--text)">Authentication → URL Configuration</strong>:</p>
+          <div class="code-wrap">
+            <pre>Site URL:
+https://seuapp.com
+
+Redirect URLs (adicionar todas):
+https://seuapp.com/pages/painel.html
+https://seuapp.com/pages/auth.html
+http://localhost:5000/pages/painel.html   ← para testes locais</pre>
+            <button class="btn-copy" onclick="copiar(this, 'https://seuapp.com')">copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" id="s2-2">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-title">Habilitar Google OAuth</div>
+            <div class="step-desc">Permite que prestadores se cadastrem com a conta Google.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <ol style="padding-left:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--muted);line-height:1.6">
+            <li>Acesse <strong style="color:var(--text)">console.cloud.google.com</strong> → crie um projeto novo</li>
+            <li>Vá em <strong style="color:var(--text)">APIs &amp; Services → Credentials → Create credentials → OAuth Client ID</strong></li>
+            <li>Tipo: <strong style="color:var(--text)">Web application</strong></li>
+            <li>Authorized redirect URI — copie do painel Supabase em <strong style="color:var(--text)">Auth → Providers → Google → Callback URL</strong>:<br>
+              <code style="font-size:11px;color:var(--lime)">https://xyzabc.supabase.co/auth/v1/callback</code>
+            </li>
+            <li>Copie o <strong style="color:var(--text)">Client ID</strong> e <strong style="color:var(--text)">Client Secret</strong></li>
+            <li>De volta no Supabase: <strong style="color:var(--text)">Auth → Providers → Google → Enable</strong> → cole as credenciais</li>
+          </ol>
+          <div class="tip" style="margin-top:12px"><span>💡</span><span>O Google OAuth também é necessário para o Google Calendar. Configure uma vez e serve para os dois.</span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s2-3">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">3</div>
+          <div>
+            <div class="step-title">Personalizar e-mail de confirmação</div>
+            <div class="step-desc">Opcional mas recomendado para maior profissionalismo.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Vá em <strong style="color:var(--text)">Authentication → Email Templates → Confirm signup</strong> e substitua o template pelo conteúdo abaixo:</p>
+          <div class="code-wrap">
+            <pre>&lt;h2&gt;Confirme seu e-mail — AgendaPro&lt;/h2&gt;
+&lt;p&gt;Olá! Clique no link abaixo para ativar sua conta:&lt;/p&gt;
+&lt;p&gt;&lt;a href="{{ .ConfirmationURL }}"&gt;Ativar minha conta&lt;/a&gt;&lt;/p&gt;
+&lt;p style="color:#888;font-size:12px"&gt;Se não foi você, ignore este e-mail.&lt;/p&gt;</pre>
+            <button class="btn-copy" onclick="copiar(this, '<h2>Confirme seu e-mail — AgendaPro</h2>')">copiar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FASE 3: EDGE FUNCTIONS ══ -->
+    <div class="phase" id="fase-3">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div>
+          <div class="phase-title">Edge Functions</div>
+          <div class="phase-subtitle">Instalar Supabase CLI e fazer deploy das 10 funções</div>
+        </div>
+      </div>
+
+      <div class="step" id="s3-1">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">1</div>
+          <div>
+            <div class="step-title">Instalar o Supabase CLI</div>
+            <div class="step-desc">Ferramenta de linha de comando para deploy das Edge Functions.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre># macOS (Homebrew)
+brew install supabase/tap/supabase
+
+# Windows (Scoop)
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+
+# Linux / WSL
+curl -fsSL https://deno.land/install.sh | sh  # Deno (runtime das funções)
+npx supabase --version  # ou via npm</pre>
+            <button class="btn-copy" onclick="copiar(this,'brew install supabase/tap/supabase')">copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" id="s3-2">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-title">Login e link com o projeto</div>
+            <div class="step-desc">Conecta o CLI ao seu projeto Supabase.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre># Login (abre o browser)
+supabase login
+
+# Link com seu projeto
+# (o Project ID está em Settings → General)
+supabase link --project-ref SEU_PROJECT_ID</pre>
+            <button class="btn-copy" onclick="copiar(this,'supabase login')">copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" id="s3-3">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">3</div>
+          <div>
+            <div class="step-title">Deploy de todas as Edge Functions</div>
+            <div class="step-desc">Um comando só faz o deploy das 10 funções.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Na raiz do projeto (pasta <span class="inline-code">agendapro/</span>):</p>
+          <div class="code-wrap">
+            <pre>for fn in horarios-disponiveis lembretes-whatsapp \
+          criar-assinatura webhook-asaas cancelar-assinatura \
+          cancelar-agendamento-cliente reagendar-cliente \
+          avaliacoes solicitar-avaliacao-batch google-calendar-sync
+do
+  supabase functions deploy $fn
+done</pre>
+            <button class="btn-copy" onclick="copiar(this,'supabase functions deploy horarios-disponiveis')">copiar</button>
+          </div>
+          <div class="tip" style="margin-top:10px"><span>💡</span><span>Para atualizar uma função específica depois: <code>supabase functions deploy nome-da-funcao</code></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FASE 4: SECRETS ══ -->
+    <div class="phase" id="fase-4">
+      <div class="phase-header">
+        <div class="phase-num">4</div>
+        <div>
+          <div class="phase-title">Variáveis de ambiente (Secrets)</div>
+          <div class="phase-subtitle">Configurar todas as chaves externas nas Edge Functions</div>
+        </div>
+      </div>
+
+      <div class="step open" id="s4-1">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">1</div>
+          <div>
+            <div class="step-title">Configurar todos os secrets de uma vez</div>
+            <div class="step-desc">Cole e edite o bloco abaixo com suas chaves reais.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre>supabase secrets set \
+  ZAPI_INSTANCE_ID="SUA_INSTANCIA_ZAPI" \
+  ZAPI_TOKEN="SEU_TOKEN_ZAPI" \
+  ZAPI_CLIENT_TOKEN="SEU_CLIENT_TOKEN_ZAPI" \
+  ASAAS_API_KEY="$aas_XXXXXXXXXXXX" \
+  ASAAS_WEBHOOK_TOKEN="token-secreto-que-voce-escolhe" \
+  GOOGLE_CLIENT_ID="XXXXXXXXX.apps.googleusercontent.com" \
+  GOOGLE_CLIENT_SECRET="GOCSPX-XXXXXXXXXX" \
+  APP_URL="https://seuapp.com"</pre>
+            <button class="btn-copy" onclick="copiar(this,'supabase secrets set')">copiar</button>
+          </div>
+
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:4px">Onde obter cada secret:</div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
+              <span class="inline-code" style="flex-shrink:0">ZAPI_*</span>
+              <span>z-api.io → Sua instância → Aba "Token"</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
+              <span class="inline-code" style="flex-shrink:0">ASAAS_API_KEY</span>
+              <span>asaas.com → Minha Conta → Integrações → API</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
+              <span class="inline-code" style="flex-shrink:0">ASAAS_WEBHOOK_TOKEN</span>
+              <span>Você escolhe — qualquer string longa e aleatória</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
+              <span class="inline-code" style="flex-shrink:0">GOOGLE_*</span>
+              <span>console.cloud.google.com → Credentials → seu OAuth Client</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" id="s4-2">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-title">Configurar webhook do Asaas</div>
+            <div class="step-desc">Conecta o Asaas à Edge Function webhook-asaas.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <ol style="padding-left:16px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);line-height:1.6">
+            <li>Acesse <strong style="color:var(--text)">asaas.com</strong> → Minha Conta → Integrações → Webhooks</li>
+            <li>Clique em <strong style="color:var(--text)">Novo webhook</strong></li>
+            <li>URL: <span class="inline-code">https://SEU_PROJETO.supabase.co/functions/v1/webhook-asaas</span></li>
+            <li>Token: o mesmo valor de <span class="inline-code">ASAAS_WEBHOOK_TOKEN</span></li>
+            <li>Eventos: marque todos — especialmente <strong style="color:var(--text)">PAYMENT_RECEIVED, PAYMENT_OVERDUE, SUBSCRIPTION_DELETED, PAYMENT_REFUNDED</strong></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FASE 5: FIREBASE ══ -->
+    <div class="phase" id="fase-5">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div>
+          <div class="phase-title">Firebase Hosting</div>
+          <div class="phase-subtitle">Publicar as páginas HTML com HTTPS automático</div>
+        </div>
+      </div>
+
+      <div class="step" id="s5-1">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">1</div>
+          <div>
+            <div class="step-title">Criar projeto no Firebase</div>
+            <div class="step-desc">Interface visual — sem linha de comando por enquanto.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <ol style="padding-left:16px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);line-height:1.6">
+            <li>Acesse <strong style="color:var(--text)">console.firebase.google.com</strong></li>
+            <li>Clique em <strong style="color:var(--text)">Add project</strong> → nome: <span class="inline-code">agendapro</span></li>
+            <li>Desmarque Google Analytics (desnecessário no começo)</li>
+            <li>Aguarde criação (~30 segundos)</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="step" id="s5-2">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-title">Instalar Firebase CLI e fazer login</div>
+            <div class="step-desc">Node.js precisa estar instalado (node.js.org).</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre># Instala globalmente
+npm install -g firebase-tools
+
+# Login (abre o browser)
+firebase login
+
+# Verifica
+firebase --version</pre>
+            <button class="btn-copy" onclick="copiar(this,'npm install -g firebase-tools')">copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" id="s5-3">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">3</div>
+          <div>
+            <div class="step-title">Substituir as variáveis no código</div>
+            <div class="step-desc">Antes do deploy, substitua os placeholders nos arquivos.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+            Faça um busca e substituição em <strong style="color:var(--text)">todos</strong> os arquivos da pasta <span class="inline-code">pages/</span> e <span class="inline-code">modules/</span>:
+          </p>
+          <div class="code-wrap">
+            <pre># macOS / Linux — substitui em todos os arquivos de uma vez:
+find agendapro/pages agendapro/modules -type f \
+  -exec sed -i '' \
+    -e 's|https://SEU_PROJETO.supabase.co|https://XYZABC.supabase.co|g' \
+    -e 's|SUA_ANON_KEY|eyJhbGci...|g' \
+  {} \;
+
+# Windows (PowerShell):
+Get-ChildItem -Recurse -Include *.html,*.js | ForEach-Object {
+  (Get-Content $_) -replace 'SEU_PROJETO', 'XYZABC' | Set-Content $_
+}</pre>
+            <button class="btn-copy" onclick="copiar(this,'find agendapro/pages')">copiar</button>
+          </div>
+          <div class="warn" style="margin-top:10px"><span>⚠️</span><span>Substitua <code>XYZABC</code> pelo seu Project ID real e <code>eyJhbGci...</code> pela sua anon key real.</span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s5-4">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">4</div>
+          <div>
+            <div class="step-title">Inicializar e fazer deploy</div>
+            <div class="step-desc">Configura o Firebase Hosting e sobe os arquivos.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre># Na raiz da pasta agendapro/
+firebase init hosting
+
+# Responda as perguntas:
+# ? What do you want to use as your public directory? → agendapro
+# ? Configure as a single-page app? → No
+# ? Set up automatic builds with GitHub? → No (por enquanto)
+# ? File agendapro/index.html already exists. Overwrite? → No</pre>
+            <button class="btn-copy" onclick="copiar(this,'firebase init hosting')">copiar</button>
+          </div>
+          <div class="code-wrap" style="margin-top:8px">
+            <pre># Deploy!
+firebase deploy --only hosting
+
+# Saída esperada:
+# ✔  Deploy complete!
+# Hosting URL: https://agendapro-xxxxx.web.app</pre>
+            <button class="btn-copy" onclick="copiar(this,'firebase deploy --only hosting')">copiar</button>
+          </div>
+          <div class="tip" style="margin-top:10px"><span>🎉</span><span>Seu app já está no ar em <code>https://agendapro-xxxxx.web.app</code>! Para deploys futuros, só rode <code>firebase deploy</code>.</span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s5-5">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">5</div>
+          <div>
+            <div class="step-title">Configurar rewrites de rotas</div>
+            <div class="step-desc">Para que /painel abra painel.html, /auth abra auth.html etc.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Crie (ou edite) o arquivo <span class="inline-code">firebase.json</span> na raiz:</p>
+          <div class="code-wrap">
+            <pre>{
+  "hosting": {
+    "public": "agendapro",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/",            "destination": "/pages/landing-page.html" },
+      { "source": "/auth",        "destination": "/pages/auth.html" },
+      { "source": "/onboarding",  "destination": "/pages/onboarding.html" },
+      { "source": "/painel",      "destination": "/pages/painel.html" },
+      { "source": "/planos",      "destination": "/pages/planos.html" },
+      { "source": "/clientes",    "destination": "/pages/clientes.html" },
+      { "source": "/relatorio",   "destination": "/pages/relatorio.html" },
+      { "source": "/configuracoes","destination": "/pages/configuracoes.html" },
+      { "source": "/cancelar",    "destination": "/pages/cancelar-cliente.html" },
+      { "source": "/reagendar",   "destination": "/pages/reagendar-cliente.html" },
+      { "source": "/avaliar",     "destination": "/pages/avaliar-cliente.html" },
+      { "source": "/:slug",       "destination": "/pages/pagina-cliente.html" }
+    ]
+  }
+}</pre>
+            <button class="btn-copy" onclick="copiar(this,'firebase.json')">copiar</button>
+          </div>
+          <div class="code-wrap" style="margin-top:8px">
+            <pre># Redeploy com os rewrites
+firebase deploy --only hosting</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FASE 6: DOMÍNIO ══ -->
+    <div class="phase" id="fase-6">
+      <div class="phase-header">
+        <div class="phase-num">6</div>
+        <div>
+          <div class="phase-title">Domínio personalizado</div>
+          <div class="phase-subtitle">Conectar seu domínio (ex: agendapro.com.br) ao Firebase</div>
+        </div>
+      </div>
+
+      <div class="step" id="s6-1">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">1</div>
+          <div>
+            <div class="step-title">Adicionar domínio no Firebase</div>
+            <div class="step-desc">Firebase gera SSL automático com Let's Encrypt.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <ol style="padding-left:16px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);line-height:1.6">
+            <li>No Firebase Console → <strong style="color:var(--text)">Hosting → Add custom domain</strong></li>
+            <li>Digite seu domínio: <span class="inline-code">agendapro.com.br</span></li>
+            <li>O Firebase mostrará dois registros <strong style="color:var(--text)">TXT</strong> para verificar a propriedade</li>
+            <li>Adicione esses registros no painel do seu registrador de domínio (Registro.br, GoDaddy, Namecheap…)</li>
+            <li>Aguarde até 48h para propagação (geralmente menos de 1h)</li>
+            <li>Após verificado, o Firebase mostrará dois registros <strong style="color:var(--text)">A</strong> — adicione-os também no DNS</li>
+            <li>SSL é ativado automaticamente em até 24h ✅</li>
+          </ol>
+          <div class="tip" style="margin-top:12px"><span>💡</span><span>Adicione também <code>www.agendapro.com.br</code> com redirecionamento para o domínio principal.</span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s6-2">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">2</div>
+          <div>
+            <div class="step-title">Atualizar URLs no Supabase</div>
+            <div class="step-desc">Após conectar o domínio, atualize as URLs de redirecionamento.</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Volte em <strong style="color:var(--text)">Authentication → URL Configuration</strong> e atualize:</p>
+          <div class="code-wrap">
+            <pre>Site URL:
+https://agendapro.com.br
+
+Redirect URLs:
+https://agendapro.com.br/painel
+https://agendapro.com.br/auth</pre>
+          </div>
+          <p style="font-size:13px;color:var(--muted);margin-top:12px;line-height:1.6">E atualize também o Google Cloud Console → OAuth → Authorized redirect URIs para incluir o novo domínio.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FASE 7: CHECKLIST ══ -->
+    <div class="phase" id="fase-7">
+      <div class="phase-header">
+        <div class="phase-num">7</div>
+        <div>
+          <div class="phase-title">Checklist final de lançamento</div>
+          <div class="phase-subtitle">Marque cada item antes de anunciar o app</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          ['Banco', 'Todas as 8 migrations rodadas sem erro'],
+          ['Banco', 'Trigger on_auth_user_created funcionando — criar usuário e ver linha em prestadores'],
+          ['Auth', 'Login com e-mail funcionando'],
+          ['Auth', 'Login com Google funcionando'],
+          ['Auth', 'Recuperação de senha funcionando (e-mail chega)'],
+          ['Auth', 'Proteção de rota: acessar /painel sem login redireciona para /auth'],
+          ['Functions', 'horarios-disponiveis retorna slots sem conflito'],
+          ['Functions', 'lembretes-whatsapp envia mensagem real no WhatsApp'],
+          ['Functions', 'Mensagem de confirmação inclui links de cancelar e remarcar'],
+          ['Functions', 'webhook-asaas recebe PAYMENT_RECEIVED e muda plano para pro'],
+          ['Functions', 'cancelar-agendamento-cliente: página carrega, cancelamento funciona'],
+          ['Functions', 'reagendar-cliente: calendário carrega slots, remarcação funciona'],
+          ['Functions', 'avaliacoes: página de avaliação carrega, nota é salva'],
+          ['Front', 'Gate de plano bloqueia /clientes e /relatorio no plano free'],
+          ['Front', 'Avaliações aparecem na página pública do prestador'],
+          ['Front', 'Google Calendar: botão "Conectar" nas Configurações funciona'],
+          ['Deploy', 'App acessível via HTTPS no domínio personalizado'],
+          ['Deploy', 'SSL ativo (cadeado verde no browser)'],
+          ['Teste E2E', 'Fluxo completo: agendar → WhatsApp → cancelar → WhatsApp notifica prestador'],
+          ['Teste E2E', 'Fluxo de pagamento no sandbox Asaas ativa o plano Pro'],
+        ].map(([cat, item]) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bord);border-radius:8px">
+            <input type="checkbox" style="accent-color:var(--lime);flex-shrink:0" onchange="atualizarProgresso()">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);width:60px;flex-shrink:0">${cat}</span>
+            <span style="font-size:13px;color:var(--muted)">${item}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="margin-top:20px;padding:16px 18px;background:var(--lime-t);border:1px solid rgba(200,240,96,.2);border-radius:12px;text-align:center">
+        <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:300;margin-bottom:6px">
+          <span id="progresso-texto">0 / 20 concluídos</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted)" id="progresso-msg">Complete todos os itens antes de lançar.</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleStep(header) {
+  const step = header.closest('.step');
+  step.classList.toggle('open');
+}
+
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copiar(btn, texto) {
+  navigator.clipboard?.writeText(texto).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ copiado';
+    btn.style.color  = 'var(--lime)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+function marcarStep(cb) { atualizarProgresso(); }
+
+let totalChecks = 0;
+let marcados    = 0;
+
+function atualizarProgresso() {
+  const todos    = document.querySelectorAll('input[type=checkbox]');
+  const checked  = [...todos].filter(c => c.checked).length;
+  totalChecks    = todos.length;
+  marcados       = checked;
+
+  const pct = Math.round((checked / totalChecks) * 100);
+  document.getElementById('progress').style.width = pct + '%';
+
+  const txt = document.getElementById('progresso-texto');
+  const msg = document.getElementById('progresso-msg');
+  if (txt) txt.textContent = `${checked} / ${totalChecks} concluídos`;
+  if (msg) {
+    if (checked === totalChecks) {
+      msg.textContent = '🎉 Tudo pronto! Pode anunciar o app.';
+      msg.style.color = 'var(--lime)';
+    } else {
+      msg.textContent = `${totalChecks - checked} item${totalChecks - checked !== 1 ? 'ns' : ''} restante${totalChecks - checked !== 1 ? 's' : ''}.`;
+    }
+  }
+}
+
+// Destaca a fase ativa no scroll
+const fases = [1,2,3,4,5,6,7];
+window.addEventListener('scroll', () => {
+  const y = window.scrollY + 120;
+  let ativa = 1;
+  fases.forEach(n => {
+    const el = document.getElementById('fase-' + n);
+    if (el && el.offsetTop <= y) ativa = n;
+  });
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.classList.toggle('active', i + 1 === ativa);
+  });
+  // progresso barra top
+  const docH = document.documentElement.scrollHeight - window.innerHeight;
+  const pct  = Math.round((window.scrollY / docH) * 100);
+  document.getElementById('progress').style.width = Math.max(pct, marcados / totalChecks * 100) + '%';
+});
+
+// Abre o primeiro step de cada fase ao carregar
+document.querySelectorAll('.phase .step:first-of-type').forEach(s => s.classList.add('open'));
+atualizarProgresso();
+</script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cancelar Agendamento — AgendaPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&family=Fraunces:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0f;
+      --card:     #181818;
+      --input:    #222222;
+      --text:     #f0ede6;
+      --muted:    #8a8778;
+      --lime:     #c8f060;
+      --border:   #2a2724;
+      --danger:   #ff5a5a;
+      --radius:   14px;
+      --radius-s: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      color: var(--lime);
+      margin-bottom: 40px;
+      letter-spacing: -0.5px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 28px;
+    }
+    .icon.danger  { background: rgba(255, 90, 90, 0.12); }
+    .icon.success { background: rgba(200, 240, 96, 0.12); }
+    .icon.warning { background: rgba(255, 180, 50, 0.12); }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    p.sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .info-box {
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 20px;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row label { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+    .info-row span  { color: var(--text); font-size: 13px; font-weight: 500; text-align: right; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-s);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover:not(:disabled) { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger  { background: var(--danger); color: #fff; margin-bottom: 12px; }
+    .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    #estado-loading, #estado-dados, #estado-cancelado,
+    #estado-erro, #estado-expirado { display: none; }
+    #estado-loading { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--input) 25%, #2a2a2a 50%, var(--input) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+      height: 14px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .footer-link {
+      margin-top: 32px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .footer-link a { color: var(--lime); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="logo">AgendaPro</div>
+
+  <!-- Estado: carregando -->
+  <div class="card" id="estado-loading">
+    <div class="skeleton" style="width:48px;height:48px;border-radius:50%;margin:0 auto 24px;"></div>
+    <div class="skeleton" style="width:70%;margin:0 auto 12px;height:22px;"></div>
+    <div class="skeleton" style="width:90%;margin:0 auto 8px;"></div>
+    <div class="skeleton" style="width:75%;margin:0 auto 28px;"></div>
+    <div class="skeleton" style="width:100%;height:120px;margin-bottom:28px;"></div>
+    <div class="skeleton" style="width:100%;height:48px;margin-bottom:12px;border-radius:10px;"></div>
+    <div class="skeleton" style="width:100%;height:48px;border-radius:10px;"></div>
+  </div>
+
+  <!-- Estado: dados carregados, aguarda confirmação -->
+  <div class="card" id="estado-dados">
+    <div class="icon danger">❌</div>
+    <h1>Cancelar agendamento?</h1>
+    <p class="sub">Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
+
+    <div class="info-box">
+      <div class="info-row">
+        <label>Serviço</label>
+        <span id="info-servico">—</span>
+      </div>
+      <div class="info-row">
+        <label>Data e hora</label>
+        <span id="info-data">—</span>
+      </div>
+      <div class="info-row">
+        <label>Profissional</label>
+        <span id="info-prestador">—</span>
+      </div>
+    </div>
+
+    <button class="btn btn-danger" id="btn-confirmar" onclick="confirmarCancelamento()">
+      Sim, cancelar agendamento
+    </button>
+    <button class="btn btn-ghost" onclick="window.history.back()">
+      Voltar
+    </button>
+  </div>
+
+  <!-- Estado: cancelado com sucesso -->
+  <div class="card" id="estado-cancelado">
+    <div class="icon success">✓</div>
+    <h1>Agendamento cancelado</h1>
+    <p class="sub">Seu agendamento foi cancelado com sucesso. Se quiser reagendar, entre em contato com o profissional ou acesse a página de agendamento.</p>
+    <p class="footer-link">Powered by <a href="/">AgendaPro</a></p>
+  </div>
+
+  <!-- Estado: já cancelado / expirado -->
+  <div class="card" id="estado-expirado">
+    <div class="icon warning">⚠️</div>
+    <h1>Link inválido ou expirado</h1>
+    <p class="sub">Este link de cancelamento já foi utilizado, expirou ou é inválido. Se precisar cancelar seu agendamento, entre em contato diretamente com o profissional.</p>
+  </div>
+
+  <!-- Estado: erro genérico -->
+  <div class="card" id="estado-erro">
+    <div class="icon danger">!</div>
+    <h1>Algo deu errado</h1>
+    <p class="sub" id="msg-erro">Não foi possível processar sua solicitação. Tente novamente mais tarde.</p>
+    <button class="btn btn-ghost" onclick="window.location.reload()">Tentar novamente</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/config.js"></script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+    // --- Utilitários ---
+    function mostrar(id) {
+      ['estado-loading','estado-dados','estado-cancelado','estado-expirado','estado-erro']
+        .forEach(e => document.getElementById(e).style.display = 'none');
+      const el = document.getElementById(id);
+      el.style.display = (id === 'estado-loading') ? 'flex' : 'block';
+    }
+
+    function showToast(msg, dur = 3000) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), dur);
+    }
+
+    function formatarDataHora(iso) {
+      const d = new Date(iso);
+      return d.toLocaleString('pt-BR', {
+        weekday: 'long', day: '2-digit', month: 'long',
+        year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    // --- Ler token da URL ---
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (!token) {
+      mostrar('estado-expirado');
+    } else {
+      init(token);
+    }
+
+    async function init(token) {
+      mostrar('estado-loading');
+      try {
+        // Buscar agendamento pelo cancel_token
+        const { data, error } = await supabase
+          .from('agendamentos')
+          .select(`
+            id, status, data_hora,
+            servicos ( nome ),
+            prestadores ( nome )
+          `)
+          .eq('cancel_token', token)
+          .single();
+
+        if (error || !data) {
+          mostrar('estado-expirado');
+          return;
+        }
+
+        if (data.status === 'cancelado') {
+          mostrar('estado-expirado');
+          return;
+        }
+
+        if (data.status === 'concluido') {
+          document.getElementById('msg-erro').textContent =
+            'Este agendamento já foi concluído e não pode ser cancelado.';
+          mostrar('estado-erro');
+          return;
+        }
+
+        // Preencher informações
+        document.getElementById('info-servico').textContent   = data.servicos?.nome ?? '—';
+        document.getElementById('info-data').textContent      = formatarDataHora(data.data_hora);
+        document.getElementById('info-prestador').textContent = data.prestadores?.nome ?? '—';
+
+        mostrar('estado-dados');
+
+        // Guardar ID para usar no cancelamento
+        window.__agendamento_id = data.id;
+
+      } catch (e) {
+        console.error(e);
+        mostrar('estado-erro');
+      }
+    }
+
+    window.confirmarCancelamento = async function () {
+      const btn = document.getElementById('btn-confirmar');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Cancelando...';
+
+      try {
+        // Tentar via Edge Function primeiro
+        const edgeFnURL = `${window.SUPABASE_URL}/functions/v1/cancelar-agendamento-cliente`;
+        const res = await fetch(edgeFnURL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+
+        if (res.ok) {
+          mostrar('estado-cancelado');
+          return;
+        }
+
+        // Fallback: atualizar diretamente via Supabase
+        const agId = window.__agendamento_id;
+        const { error } = await supabase
+          .from('agendamentos')
+          .update({ status: 'cancelado' })
+          .eq('id', agId)
+          .eq('cancel_token', token); // double-check segurança
+
+        if (error) throw error;
+
+        mostrar('estado-cancelado');
+
+      } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.innerHTML = 'Sim, cancelar agendamento';
+        showToast('Erro ao cancelar. Tente novamente.');
+      }
+    };
+  </script>
+</body>
+</html>

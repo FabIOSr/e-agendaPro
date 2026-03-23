@@ -1,0 +1,40 @@
+{
+  "hosting": {
+    "public": ".",
+    "environment": {
+      "SUPABASE_URL": "https://kevqgxmcoxmzbypdjhru.supabase.co",
+      "SUPABASE_ANON": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg",
+      "APP_URL": "https://e-agendapro.web.app"
+    },
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "migrations/**",
+      "modules/**",
+      "patches/**",
+      "README.md",
+      "DEPLOY.html",
+      "setup.js"
+    ],
+    "rewrites": [
+      { "source": "/",              "destination": "/pages/landing-page.html" },
+      { "source": "/auth",          "destination": "/pages/auth.html" },
+      { "source": "/onboarding",    "destination": "/pages/onboarding.html" },
+      { "source": "/painel",        "destination": "/pages/painel.html" },
+      { "source": "/planos",        "destination": "/pages/planos.html" },
+      { "source": "/clientes",      "destination": "/pages/clientes.html" },
+      { "source": "/relatorio",     "destination": "/pages/relatorio.html" },
+      { "source": "/configuracoes", "destination": "/pages/configuracoes.html" },
+      { "source": "/cancelar",      "destination": "/pages/cancelar-cliente.html" },
+      { "source": "/reagendar",     "destination": "/pages/reagendar-cliente.html" },
+      { "source": "/avaliar",       "destination": "/pages/avaliar-cliente.html" },
+      { "source": "/:slug",         "destination": "/pages/pagina-cliente.html" }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|html)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  }
+}

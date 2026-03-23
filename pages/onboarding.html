@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Configurar minha página</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #f5f2eb;
+  --bg2:     #ede9df;
+  --bg3:     #e4dfd2;
+  --cream:   #faf8f3;
+  --border:  #d8d4c8;
+  --border2: #c4c0b4;
+  --ink:     #0e0d0a;
+  --muted:   #6b6860;
+  --faint:   #a8a49a;
+  --lime:    #c8f060;
+  --lime-d:  #8ab830;
+  --lime-ink:#1a2a08;
+  --lime-l:  #eef6d8;
+  --rust:    #c84830;
+  --rust-l:  #fdf0ed;
+  --radius:  14px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── SPLIT LAYOUT ── */
+.left-panel {
+  width: 380px; flex-shrink: 0;
+  background: var(--ink);
+  position: fixed; top: 0; left: 0; bottom: 0;
+  display: flex; flex-direction: column;
+  padding: 40px 36px;
+  overflow: hidden;
+}
+
+/* grid de fundo no painel esquerdo */
+.left-panel::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+.left-panel::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+  background: radial-gradient(ellipse 80% 60% at 50% 120%, rgba(200,240,96,.18), transparent);
+  pointer-events: none;
+}
+
+.left-inner { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
+
+.logo {
+  font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400;
+  color: #f5f2eb; display: flex; align-items: center; gap: 8px; margin-bottom: 52px;
+}
+.logo-dot {
+  width: 8px; height: 8px; background: var(--lime); border-radius: 50%;
+  box-shadow: 0 0 12px rgba(200,240,96,.5);
+}
+
+/* steps list */
+.steps-list { display: flex; flex-direction: column; gap: 0; flex: 1; }
+.step-li {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 20px 0; position: relative; cursor: pointer;
+}
+.step-li:not(:last-child)::after {
+  content: '';
+  position: absolute; left: 15px; top: 52px; bottom: 0;
+  width: 1px; background: rgba(255,255,255,.08);
+}
+
+.step-circle-left {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,.3);
+  transition: all .3s; background: transparent;
+}
+.step-li.active .step-circle-left {
+  background: var(--lime); border-color: var(--lime);
+  color: var(--lime-ink); box-shadow: 0 0 16px rgba(200,240,96,.4);
+}
+.step-li.done .step-circle-left {
+  background: rgba(200,240,96,.15); border-color: rgba(200,240,96,.3);
+  color: var(--lime); font-size: 11px;
+}
+.step-li.done .step-circle-left::after { content: '✓'; }
+
+.step-li-body { padding-top: 5px; }
+.step-li-title {
+  font-size: 14px; font-weight: 600; color: rgba(255,255,255,.3);
+  transition: color .3s; margin-bottom: 3px;
+}
+.step-li.active .step-li-title, .step-li.done .step-li-title { color: rgba(255,255,255,.9); }
+.step-li-desc { font-size: 12px; color: rgba(255,255,255,.2); line-height: 1.5; }
+.step-li.active .step-li-desc { color: rgba(255,255,255,.45); }
+
+/* preview da página no rodapé */
+.preview-box {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 16px; margin-top: auto;
+}
+.preview-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.25); margin-bottom: 10px; }
+.preview-url {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  color: var(--lime); word-break: break-all;
+}
+.preview-profile { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.preview-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: rgba(255,255,255,.5); font-weight: 600;
+  transition: all .3s; overflow: hidden; font-family: 'Syne', sans-serif;
+}
+.preview-name-wrap { flex: 1; }
+.preview-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.8); min-height: 18px; }
+.preview-serv { font-size: 11px; color: rgba(255,255,255,.3); }
+
+/* ── DIREITA ── */
+.right-panel {
+  margin-left: 380px; flex: 1;
+  min-height: 100vh; padding: 0 0 80px;
+  display: flex; flex-direction: column;
+}
+
+.right-top {
+  padding: 32px 48px 0;
+  display: flex; justify-content: flex-end;
+}
+.skip-btn {
+  background: none; border: none; font-size: 13px; color: var(--faint);
+  cursor: pointer; font-family: 'Syne', sans-serif;
+  transition: color .2s;
+}
+.skip-btn:hover { color: var(--muted); }
+
+/* ── STEPS ── */
+.step-content {
+  display: none; padding: 40px 48px;
+  animation: fadein .3s ease;
+  flex: 1;
+}
+.step-content.active { display: flex; flex-direction: column; }
+@keyframes fadein { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+.step-num {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--lime-d);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.step-num::before { content: ''; display: block; width: 20px; height: 1px; background: var(--lime-d); }
+
+.step-h { font-family: 'Fraunces', serif; font-size: clamp(28px, 3.5vw, 42px); font-weight: 300; letter-spacing: -.02em; line-height: 1.1; margin-bottom: 10px; }
+.step-sub { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 36px; max-width: 480px; }
+
+/* ── FORM ── */
+.form-group { margin-bottom: 20px; max-width: 480px; }
+.form-label {
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  letter-spacing: .04em; text-transform: uppercase;
+  margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+}
+.form-hint { font-size: 11px; color: var(--faint); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.form-input {
+  width: 100%; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 13px 16px; font-size: 15px;
+  font-family: 'Syne', sans-serif; color: var(--ink); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-input:focus { border-color: var(--lime-d); box-shadow: 0 0 0 3px rgba(200,240,96,.2); }
+.form-input::placeholder { color: var(--faint); }
+.form-input.error { border-color: var(--rust); box-shadow: 0 0 0 3px rgba(200,72,48,.12); }
+.form-input.ok    { border-color: var(--lime-d); }
+
+.form-input-wrap { position: relative; }
+.form-prefix {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 14px; color: var(--muted);
+  font-family: 'DM Mono', monospace; pointer-events: none;
+}
+.form-input.has-prefix { padding-left: 148px; }
+
+.slug-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; margin-top: 6px; min-height: 18px;
+  color: var(--faint); transition: color .2s;
+}
+.slug-status.ok     { color: var(--lime-d); }
+.slug-status.error  { color: var(--rust); }
+.slug-status.checking { color: var(--faint); }
+
+.textarea {
+  resize: vertical; min-height: 80px; line-height: 1.6;
+}
+
+/* foto de perfil */
+.foto-area {
+  display: flex; align-items: center; gap: 24px; margin-bottom: 28px; max-width: 480px;
+}
+.foto-circle {
+  width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bg2); border: 2px dashed var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; cursor: pointer; transition: all .2s;
+  position: relative; overflow: hidden;
+}
+.foto-circle:hover { border-color: var(--border2); background: var(--bg3); }
+.foto-circle img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.foto-info { flex: 1; }
+.foto-info p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.btn-foto {
+  margin-top: 8px; background: none; border: 1.5px solid var(--border);
+  color: var(--muted); border-radius: 8px; padding: 7px 14px;
+  font-size: 12px; font-weight: 600; font-family: 'Syne', sans-serif;
+  cursor: pointer; transition: all .2s;
+}
+.btn-foto:hover { border-color: var(--border2); color: var(--ink); }
+
+/* categorias (tipo de profissional) */
+.categoria-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; max-width: 520px; margin-bottom: 28px;
+}
+.categoria-item {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 16px 12px; text-align: center;
+  cursor: pointer; transition: all .2s;
+}
+.categoria-item:hover { border-color: var(--border2); background: var(--bg2); }
+.categoria-item.selected { border-color: var(--lime-d); background: var(--lime-l); }
+.cat-icon { font-size: 22px; margin-bottom: 6px; }
+.cat-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.categoria-item.selected .cat-label { color: var(--lime-ink); }
+
+/* serviços */
+.servicos-list { display: flex; flex-direction: column; gap: 10px; max-width: 540px; margin-bottom: 20px; }
+.servico-row {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  display: flex; gap: 10px; align-items: center;
+  animation: fadein .2s ease;
+}
+.servico-row-inputs { flex: 1; display: grid; grid-template-columns: 1fr 80px 80px; gap: 8px; }
+.si {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  font-family: 'Syne', sans-serif; color: var(--ink); outline: none;
+  transition: border-color .2s;
+}
+.si:focus { border-color: var(--lime-d); }
+.si::placeholder { color: var(--faint); font-size: 12px; }
+.si.mono { font-family: 'DM Mono', monospace; }
+.btn-del-servico {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: none; border: 1px solid var(--border);
+  color: var(--faint); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0;
+}
+.btn-del-servico:hover { background: var(--rust-l); border-color: var(--rust); color: var(--rust); }
+
+.btn-add-servico {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: 1.5px dashed var(--border2);
+  border-radius: 12px; padding: 12px 16px;
+  font-size: 13px; color: var(--muted); font-weight: 600;
+  font-family: 'Syne', sans-serif; cursor: pointer;
+  max-width: 540px; transition: all .2s;
+}
+.btn-add-servico:hover { border-color: var(--lime-d); color: var(--lime-ink); background: var(--lime-l); }
+
+/* horários */
+.dias-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 6px; max-width: 520px; margin-bottom: 24px;
+}
+.dia-btn {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 4px; text-align: center;
+  cursor: pointer; transition: all .2s;
+}
+.dia-btn:hover { border-color: var(--border2); }
+.dia-btn.on { border-color: var(--lime-d); background: var(--lime-l); }
+.dia-nome { font-size: 11px; font-weight: 700; color: var(--faint); display: block; margin-bottom: 2px; }
+.dia-btn.on .dia-nome { color: var(--lime-ink); }
+.dia-check { font-size: 10px; color: var(--lime-d); min-height: 14px; }
+
+.horario-row {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 360px; margin-bottom: 12px;
+}
+.horario-label { font-size: 13px; color: var(--muted); width: 80px; flex-shrink: 0; }
+.time-input {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 9px 12px; font-size: 14px;
+  font-family: 'DM Mono', monospace; color: var(--ink); outline: none;
+  width: 100px; transition: border-color .2s;
+}
+.time-input:focus { border-color: var(--lime-d); }
+.horario-sep { color: var(--faint); }
+
+/* bloqueios rápidos */
+.bloqueios-quick { display: flex; gap: 8px; flex-wrap: wrap; max-width: 480px; margin-top: 16px; }
+.blq-chip {
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 6px 14px; font-size: 12px;
+  cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px;
+}
+.blq-chip:hover { border-color: var(--border2); }
+.blq-chip.on { background: var(--lime-l); border-color: var(--lime-d); color: var(--lime-ink); }
+
+/* ── BOTÕES NAV ── */
+.step-nav {
+  display: flex; gap: 10px; align-items: center;
+  margin-top: auto; padding-top: 40px; max-width: 480px;
+}
+.btn-back {
+  background: none; border: 1.5px solid var(--border);
+  color: var(--muted); border-radius: 10px;
+  padding: 13px 20px; font-size: 14px; font-weight: 500;
+  font-family: 'Syne', sans-serif; cursor: pointer;
+  transition: all .2s;
+}
+.btn-back:hover { border-color: var(--border2); color: var(--ink); }
+.btn-next {
+  flex: 1; background: var(--ink); color: var(--bg);
+  border: none; border-radius: 10px;
+  padding: 14px 24px; font-size: 15px; font-weight: 600;
+  font-family: 'Syne', sans-serif; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .15s, background .2s;
+}
+.btn-next:hover { transform: translateY(-1px); background: #2a2820; }
+.btn-next:disabled { opacity: .35; cursor: default; transform: none; }
+.btn-next.lime { background: var(--lime); color: var(--lime-ink); }
+.btn-next.lime:hover { background: #b8e050; }
+
+/* ── SUCESSO ── */
+.success-screen {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px; text-align: center;
+}
+.success-anim {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--lime-l); border: 3px solid var(--lime);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin: 0 auto 24px;
+  animation: pop .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop { from { transform: scale(0) rotate(-20deg); opacity:0; } to { transform: scale(1) rotate(0); opacity:1; } }
+.success-h { font-family: 'Fraunces', serif; font-size: 38px; font-weight: 300; letter-spacing: -.02em; margin-bottom: 12px; }
+.success-sub { font-size: 16px; color: var(--muted); max-width: 380px; line-height: 1.65; margin-bottom: 32px; }
+
+.link-box {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 14px 18px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 12px; max-width: 420px; width: 100%;
+}
+.link-url { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--lime-d); flex: 1; word-break: break-all; }
+.btn-copy {
+  background: var(--ink); color: var(--bg); border: none;
+  border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600;
+  font-family: 'Syne', sans-serif; cursor: pointer; white-space: nowrap;
+  transition: all .2s;
+}
+.btn-copy:hover { background: #2a2820; }
+
+.success-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 420px; width: 100%; }
+.btn-success-primary {
+  flex: 1; min-width: 160px; background: var(--ink); color: var(--bg);
+  border: none; border-radius: 10px; padding: 14px; font-size: 14px; font-weight: 600;
+  font-family: 'Syne', sans-serif; cursor: pointer; transition: all .2s;
+}
+.btn-success-primary:hover { background: #2a2820; }
+.btn-success-ghost {
+  flex: 1; min-width: 160px; background: none; color: var(--muted);
+  border: 1.5px solid var(--border); border-radius: 10px; padding: 14px;
+  font-size: 14px; font-family: 'Syne', sans-serif; cursor: pointer; transition: all .2s;
+}
+.btn-success-ghost:hover { border-color: var(--border2); color: var(--ink); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  .left-panel { display: none; }
+  .right-panel { margin-left: 0; }
+  .step-content { padding: 32px 20px; }
+  .categoria-grid { grid-template-columns: repeat(3, 1fr); }
+  .dias-grid { grid-template-columns: repeat(7, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- PAINEL ESQUERDO -->
+<div class="left-panel">
+  <div class="left-inner">
+    <div class="logo"><div class="logo-dot"></div> AgendaPro</div>
+
+    <div class="steps-list">
+      <div class="step-li active" id="sl-1">
+        <div class="step-circle-left">1</div>
+        <div class="step-li-body">
+          <div class="step-li-title">Sua identidade</div>
+          <div class="step-li-desc">Nome, foto e link personalizado</div>
+        </div>
+      </div>
+      <div class="step-li" id="sl-2">
+        <div class="step-circle-left">2</div>
+        <div class="step-li-body">
+          <div class="step-li-title">Seus serviços</div>
+          <div class="step-li-desc">O que você oferece e quanto cobra</div>
+        </div>
+      </div>
+      <div class="step-li" id="sl-3">
+        <div class="step-circle-left">3</div>
+        <div class="step-li-body">
+          <div class="step-li-title">Sua agenda</div>
+          <div class="step-li-desc">Dias, horários e bloqueios fixos</div>
+        </div>
+      </div>
+      <div class="step-li" id="sl-4">
+        <div class="step-circle-left">4</div>
+        <div class="step-li-body">
+          <div class="step-li-title">Tudo pronto!</div>
+          <div class="step-li-desc">Compartilhe seu link e comece</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-box">
+      <div class="preview-label">Pré-visualização</div>
+      <div class="preview-url" id="prev-url">—</div>
+      <div class="preview-profile">
+        <div class="preview-avatar" id="prev-avatar">?</div>
+        <div class="preview-name-wrap">
+          <div class="preview-name" id="prev-nome">Seu nome</div>
+          <div class="preview-serv" id="prev-servs">0 serviços cadastrados</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAINEL DIREITO -->
+<div class="right-panel">
+  <div class="right-top">
+    <button class="skip-btn" onclick="pularOnboarding()">Pular configuração →</button>
+  </div>
+
+  <!-- STEP 1: IDENTIDADE -->
+  <div class="step-content active" id="step-1">
+    <div class="step-num">Passo 1 de 3</div>
+    <h1 class="step-h">Vamos criar<br><em>sua página</em></h1>
+    <p class="step-sub">Primeiras informações para seus clientes saberem quem é você.</p>
+
+    <!-- Foto -->
+    <div class="foto-area">
+      <div class="foto-circle" id="foto-circle" onclick="document.getElementById('foto-input').click()">
+        📷
+      </div>
+      <div class="foto-info">
+        <p>Adicione uma foto de perfil.<br>Clientes confiam mais em profissionais com foto.</p>
+        <button class="btn-foto" onclick="document.getElementById('foto-input').click()">Escolher foto</button>
+        <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="previewFoto(this)">
+      </div>
+    </div>
+
+    <!-- Categoria -->
+    <div class="form-group">
+      <div class="form-label">Qual é sua profissão?</div>
+      <div class="categoria-grid">
+        <div class="categoria-item" onclick="selecionarCat(this,'Cabeleireiro','✂️')">
+          <div class="cat-icon">✂️</div>
+          <div class="cat-label">Cabeleireiro(a)</div>
+        </div>
+        <div class="categoria-item" onclick="selecionarCat(this,'Manicure','💅')">
+          <div class="cat-icon">💅</div>
+          <div class="cat-label">Manicure</div>
+        </div>
+        <div class="categoria-item" onclick="selecionarCat(this,'Personal','🏋️')">
+          <div class="cat-icon">🏋️</div>
+          <div class="cat-label">Personal</div>
+        </div>
+        <div class="categoria-item" onclick="selecionarCat(this,'Tatuador','🎨')">
+          <div class="cat-icon">🎨</div>
+          <div class="cat-label">Tatuador(a)</div>
+        </div>
+        <div class="categoria-item" onclick="selecionarCat(this,'Massagista','💆')">
+          <div class="cat-icon">💆</div>
+          <div class="cat-label">Massagista</div>
+        </div>
+        <div class="categoria-item" onclick="selecionarCat(this,'Outro','👤')">
+          <div class="cat-icon">👤</div>
+          <div class="cat-label">Outro</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nome -->
+    <div class="form-group">
+      <div class="form-label">
+        Seu nome profissional
+        <span class="form-hint">Como aparece para os clientes</span>
+      </div>
+      <input class="form-input" id="input-nome" placeholder="Ex: Ana Beatriz Cabelos"
+        oninput="atualizarPreview()">
+    </div>
+
+    <!-- Slug -->
+    <div class="form-group">
+      <div class="form-label">Seu link personalizado</div>
+      <div class="form-input-wrap">
+        <span class="form-prefix" id="form-prefix-url">agendapro.com.br/</span>
+        <input class="form-input has-prefix" id="input-slug" placeholder="ana-cabelos"
+          oninput="atualizarSlug(this)">
+      </div>
+      <div class="slug-status" id="slug-status">
+        <span id="slug-msg">Digite seu link personalizado</span>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="form-group">
+      <div class="form-label">
+        Bio curta
+        <span class="form-hint">Opcional</span>
+      </div>
+      <textarea class="form-input textarea" id="input-bio"
+        placeholder="Ex: Especialista em coloração e tratamentos capilares. 10 anos de experiência."
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+    </div>
+
+    <!-- Whatsapp -->
+    <div class="form-group">
+      <div class="form-label">WhatsApp (para receber avisos)</div>
+      <input class="form-input" id="input-wpp" placeholder="(11) 99999-0000"
+        oninput="mascaraTel(this)">
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-next" id="btn-next-1" onclick="irPara(2)">
+        Próximo — Serviços →
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2: SERVIÇOS -->
+  <div class="step-content" id="step-2">
+    <div class="step-num">Passo 2 de 3</div>
+    <h1 class="step-h">Seus<br><em>serviços</em></h1>
+    <p class="step-sub">Adicione o que você oferece, a duração e o preço. O cliente vai ver isso na hora de agendar.</p>
+
+    <div class="servicos-list" id="servicos-list"></div>
+
+    <button class="btn-add-servico" onclick="adicionarServico()">
+      + Adicionar serviço
+    </button>
+
+    <div style="max-width:540px;margin-top:16px;padding:12px 16px;background:var(--lime-l);border:1px solid var(--lime);border-radius:10px;font-size:13px;color:var(--lime-ink)">
+      💡 <strong>Dica:</strong> Quanto mais completo, maior a chance do cliente agendar sem precisar te perguntar nada.
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-back" onclick="irPara(1)">← Voltar</button>
+      <button class="btn-next" id="btn-next-2" onclick="irPara(3)">
+        Próximo — Horários →
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 3: HORÁRIOS -->
+  <div class="step-content" id="step-3">
+    <div class="step-num">Passo 3 de 3</div>
+    <h1 class="step-h">Sua<br><em>disponibilidade</em></h1>
+    <p class="step-sub">Quais dias e horários você atende? Pode ajustar depois quando quiser.</p>
+
+    <div class="form-label" style="margin-bottom:10px">Dias que você atende</div>
+    <div class="dias-grid" id="dias-grid"></div>
+
+    <div class="form-label" style="margin-bottom:10px;margin-top:4px">Horário de atendimento</div>
+    <div class="horario-row">
+      <span class="horario-label">Início</span>
+      <input type="time" class="time-input" id="hora-inicio" value="09:00">
+    </div>
+    <div class="horario-row">
+      <span class="horario-label">Fim</span>
+      <input type="time" class="time-input" id="hora-fim" value="18:00">
+    </div>
+
+    <div class="form-label" style="margin-bottom:10px;margin-top:24px">
+      Bloqueios fixos
+      <span class="form-hint" style="font-weight:400;font-size:11px;color:var(--faint);text-transform:none">Selecione os que se aplicam</span>
+    </div>
+    <div class="bloqueios-quick">
+      <div class="blq-chip" onclick="toggleBlq(this,'🍽️ Almoço (12–13h)')">🍽️ Almoço</div>
+      <div class="blq-chip" onclick="toggleBlq(this,'☕ Café (10–10:30h)')">☕ Café manhã</div>
+      <div class="blq-chip" onclick="toggleBlq(this,'☕ Café (15–15:30h)')">☕ Café tarde</div>
+      <div class="blq-chip" onclick="toggleBlq(this,'🧹 Limpeza (19–19:30h)')">🧹 Limpeza final</div>
+    </div>
+
+    <div style="max-width:480px;margin-top:20px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);line-height:1.6">
+      🔒 Pode adicionar férias, consultas médicas e qualquer bloqueio pontual depois, direto no painel.
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-back" onclick="irPara(2)">← Voltar</button>
+      <button class="btn-next lime" onclick="finalizar()">
+        ✦ Criar minha página
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 4: SUCESSO -->
+  <div class="step-content" id="step-4">
+    <div class="success-screen">
+      <div class="success-anim">🎉</div>
+      <h2 class="success-h">Página criada!</h2>
+      <p class="success-sub">Seu link de agendamento está no ar. Compartilhe agora e comece a receber clientes.</p>
+
+      <div class="link-box">
+        <div class="link-url" id="link-final">—</div>
+        <button class="btn-copy" onclick="copiarLink()">Copiar</button>
+      </div>
+
+      <div class="success-actions">
+        <button class="btn-success-primary" onclick="irPainel()">Ir para meu painel →</button>
+        <button class="btn-success-ghost" onclick="compartilhar()">📲 Compartilhar</button>
+      </div>
+
+      <p style="font-size:12px;color:var(--faint);margin-top:28px;max-width:340px;line-height:1.6">
+        Cole este link na bio do Instagram, no status do WhatsApp ou envie direto para seus clientes.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+// ── PROTEÇÃO DE ROTA ─────────────────────────────────────────────────────
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) { window.location.href = '/auth'; }
+const userId = session.user.id;
+
+// ── ESTADO ───────────────────────────────────────────────────────────────
+const state = {
+  step: 1,
+  nome: '', slug: '', bio: '', wpp: '', cat: '', fotoEmoji: '',
+  diasAtivos: new Set([1,2,3,4,5]),
+  horaInicio: '09:00', horaFim: '18:00',
+  bloqueios: [],
+  slugOk: false,
+};
+
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+// ── NAVEGAÇÃO ────────────────────────────────────────────────────────────
+function irPara(n) {
+  document.getElementById('step-' + state.step)?.classList.remove('active');
+  state.step = n;
+  document.getElementById('step-' + n)?.classList.add('active');
+  atualizarSidebarSteps();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.irPara = irPara;
+
+function atualizarSidebarSteps() {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('sl-' + i);
+    if (!el) continue;
+    el.classList.remove('active','done');
+    if (i === state.step) el.classList.add('active');
+    else if (i < state.step) el.classList.add('done');
+    const circ = el.querySelector('.step-circle-left');
+    if (!circ) continue;
+    if (i < state.step) { circ.textContent = ''; circ.style.fontSize = '0'; }
+    else { circ.textContent = i; circ.style.fontSize = ''; }
+  }
+}
+
+window.pularOnboarding = function() {
+  irPara(4);
+  document.getElementById('link-final').textContent = `${appDomain}/meu-perfil`;
+};
+
+// ── STEP 1 — PERFIL ───────────────────────────────────────────────────────
+window.previewFoto = async function(input) {
+  if (!input.files || !input.files[0]) return;
+  const file   = input.files[0];
+  const reader = new FileReader();
+
+  // Preview local imediato
+  reader.onload = e => {
+    const circle = document.getElementById('foto-circle');
+    if (circle) circle.innerHTML = `<img src="${e.target.result}" alt="foto" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    const prevAv = document.getElementById('prev-avatar');
+    if (prevAv) prevAv.innerHTML = `<img src="${e.target.result}" alt="foto" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(file);
+
+  // Upload para Supabase Storage (bucket: avatars)
+  try {
+    const ext  = file.name.split('.').pop() || 'jpg';
+    const path = `${userId}/avatar.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) {
+      console.warn('Erro no upload da foto:', upErr.message);
+      // Preview local continua mesmo sem upload
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    state.fotoUrl = urlData?.publicUrl || null;
+  } catch (e) {
+    console.warn('Storage indisponível, foto salva apenas localmente:', e);
+  }
+};
+
+const SUGESTOES = {
+  'Cabeleireiro': [
+    { nome: 'Corte feminino', dur: '60', preco: '80' },
+    { nome: 'Corte + escova', dur: '60', preco: '90' },
+    { nome: 'Tintura',        dur: '120', preco: '160' },
+  ],
+  'Manicure': [
+    { nome: 'Manicure',           dur: '45', preco: '35' },
+    { nome: 'Pedicure',           dur: '45', preco: '40' },
+    { nome: 'Manicure + Pedicure', dur: '80', preco: '65' },
+  ],
+  'Personal': [
+    { nome: 'Treino individual', dur: '60', preco: '120' },
+    { nome: 'Avaliação física',  dur: '60', preco: '80' },
+    { nome: 'Online (1h)',       dur: '60', preco: '80' },
+  ],
+  'Tatuador': [
+    { nome: 'Tatuagem pequena', dur: '60',  preco: '200' },
+    { nome: 'Tatuagem média',   dur: '120', preco: '400' },
+    { nome: 'Consultoria',      dur: '30',  preco: '0' },
+  ],
+  'Massagista': [
+    { nome: 'Relaxante 60min', dur: '60',  preco: '120' },
+    { nome: 'Relaxante 90min', dur: '90',  preco: '160' },
+    { nome: 'Drenagem',        dur: '60',  preco: '130' },
+  ],
+};
+
+window.selecionarCat = function(el, nome, emoji) {
+  document.querySelectorAll('.categoria-item').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.cat       = nome;
+  state.fotoEmoji = emoji;
+  const sug = SUGESTOES[nome];
+  if (sug) {
+    document.getElementById('servicos-list').innerHTML = '';
+    sug.forEach(s => adicionarServico(s.nome, s.dur, s.preco));
+    atualizarPreviewServicos();
+  }
+};
+
+window.mascaraTel = function(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,11);
+  if (v.length >= 7) v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+  else if (v.length >= 3) v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+  else if (v.length >= 1) v = '(' + v;
+  el.value = v;
+};
+
+// ── SLUG ─────────────────────────────────────────────────────────────────
+let slugTimer;
+window.atualizarSlug = function(el) {
+  let v = el.value.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9-]/g,'-')
+    .replace(/-+/g,'-').replace(/^-|-$/g,'');
+  el.value = v;
+  state.slug = v;
+  atualizarPreview();
+
+  const status = document.getElementById('slug-status');
+  const msg    = document.getElementById('slug-msg');
+  clearTimeout(slugTimer);
+  state.slugOk = false;
+  el.classList.remove('ok','error');
+
+  if (!v) {
+    status.className = 'slug-status';
+    msg.textContent  = 'Digite seu link personalizado';
+    return;
+  }
+  if (v.length < 3) {
+    status.className = 'slug-status error';
+    msg.textContent  = 'Mínimo 3 caracteres';
+    el.classList.add('error');
+    return;
+  }
+
+  status.className = 'slug-status checking';
+  msg.textContent  = 'Verificando disponibilidade…';
+
+  slugTimer = setTimeout(async () => {
+    const { data } = await supabase
+      .from('prestadores')
+      .select('id')
+      .eq('slug', v)
+      .neq('id', userId)
+      .maybeSingle();
+    if (data) {
+      status.className = 'slug-status error';
+      msg.textContent  = '✕ Este link já está em uso';
+      el.classList.add('error');
+    } else {
+      status.className = 'slug-status ok';
+      msg.textContent  = '✓ Disponível!';
+      el.classList.add('ok');
+      state.slugOk = true;
+    }
+  }, 700);
+};
+
+window.atualizarPreview = function() {
+  const nome = document.getElementById('input-nome')?.value.trim() || '';
+  const bio  = document.getElementById('input-bio')?.value.trim()  || '';
+  const slug = state.slug;
+  state.nome = nome;
+  state.bio  = bio;
+
+  const prevNome = document.getElementById('prev-nome');
+  const prevUrl  = document.getElementById('prev-url');
+  if (prevNome) prevNome.textContent = nome || 'Seu nome';
+  if (prevUrl)  prevUrl.textContent  = slug ? `${appDomain}/${slug}` : `${appDomain}/seu-link`;
+
+  // Avatar com inicial se não tiver foto
+  const prevAv = document.getElementById('prev-avatar');
+  if (prevAv && nome && !prevAv.querySelector('img')) {
+    prevAv.textContent = nome[0].toUpperCase();
+    prevAv.style.background = '#dde8c8';
+    prevAv.style.color = '#4a6a20';
+  }
+};
+
+// ── STEP 2 — SERVIÇOS ─────────────────────────────────────────────────────
+let servicoId = 0;
+
+function adicionarServico(nome='', dur='', preco='') {
+  const id = ++servicoId;
+  const row = document.createElement('div');
+  row.className = 'servico-row';
+  row.id = 'srv-' + id;
+  row.innerHTML = `
+    <div class="servico-row-inputs">
+      <input class="si" placeholder="Nome do serviço" value="${nome}"
+        oninput="atualizarPreviewServicos()">
+      <input class="si mono" placeholder="min" value="${dur}"
+        title="Duração em minutos">
+      <input class="si mono" placeholder="R$" value="${preco}"
+        title="Preço">
+    </div>
+    <button class="btn-del-servico" onclick="removerServico(${id})" title="Remover">✕</button>
+  `;
+  document.getElementById('servicos-list')?.appendChild(row);
+  atualizarPreviewServicos();
+}
+window.adicionarServico = adicionarServico;
+
+window.removerServico = function(id) {
+  document.getElementById('srv-' + id)?.remove();
+  atualizarPreviewServicos();
+};
+
+function atualizarPreviewServicos() {
+  const rows  = document.querySelectorAll('.servico-row');
+  const total = [...rows].filter(r => r.querySelector('.si')?.value?.trim()).length;
+  const el    = document.getElementById('prev-servs');
+  if (el) el.textContent =
+    total === 0 ? '0 serviços cadastrados'
+    : total === 1 ? '1 serviço cadastrado'
+    : `${total} serviços cadastrados`;
+}
+window.atualizarPreviewServicos = atualizarPreviewServicos;
+
+// ── STEP 3 — DIAS ─────────────────────────────────────────────────────────
+function renderDias() {
+  const grid = document.getElementById('dias-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  DIAS.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'dia-btn' + (state.diasAtivos.has(i) ? ' on' : '');
+    el.innerHTML = `<span class="dia-nome">${d}</span><div class="dia-check">${state.diasAtivos.has(i) ? '✓' : ''}</div>`;
+    el.onclick = () => {
+      if (state.diasAtivos.has(i)) state.diasAtivos.delete(i);
+      else state.diasAtivos.add(i);
+      renderDias();
+    };
+    grid.appendChild(el);
+  });
+}
+
+window.toggleBlq = function(el, label) {
+  el.classList.toggle('on');
+  if (el.classList.contains('on')) state.bloqueios.push(label);
+  else state.bloqueios = state.bloqueios.filter(b => b !== label);
+};
+
+// ── FINALIZAR ─────────────────────────────────────────────────────────────
+window.finalizar = async function() {
+  const btn = document.querySelector('.btn-next.lime');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+  try {
+    // Lê bio e wpp dos inputs no momento de salvar
+    state.bio = document.getElementById('input-bio')?.value.trim() || null;
+    state.wpp = document.getElementById('input-wpp')?.value.trim() || null;
+
+    // 1. Atualizar prestadores
+    const { error: errP } = await supabase
+      .from('prestadores')
+      .update({
+        nome:     state.nome || session.user.user_metadata?.nome_completo || '',
+        slug:     state.slug,
+        bio:      state.bio  || null,
+        whatsapp: state.wpp  || null,
+        foto_url: state.fotoUrl || null,
+      })
+      .eq('id', userId);
+    if (errP) throw errP;
+
+    // 2. Ler serviços diretamente dos inputs (evita problema do state desincronizado)
+    const rows = document.querySelectorAll('.servico-row');
+    const servicosValidos = [];
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll('.si');
+      const nome   = inputs[0]?.value.trim();
+      const dur    = parseInt(inputs[1]?.value) || 60;
+      const preco  = parseFloat(inputs[2]?.value) || 0;
+      if (nome) servicosValidos.push({ nome, dur, preco });
+    });
+
+    if (servicosValidos.length > 0) {
+      const { error: errS } = await supabase
+        .from('servicos')
+        .insert(servicosValidos.map(s => ({
+          prestador_id: userId,
+          nome:         s.nome,
+          duracao_min:  s.dur,
+          preco:        s.preco,
+          ativo:        true,
+        })));
+      if (errS) throw errS;
+    }
+
+    // 3. Inserir disponibilidade
+    const diasArray = Array.from(state.diasAtivos);
+    if (diasArray.length > 0) {
+      const { error: errD } = await supabase
+        .from('disponibilidade')
+        .insert(diasArray.map(dia => ({
+          prestador_id: userId,
+          dia_semana:   dia,
+          hora_inicio:  state.horaInicio || '09:00',
+          hora_fim:     state.horaFim    || '18:00',
+        })));
+      if (errD) throw errD;
+    }
+
+    // Sucesso
+    document.getElementById('link-final').textContent = `${appDomain}/${state.slug}`;
+    irPara(4);
+
+  } catch (err) {
+    console.error('Erro ao salvar onboarding:', err);
+    alert('Erro ao salvar: ' + (err.message || 'tente novamente'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar minha página →'; }
+  }
+};
+
+window.copiarLink = function() {
+  const txt = document.getElementById('link-final')?.textContent || '';
+  navigator.clipboard?.writeText(txt).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    if (!btn) return;
+    btn.textContent = '✓ Copiado!';
+    btn.style.background = '#3a6a20';
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.style.background = ''; }, 2000);
+  });
+};
+
+window.compartilhar = function() {
+  const txt = document.getElementById('link-final')?.textContent || '';
+  if (navigator.share) navigator.share({ title: 'Meu link de agendamento', url: txt.startsWith('http') ? txt : 'https://' + txt });
+  else window.copiarLink();
+};
+
+window.irPainel = function() {
+  window.location.href = '/painel';
+};
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+// Preenche o prefixo da URL com APP_URL do config.js
+const appUrl = (window.APP_URL || 'https://agendapro.com.br').replace(/\/$/, '');
+const appDomain = appUrl.replace(/^https?:\/\//, '');
+const prefixEl = document.getElementById('form-prefix-url');
+if (prefixEl) prefixEl.textContent = appDomain + '/';
+
+renderDias();
+adicionarServico();
+adicionarServico();
+</script>
+</body>
+</html>

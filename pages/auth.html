@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Entrar</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0e0d0a;
+  --bg2:    #181714;
+  --bg3:    #222018;
+  --border: #2e2b24;
+  --bord2:  #3e3b32;
+  --text:   #f0ede6;
+  --muted:  #8a8778;
+  --faint:  #4a4840;
+  --lime:   #c8f060;
+  --lime-d: #8ab830;
+  --lime-l: #1a2a08;
+  --lime-t: rgba(200,240,96,.12);
+  --rust:   #f06048;
+  --rust-t: rgba(240,96,72,.12);
+  --radius: 14px;
+}
+html, body { height: 100%; }
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex; align-items: stretch; min-height: 100vh;
+}
+
+/* ── GRADE DE FUNDO ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 300px;
+  background: radial-gradient(ellipse, rgba(200,240,96,.07) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── LAYOUT SPLIT ── */
+.split { display: flex; width: 100%; min-height: 100vh; position: relative; z-index: 1; }
+
+/* lado esquerdo — decorativo */
+.left {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: space-between; padding: 48px;
+  background: var(--bg2); border-right: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.left::before {
+  content: '';
+  position: absolute; top: -80px; left: -80px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(200,240,96,.06), transparent 60%);
+  pointer-events: none;
+}
+@media (max-width: 800px) { .left { display: none; } }
+
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-dot { width: 8px; height: 8px; background: var(--lime); border-radius: 50%; box-shadow: 0 0 10px rgba(200,240,96,.5); }
+.brand-name { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 400; }
+
+.left-quote {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  padding: 40px 0;
+}
+.quote-text {
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-size: clamp(24px, 2.5vw, 34px); font-weight: 300;
+  line-height: 1.3; letter-spacing: -.02em;
+  color: var(--text); margin-bottom: 20px;
+}
+.quote-text em { color: var(--lime); font-style: normal; }
+.quote-author { font-size: 13px; color: var(--muted); }
+
+/* mini mockup animado */
+.left-mockup {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; margin-top: 20px;
+}
+.mock-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.mock-row:last-child { margin-bottom: 0; }
+.mock-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.mock-bar { height: 8px; border-radius: 4px; background: var(--border); }
+.mock-val { font-family: 'DM Mono', monospace; font-size: 11px; margin-left: auto; }
+.mock-val.lime { color: var(--lime); }
+
+.left-stats { display: flex; gap: 12px; }
+.stat-mini {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px; text-align: center;
+}
+.stat-mini-val  { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; color: var(--lime); }
+.stat-mini-label{ font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* ── FORMULÁRIO ── */
+.right {
+  width: 480px; flex-shrink: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 48px 52px;
+}
+@media (max-width: 800px) { .right { width: 100%; padding: 40px 24px; } }
+
+/* painel de telas */
+.screen { display: none; animation: fadein .25s ease; }
+.screen.active { display: block; }
+@keyframes fadein { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+.screen-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--lime-d);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.screen-eyebrow::before { content:''; display:block; width:16px; height:1px; background:var(--lime-d); }
+
+.screen-h {
+  font-family: 'Fraunces', serif; font-size: clamp(28px, 4vw, 38px);
+  font-weight: 300; letter-spacing: -.02em; line-height: 1.1;
+  margin-bottom: 8px;
+}
+.screen-sub { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
+
+/* campos */
+.field { margin-bottom: 16px; }
+.field-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 7px; display: block;
+}
+.field-wrap { position: relative; }
+.field-input {
+  width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px 44px 12px 16px;
+  font-size: 15px; font-family: 'Syne', sans-serif; color: var(--text);
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.field-input::placeholder { color: var(--faint); }
+.field-input:focus { border-color: var(--lime-d); box-shadow: 0 0 0 3px rgba(200,240,96,.1); }
+.field-input.error { border-color: var(--rust); box-shadow: 0 0 0 3px var(--rust-t); }
+.field-input.ok    { border-color: var(--lime-d); }
+
+.field-icon {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 16px; color: var(--faint); pointer-events: none;
+}
+.field-icon.btn { pointer-events: all; cursor: pointer; transition: color .2s; }
+.field-icon.btn:hover { color: var(--muted); }
+
+.field-error { font-size: 12px; color: var(--rust); margin-top: 5px; display: none; }
+.field-error.visible { display: block; }
+
+/* força de senha */
+.strength-wrap { margin-top: 6px; display: none; }
+.strength-wrap.visible { display: block; }
+.strength-bars { display: flex; gap: 3px; margin-bottom: 4px; }
+.strength-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background .3s; }
+.strength-bar.f { background: var(--rust); }
+.strength-bar.m { background: #d4a820; }
+.strength-bar.s { background: var(--lime-d); }
+.strength-label { font-size: 11px; color: var(--muted); }
+
+/* divider social */
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0; color: var(--faint); font-size: 12px;
+}
+.divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* botão Google */
+.btn-google {
+  width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 500;
+  font-family: 'Syne', sans-serif; color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: border-color .2s, background .2s; margin-bottom: 16px;
+}
+.btn-google:hover { border-color: var(--bord2); background: var(--bg3); }
+.google-icon { width: 18px; height: 18px; }
+
+/* botão primário */
+.btn-primary {
+  width: 100%; background: var(--lime); color: var(--lime-l);
+  border: none; border-radius: 10px; padding: 14px;
+  font-size: 15px; font-weight: 700; font-family: 'Syne', sans-serif;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .2s, transform .1s; margin-top: 4px;
+}
+.btn-primary:hover { background: #b8e050; }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { opacity: .35; cursor: default; transform: none; }
+.btn-primary.loading::after {
+  content: '';
+  width: 16px; height: 16px;
+  border: 2px solid var(--lime-l);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* link de nav entre telas */
+.nav-link {
+  text-align: center; font-size: 13px; color: var(--muted);
+  margin-top: 18px;
+}
+.nav-link a { color: var(--lime-d); cursor: pointer; text-decoration: none; font-weight: 600; }
+.nav-link a:hover { color: var(--lime); }
+
+/* termos */
+.terms {
+  font-size: 11px; color: var(--faint); text-align: center;
+  margin-top: 16px; line-height: 1.6;
+}
+.terms a { color: var(--muted); }
+
+/* alerta de feedback */
+.alert {
+  border-radius: 8px; padding: 10px 14px; font-size: 13px;
+  margin-bottom: 16px; display: none; line-height: 1.5;
+}
+.alert.visible { display: block; }
+.alert.success { background: var(--lime-t); border: 1px solid rgba(200,240,96,.3); color: var(--lime); }
+.alert.error   { background: var(--rust-t); border: 1px solid rgba(240,96,72,.3);  color: var(--rust); }
+
+/* senha visível/oculta */
+.pass-toggle { pointer-events: all !important; cursor: pointer !important; }
+
+/* OTP / magic link enviado */
+.sent-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--lime-t); border: 1px solid rgba(200,240,96,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; margin-bottom: 20px;
+  animation: pop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+
+.otp-grid { display: flex; gap: 8px; margin-bottom: 24px; }
+.otp-input {
+  flex: 1; background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 14px 0; text-align: center;
+  font-size: 22px; font-family: 'DM Mono', monospace; font-weight: 500;
+  color: var(--text); outline: none; transition: border-color .2s;
+}
+.otp-input:focus { border-color: var(--lime-d); box-shadow: 0 0 0 3px rgba(200,240,96,.1); }
+
+/* mobile brand */
+.mobile-brand {
+  display: none; align-items: center; gap: 8px; margin-bottom: 36px;
+}
+@media (max-width: 800px) { .mobile-brand { display: flex; } }
+</style>
+</head>
+<body>
+<div class="split">
+
+  <!-- ESQUERDA decorativa -->
+  <div class="left">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-name">AgendaPro</div>
+    </div>
+
+    <div class="left-quote">
+      <div class="quote-text">
+        Transforme seu<br>
+        WhatsApp em uma<br>
+        <em>agenda profissional</em>
+      </div>
+      <div class="quote-author">+1.200 profissionais autônomos</div>
+
+      <div class="left-mockup" style="margin-top:32px">
+        <div class="mock-row">
+          <div class="mock-dot" style="background:var(--lime)"></div>
+          <div class="mock-bar" style="width:55%;flex:none"></div>
+          <div class="mock-val lime">R$3.900</div>
+        </div>
+        <div class="mock-row">
+          <div class="mock-dot" style="background:#5DCAA5"></div>
+          <div class="mock-bar" style="width:40%;flex:none"></div>
+          <div class="mock-val" style="color:#5DCAA5">23 clientes</div>
+        </div>
+        <div class="mock-row">
+          <div class="mock-dot" style="background:#85B7EB"></div>
+          <div class="mock-bar" style="width:70%;flex:none"></div>
+          <div class="mock-val" style="color:#85B7EB">0 no-shows</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="left-stats">
+      <div class="stat-mini">
+        <div class="stat-mini-val">70%</div>
+        <div class="stat-mini-label">menos no-show</div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-val">3h</div>
+        <div class="stat-mini-label">economizadas/sem</div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-val">5min</div>
+        <div class="stat-mini-label">para configurar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIREITA — formulários -->
+  <div class="right">
+
+    <!-- BRAND MOBILE -->
+    <div class="mobile-brand">
+      <div class="brand-dot"></div>
+      <div class="brand-name" style="font-family:'Fraunces',serif;font-size:18px;font-weight:400">AgendaPro</div>
+    </div>
+
+    <!-- ── TELA: LOGIN ── -->
+    <div class="screen active" id="screen-login">
+      <div class="screen-eyebrow">Bem-vindo de volta</div>
+      <h1 class="screen-h">Entre na<br><em style="color:var(--muted);font-style:italic">sua conta</em></h1>
+      <p class="screen-sub">Acesse seu painel e gerencie sua agenda.</p>
+
+      <div class="alert" id="login-alert"></div>
+
+      <button class="btn-google" onclick="loginGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continuar com Google
+      </button>
+
+      <div class="divider">ou com e-mail</div>
+
+      <div class="field">
+        <label class="field-label">E-mail</label>
+        <div class="field-wrap">
+          <input class="field-input" id="login-email" type="email"
+            placeholder="seu@email.com" oninput="clearError('login-email')">
+          <span class="field-icon">@</span>
+        </div>
+        <div class="field-error" id="login-email-err"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" style="display:flex;justify-content:space-between">
+          Senha
+          <a style="color:var(--muted);font-size:11px;cursor:pointer;font-weight:400;text-decoration:none;text-transform:none;letter-spacing:0"
+            onclick="irPara('screen-forgot')">Esqueceu?</a>
+        </label>
+        <div class="field-wrap">
+          <input class="field-input" id="login-senha" type="password"
+            placeholder="••••••••" oninput="clearError('login-senha')"
+            onkeydown="if(event.key==='Enter') fazerLogin()">
+          <span class="field-icon btn pass-toggle" onclick="toggleSenha('login-senha',this)">👁</span>
+        </div>
+        <div class="field-error" id="login-senha-err"></div>
+      </div>
+
+      <button class="btn-primary" id="btn-login" onclick="fazerLogin()">
+        Entrar na minha conta
+      </button>
+
+      <div class="nav-link">
+        Não tem conta? <a onclick="irPara('screen-cadastro')">Criar conta grátis</a>
+      </div>
+    </div>
+
+    <!-- ── TELA: CADASTRO ── -->
+    <div class="screen" id="screen-cadastro">
+      <div class="screen-eyebrow">Novo por aqui</div>
+      <h1 class="screen-h">Crie sua<br><em style="color:var(--muted);font-style:italic">conta grátis</em></h1>
+      <p class="screen-sub">Pronto em menos de 2 minutos. Sem cartão.</p>
+
+      <div class="alert" id="cadastro-alert"></div>
+
+      <button class="btn-google" onclick="loginGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Cadastrar com Google
+      </button>
+
+      <div class="divider">ou com e-mail</div>
+
+      <div class="field">
+        <label class="field-label">Nome completo</label>
+        <div class="field-wrap">
+          <input class="field-input" id="cad-nome" type="text"
+            placeholder="Ana Beatriz Silva" oninput="clearError('cad-nome')">
+          <span class="field-icon">✦</span>
+        </div>
+        <div class="field-error" id="cad-nome-err"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">E-mail</label>
+        <div class="field-wrap">
+          <input class="field-input" id="cad-email" type="email"
+            placeholder="seu@email.com" oninput="clearError('cad-email')">
+          <span class="field-icon">@</span>
+        </div>
+        <div class="field-error" id="cad-email-err"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Senha</label>
+        <div class="field-wrap">
+          <input class="field-input" id="cad-senha" type="password"
+            placeholder="Mínimo 8 caracteres"
+            oninput="clearError('cad-senha');verificarForca(this.value)"
+            onkeydown="if(event.key==='Enter') fazerCadastro()">
+          <span class="field-icon btn pass-toggle" onclick="toggleSenha('cad-senha',this)">👁</span>
+        </div>
+        <div class="strength-wrap" id="strength-wrap">
+          <div class="strength-bars">
+            <div class="strength-bar" id="sb1"></div>
+            <div class="strength-bar" id="sb2"></div>
+            <div class="strength-bar" id="sb3"></div>
+            <div class="strength-bar" id="sb4"></div>
+          </div>
+          <div class="strength-label" id="strength-label">Muito fraca</div>
+        </div>
+        <div class="field-error" id="cad-senha-err"></div>
+      </div>
+
+      <button class="btn-primary" id="btn-cadastro" onclick="fazerCadastro()">
+        Criar conta grátis
+      </button>
+
+      <div class="terms">
+        Ao criar conta você concorda com os
+        <a href="#">Termos de uso</a> e a
+        <a href="#">Política de privacidade</a>.
+      </div>
+
+      <div class="nav-link">
+        Já tem conta? <a onclick="irPara('screen-login')">Entrar</a>
+      </div>
+    </div>
+
+    <!-- ── TELA: CONFIRME O E-MAIL ── -->
+    <div class="screen" id="screen-confirmar">
+      <div class="sent-icon">📬</div>
+      <div class="screen-eyebrow">Quase lá</div>
+      <h1 class="screen-h">Confirme<br><em style="color:var(--muted);font-style:italic">seu e-mail</em></h1>
+      <p class="screen-sub" id="confirmar-sub">
+        Enviamos um link de confirmação para <strong id="confirmar-email"></strong>.
+        Clique no link para ativar sua conta.
+      </p>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px">
+        💡 Não encontrou? Verifique a pasta de spam ou clique abaixo para reenviar.
+      </div>
+
+      <button class="btn-primary" id="btn-reenviar" onclick="reenviarEmail()" style="background:var(--bg2);color:var(--text);border:1.5px solid var(--border)">
+        Reenviar e-mail
+      </button>
+
+      <div class="nav-link" style="margin-top:12px">
+        <a onclick="irPara('screen-login')">← Voltar para o login</a>
+      </div>
+    </div>
+
+    <!-- ── TELA: ESQUECI SENHA ── -->
+    <div class="screen" id="screen-forgot">
+      <div class="screen-eyebrow">Recuperação</div>
+      <h1 class="screen-h">Redefinir<br><em style="color:var(--muted);font-style:italic">senha</em></h1>
+      <p class="screen-sub">Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
+
+      <div class="alert" id="forgot-alert"></div>
+
+      <div class="field">
+        <label class="field-label">E-mail cadastrado</label>
+        <div class="field-wrap">
+          <input class="field-input" id="forgot-email" type="email"
+            placeholder="seu@email.com" oninput="clearError('forgot-email')"
+            onkeydown="if(event.key==='Enter') enviarReset()">
+          <span class="field-icon">@</span>
+        </div>
+        <div class="field-error" id="forgot-email-err"></div>
+      </div>
+
+      <button class="btn-primary" id="btn-reset" onclick="enviarReset()">
+        Enviar link de redefinição
+      </button>
+
+      <div class="nav-link">
+        <a onclick="irPara('screen-login')">← Voltar para o login</a>
+      </div>
+    </div>
+
+    <!-- ── TELA: RESET ENVIADO ── -->
+    <div class="screen" id="screen-reset-sent">
+      <div class="sent-icon">🔑</div>
+      <div class="screen-eyebrow">Link enviado</div>
+      <h1 class="screen-h">Verifique<br><em style="color:var(--muted);font-style:italic">seu e-mail</em></h1>
+      <p class="screen-sub">
+        Enviamos um link de redefinição para <strong id="reset-email-label"></strong>.
+        O link expira em 1 hora.
+      </p>
+
+      <div class="nav-link">
+        <a onclick="irPara('screen-login')">← Voltar para o login</a>
+      </div>
+    </div>
+
+    <!-- ── TELA: NOVA SENHA (pós magic link) ── -->
+    <div class="screen" id="screen-nova-senha">
+      <div class="screen-eyebrow">Nova senha</div>
+      <h1 class="screen-h">Crie uma<br><em style="color:var(--muted);font-style:italic">nova senha</em></h1>
+      <p class="screen-sub">Escolha uma senha segura para sua conta.</p>
+
+      <div class="alert" id="nova-senha-alert"></div>
+
+      <div class="field">
+        <label class="field-label">Nova senha</label>
+        <div class="field-wrap">
+          <input class="field-input" id="ns-senha" type="password"
+            placeholder="Mínimo 8 caracteres"
+            oninput="verificarForca(this.value)">
+          <span class="field-icon btn pass-toggle" onclick="toggleSenha('ns-senha',this)">👁</span>
+        </div>
+        <div class="strength-wrap visible" id="ns-strength-wrap">
+          <div class="strength-bars">
+            <div class="strength-bar" id="ns-sb1"></div>
+            <div class="strength-bar" id="ns-sb2"></div>
+            <div class="strength-bar" id="ns-sb3"></div>
+            <div class="strength-bar" id="ns-sb4"></div>
+          </div>
+          <div class="strength-label" id="ns-strength-label"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Confirmar nova senha</label>
+        <div class="field-wrap">
+          <input class="field-input" id="ns-confirmar" type="password" placeholder="Repita a senha">
+          <span class="field-icon btn pass-toggle" onclick="toggleSenha('ns-confirmar',this)">👁</span>
+        </div>
+        <div class="field-error" id="ns-confirmar-err"></div>
+      </div>
+
+      <button class="btn-primary" onclick="salvarNovaSenha()">Salvar nova senha</button>
+    </div>
+
+  </div><!-- /right -->
+</div><!-- /split -->
+
+<script type="module">
+// ── SUPABASE CLIENT ──────────────────────────────────────────────────────
+// Em produção: substituir pelas variáveis de ambiente reais
+// Pode usar CDN: https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+const SUPABASE_URL  = 'https://kevqgxmcoxmzbypdjhru.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── HELPERS ──────────────────────────────────────────────────────────────
+window.irPara = (id) => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+};
+
+window.toggleSenha = (id, icon) => {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; icon.textContent = '🙈'; }
+  else                         { inp.type = 'password'; icon.textContent = '👁'; }
+};
+
+window.clearError = (id) => {
+  const inp = document.getElementById(id);
+  const err = document.getElementById(id + '-err');
+  inp?.classList.remove('error');
+  if (err) { err.classList.remove('visible'); err.textContent = ''; }
+};
+
+function mostrarErro(id, msg) {
+  const inp = document.getElementById(id);
+  const err = document.getElementById(id + '-err');
+  inp?.classList.add('error');
+  if (err) { err.textContent = msg; err.classList.add('visible'); }
+}
+
+function mostrarAlerta(id, msg, tipo = 'error') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert ${tipo} visible`;
+}
+
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = on;
+  if (on) btn.classList.add('loading');
+  else    btn.classList.remove('loading');
+  btn.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = on ? '' : btn.dataset.label || ''; });
+}
+
+// ── FORÇA DE SENHA ───────────────────────────────────────────────────────
+window.verificarForca = (senha) => {
+  const prefix = senha.length === 0 ? '' : '';
+  const wrap  = document.getElementById('strength-wrap') || document.getElementById('ns-strength-wrap');
+  const bars  = ['sb1','sb2','sb3','sb4'].map(id =>
+    document.getElementById(id) || document.getElementById('ns-' + id));
+  const label = document.getElementById('strength-label') || document.getElementById('ns-strength-label');
+  if (!wrap) return;
+
+  wrap.classList.toggle('visible', senha.length > 0);
+  if (senha.length === 0) return;
+
+  let score = 0;
+  if (senha.length >= 8)              score++;
+  if (/[A-Z]/.test(senha))            score++;
+  if (/[0-9]/.test(senha))            score++;
+  if (/[^A-Za-z0-9]/.test(senha))     score++;
+
+  const classes = ['', 'f', 'f m', 'f m s', 'f m s s'];
+  const labels  = ['', 'Muito fraca', 'Fraca', 'Boa', 'Forte'];
+  const cls     = (classes[score] || '').split(' ');
+
+  bars.forEach((b, i) => {
+    if (!b) return;
+    b.className = 'strength-bar ' + (cls[i] || '');
+  });
+  if (label) label.textContent = labels[score] || '';
+};
+
+// ── LOGIN ────────────────────────────────────────────────────────────────
+window.fazerLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  let ok = true;
+
+  if (!email) { mostrarErro('login-email', 'Informe seu e-mail'); ok = false; }
+  if (!senha)  { mostrarErro('login-senha', 'Informe sua senha');  ok = false; }
+  if (!ok) return;
+
+  setLoading('btn-login', true);
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
+
+  setLoading('btn-login', false);
+
+  if (error) {
+    const msg = error.message.includes('Invalid login')
+      ? 'E-mail ou senha incorretos.'
+      : error.message.includes('Email not confirmed')
+      ? 'Confirme seu e-mail antes de entrar.'
+      : 'Erro ao fazer login. Tente novamente.';
+    mostrarAlerta('login-alert', msg);
+    return;
+  }
+
+  // Sucesso → verifica se já fez onboarding
+  await redirecionarPosLogin(data.session);
+};
+
+// ── GOOGLE OAUTH ─────────────────────────────────────────────────────────
+window.loginGoogle = async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/auth?_callback=1' },
+  });
+  if (error) mostrarAlerta('login-alert', 'Erro ao conectar com Google.');
+};
+
+// ── CADASTRO ─────────────────────────────────────────────────────────────
+window.fazerCadastro = async () => {
+  const nome  = document.getElementById('cad-nome').value.trim();
+  const email = document.getElementById('cad-email').value.trim();
+  const senha = document.getElementById('cad-senha').value;
+  let ok = true;
+
+  if (nome.length < 2)  { mostrarErro('cad-nome',  'Informe seu nome completo'); ok = false; }
+  if (!email.includes('@')) { mostrarErro('cad-email', 'E-mail inválido'); ok = false; }
+  if (senha.length < 8) { mostrarErro('cad-senha', 'Mínimo 8 caracteres'); ok = false; }
+  if (!ok) return;
+
+  setLoading('btn-cadastro', true);
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: senha,
+    options: {
+      data: { nome_completo: nome },
+      emailRedirectTo: window.location.origin + '/auth?_callback=1',
+    },
+  });
+
+  setLoading('btn-cadastro', false);
+
+  if (error) {
+    const msg = error.message.includes('already registered')
+      ? 'Este e-mail já está cadastrado. Tente fazer login.'
+      : 'Erro ao criar conta. Tente novamente.';
+    mostrarAlerta('cadastro-alert', msg);
+    return;
+  }
+
+  // Mostra tela de confirmação
+  document.getElementById('confirmar-email').textContent = email;
+  irPara('screen-confirmar');
+};
+
+// ── REENVIAR E-MAIL ───────────────────────────────────────────────────────
+window.reenviarEmail = async () => {
+  const email = document.getElementById('confirmar-email').textContent;
+  const btn   = document.getElementById('btn-reenviar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+
+  await supabase.auth.resend({ type: 'signup', email });
+
+  btn.textContent = '✓ Reenviado!';
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Reenviar e-mail'; }, 4000);
+};
+
+// ── RECUPERAR SENHA ───────────────────────────────────────────────────────
+window.enviarReset = async () => {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email.includes('@')) {
+    mostrarErro('forgot-email', 'Informe um e-mail válido');
+    return;
+  }
+
+  setLoading('btn-reset', true);
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/auth?tela=nova-senha',
+  });
+
+  setLoading('btn-reset', false);
+
+  if (error) {
+    mostrarAlerta('forgot-alert', 'Erro ao enviar e-mail. Tente novamente.');
+    return;
+  }
+
+  document.getElementById('reset-email-label').textContent = email;
+  irPara('screen-reset-sent');
+};
+
+// ── NOVA SENHA (pós magic link) ───────────────────────────────────────────
+window.salvarNovaSenha = async () => {
+  const senha     = document.getElementById('ns-senha').value;
+  const confirmar = document.getElementById('ns-confirmar').value;
+
+  if (senha.length < 8) {
+    mostrarErro('ns-confirmar', 'Senha deve ter no mínimo 8 caracteres');
+    return;
+  }
+  if (senha !== confirmar) {
+    mostrarErro('ns-confirmar', 'As senhas não coincidem');
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: senha });
+
+  if (error) {
+    mostrarAlerta('nova-senha-alert', 'Erro ao salvar. Tente novamente.');
+    return;
+  }
+
+  mostrarAlerta('nova-senha-alert', '✓ Senha atualizada! Redirecionando…', 'success');
+  setTimeout(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    await redirecionarPosLogin(session);
+  }, 1500);
+};
+
+// ── HELPER: redireciona para onboarding ou painel conforme slug ───────────
+async function redirecionarPosLogin(session) {
+  if (!session) return;
+  // Verifica se o prestador já preencheu o slug (completou onboarding)
+  const { data: prestador } = await supabase
+    .from('prestadores')
+    .select('slug')
+    .eq('id', session.user.id)
+    .maybeSingle();
+  if (prestador && prestador.slug) {
+    window.location.href = '/painel';
+  } else {
+    window.location.href = '/onboarding';
+  }
+}
+
+// ── DETECTA TELA VIA URL ──────────────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const tela   = params.get('tela');
+if (tela === 'nova-senha')  irPara('screen-nova-senha');
+if (tela === 'confirmar')   irPara('screen-confirmar');
+if (params.get('tela') === 'cadastro') irPara('screen-cadastro');
+
+// ── SESSÃO ATIVA → redireciona (verifica onboarding) ─────────────────────
+const { data: { session } } = await supabase.auth.getSession();
+if (session) await redirecionarPosLogin(session);
+
+// ── ESCUTA MUDANÇAS DE AUTH (magic link, OAuth callback) ──────────────────
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    await redirecionarPosLogin(session);
+  }
+  if (event === 'PASSWORD_RECOVERY') {
+    irPara('screen-nova-senha');
+  }
+});
+</script>
+</body>
+</html>

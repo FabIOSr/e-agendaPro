@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remarcar agendamento — AgendaPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f2eb; --bg2: #ede9df; --border: #d8d4c8; --border2: #c4c0b4;
+  --ink: #0e0d0a; --muted: #6b6860; --faint: #a8a49a;
+  --lime: #c8f060; --lime-d: #8ab830; --lime-l: #eef6d8; --lime-ink: #1a2a08;
+}
+body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; display:flex; flex-direction:column; }
+
+.topbar { padding:16px 24px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); background:var(--bg); }
+.logo { font-family:'Fraunces',serif; font-size:18px; font-weight:400; }
+.logo-dot { width:7px; height:7px; background:var(--lime); border-radius:50%; }
+
+.main { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:32px 20px 80px; }
+.card { background:white; border:1.5px solid var(--border); border-radius:16px; padding:32px 28px; max-width:460px; width:100%; box-shadow:0 4px 32px rgba(14,13,10,.06); }
+
+.state { display:none; }
+.state.active { display:block; animation:fadein .3s ease; }
+@keyframes fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.icon-wrap { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 18px; }
+.icon-wrap.blue    { background:#E6F1FB; }
+.icon-wrap.success { background:var(--lime-l); animation:pop .4s cubic-bezier(.34,1.56,.64,1); }
+.icon-wrap.error   { background:#FCEBEB; }
+@keyframes pop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+h1 { font-family:'Fraunces',serif; font-size:22px; font-weight:300; margin-bottom:6px; letter-spacing:-.02em; }
+.subtitle { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px; }
+
+/* atual */
+.atual { background:var(--bg2); border-radius:10px; padding:12px 15px; margin-bottom:22px; }
+.atual-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); margin-bottom:6px; }
+.atual-row { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; }
+.atual-row span:first-child { color:var(--muted); }
+.atual-row span:last-child  { font-weight:500; }
+
+/* campos */
+.field { margin-bottom:16px; }
+.label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:7px; display:block; }
+input[type=date] {
+  width:100%; background:var(--bg2); border:1.5px solid var(--border);
+  border-radius:9px; padding:11px 13px; font-size:14px; color:var(--ink);
+  outline:none; transition:border-color .2s; font-family:'DM Mono',monospace;
+}
+input[type=date]:focus { border-color:var(--lime-d); }
+
+/* slots */
+.slots-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.slot {
+  background:white; border:1.5px solid var(--border); border-radius:9px;
+  padding:10px 4px; text-align:center; font-size:13px;
+  font-family:'DM Mono',monospace; cursor:pointer; transition:all .15s;
+}
+.slot:hover   { border-color:var(--lime-d); background:var(--lime-l); }
+.slot.selected{ border-color:var(--lime-d); background:var(--lime); color:var(--lime-ink); font-weight:600; }
+.slot.busy    { background:var(--bg2); border-color:var(--border); color:var(--faint); cursor:default; text-decoration:line-through; font-size:11px; }
+.slots-empty  { grid-column:1/-1; text-align:center; padding:20px 0; font-size:13px; color:var(--faint); }
+.slots-loading{ grid-column:1/-1; text-align:center; padding:20px 0; font-size:13px; color:var(--muted); }
+
+/* botões */
+.btn-primary {
+  width:100%; background:var(--ink); color:white; border:none;
+  border-radius:10px; padding:14px; font-size:15px; font-weight:600;
+  font-family:'Syne',sans-serif; cursor:pointer; transition:all .15s; margin-top:8px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-primary:hover    { background:#2a2820; }
+.btn-primary:disabled { opacity:.35; cursor:default; }
+.btn-primary.lime     { background:var(--lime); color:var(--lime-ink); }
+.btn-primary.lime:hover { background:#b8e050; }
+.btn-ghost {
+  width:100%; background:none; color:var(--muted);
+  border:1.5px solid var(--border); border-radius:10px; padding:12px;
+  font-size:14px; font-family:'Syne',sans-serif; cursor:pointer;
+  transition:all .2s; margin-top:8px;
+}
+.btn-ghost:hover { border-color:var(--border2); color:var(--ink); }
+
+/* sucesso */
+.novo-horario { background:var(--lime-l); border:1px solid var(--lime-d); border-radius:12px; padding:16px 18px; text-align:center; margin:16px 0; }
+.novo-horario .data { font-family:'Fraunces',serif; font-size:18px; font-weight:300; }
+.novo-horario .hora { font-family:'DM Mono',monospace; font-size:24px; font-weight:500; color:var(--lime-d); margin-top:4px; }
+
+.skeleton { background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 50%,var(--bg2) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:6px; height:14px; margin-bottom:8px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-dot"></div>
+  <div class="logo">AgendaPro</div>
+</div>
+
+<div class="main">
+  <div class="card">
+
+    <!-- LOADING -->
+    <div class="state active" id="state-loading">
+      <div class="skeleton" style="width:60%;height:20px;margin:0 auto 16px"></div>
+      <div class="skeleton medium"></div>
+      <div class="skeleton full" style="height:72px;border-radius:10px;margin-top:12px"></div>
+    </div>
+
+    <!-- FORM DE REMARCAÇÃO -->
+    <div class="state" id="state-form">
+      <div class="icon-wrap blue">🔄</div>
+      <h1>Remarcar agendamento</h1>
+      <p class="subtitle">Escolha uma nova data e horário com <strong id="r-prestador"></strong>.</p>
+
+      <div class="atual">
+        <div class="atual-label">Agendamento atual</div>
+        <div class="atual-row"><span>Serviço</span><span id="r-servico"></span></div>
+        <div class="atual-row"><span>Data</span>   <span id="r-data"></span></div>
+        <div class="atual-row"><span>Horário</span><span id="r-hora"></span></div>
+      </div>
+
+      <div class="field">
+        <label class="label">Nova data</label>
+        <input type="date" id="data-input"
+          min="" onchange="buscarSlots(this.value)">
+      </div>
+
+      <div class="field">
+        <label class="label">Novo horário</label>
+        <div class="slots-grid" id="slots-grid">
+          <div class="slots-empty">Selecione uma data primeiro</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-confirmar" disabled onclick="confirmarReagendamento()">
+        Confirmar remarcação
+      </button>
+      <button class="btn-ghost" onclick="history.back()">Cancelar</button>
+    </div>
+
+    <!-- SUCESSO -->
+    <div class="state" id="state-success">
+      <div class="icon-wrap success">✓</div>
+      <h1>Remarcado!</h1>
+      <p class="subtitle">Seu atendimento foi remarcado com sucesso. Uma confirmação será enviada para você.</p>
+      <div class="novo-horario">
+        <div class="data" id="suc-data"></div>
+        <div class="hora" id="suc-hora"></div>
+        <div style="font-size:12px;color:var(--lime-d);margin-top:4px" id="suc-servico"></div>
+      </div>
+      <button class="btn-primary lime" onclick="fecharOuIr()">Perfeito, obrigado!</button>
+    </div>
+
+    <!-- ERRO -->
+    <div class="state" id="state-error">
+      <div class="icon-wrap error">❌</div>
+      <h1 id="err-title">Link inválido</h1>
+      <p class="subtitle" id="err-msg">Este link não é mais válido.</p>
+      <button class="btn-ghost" onclick="fecharOuIr()">Fechar</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const TOKEN  = params.get('token');
+const SUPABASE_URL = document.querySelector('meta[name="supabase-url"]')?.content
+  || 'https://kevqgxmcoxmzbypdjhru.supabase.co';
+
+let agAtual       = null;
+let horaSelecionada = null;
+let dataSelecionada = null;
+
+function mostrarState(id) {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function fmtData(iso) {
+  return new Date(iso).toLocaleDateString('pt-BR',
+    { weekday:'long', day:'2-digit', month:'long', timeZone:'America/Sao_Paulo' });
+}
+function fmtHora(iso) {
+  return new Date(iso).toLocaleTimeString('pt-BR',
+    { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });
+}
+function fmtDataCurta(iso) {
+  return new Date(iso).toLocaleDateString('pt-BR',
+    { weekday:'long', day:'2-digit', month:'long', year:'numeric', timeZone:'America/Sao_Paulo' });
+}
+
+async function carregarAgendamento() {
+  if (!TOKEN) {
+    mostrarState('state-error');
+    return;
+  }
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/reagendar-cliente?token=${TOKEN}&modo=dados`
+    );
+    if (!res.ok) { mostrarState('state-error'); return; }
+    agAtual = await res.json();
+
+    document.getElementById('r-prestador').textContent = agAtual.prestadores?.nome ?? '';
+    document.getElementById('r-servico').textContent   = agAtual.servicos?.nome ?? '';
+    document.getElementById('r-data').textContent      = fmtData(agAtual.data_hora);
+    document.getElementById('r-hora').textContent      = fmtHora(agAtual.data_hora);
+
+    // Data mínima = amanhã
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    document.getElementById('data-input').min = amanha.toISOString().slice(0, 10);
+
+    mostrarState('state-form');
+  } catch (e) {
+    console.error(e);
+    mostrarState('state-error');
+  }
+}
+
+async function buscarSlots(data) {
+  dataSelecionada  = data;
+  horaSelecionada  = null;
+  document.getElementById('btn-confirmar').disabled = true;
+
+  const grid = document.getElementById('slots-grid');
+  grid.innerHTML = '<div class="slots-loading">Buscando horários disponíveis…</div>';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/horarios-disponiveis`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prestador_slug: agAtual.prestadores?.slug,
+        servico_id:     agAtual.servico_id,
+        data,
+      }),
+    });
+    const { slots } = await res.json();
+
+    if (!slots?.length) {
+      grid.innerHTML = '<div class="slots-empty">Nenhum horário disponível neste dia.</div>';
+      return;
+    }
+
+    grid.innerHTML = slots.map(s => `
+      <div class="slot${s.disponivel ? '' : ' busy'}"
+        ${s.disponivel ? `onclick="selecionarHora('${s.hora}', this)"` : ''}>
+        ${s.hora}
+      </div>
+    `).join('');
+  } catch {
+    grid.innerHTML = '<div class="slots-empty">Erro ao carregar. Tente outra data.</div>';
+  }
+}
+
+function selecionarHora(hora, el) {
+  document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  horaSelecionada = hora;
+  document.getElementById('btn-confirmar').disabled = false;
+}
+
+async function confirmarReagendamento() {
+  if (!dataSelecionada || !horaSelecionada) return;
+
+  const btn = document.getElementById('btn-confirmar');
+  btn.disabled    = true;
+  btn.textContent = 'Confirmando…';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/reagendar-cliente`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, data: dataSelecionada, hora: horaSelecionada }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      if (err.erro?.includes('não disponível')) {
+        btn.disabled    = false;
+        btn.textContent = 'Confirmar remarcação';
+        alert('Este horário acabou de ser ocupado. Escolha outro.');
+        buscarSlots(dataSelecionada);
+        return;
+      }
+      throw new Error(err.erro);
+    }
+
+    const { nova_data_hora } = await res.json();
+    document.getElementById('suc-data').textContent    = fmtDataCurta(nova_data_hora);
+    document.getElementById('suc-hora').textContent    = fmtHora(nova_data_hora);
+    document.getElementById('suc-servico').textContent = agAtual.servicos?.nome ?? '';
+
+    mostrarState('state-success');
+  } catch (e) {
+    btn.disabled    = false;
+    btn.textContent = '✕ Erro — tente novamente';
+  }
+}
+
+function fecharOuIr() {
+  if (window.history.length > 1) history.back();
+  else window.close();
+}
+
+carregarAgendamento();
+</script>
+</body>
+</html>

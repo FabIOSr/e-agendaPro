@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Plano e cobrança</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f2eb; --bg2: #ede9df; --cream: #faf8f3;
+  --border: #d8d4c8; --border2: #c4c0b4;
+  --ink: #0e0d0a; --muted: #6b6860; --faint: #a8a49a;
+  --lime: #c8f060; --lime-d: #8ab830; --lime-ink: #1a2a08; --lime-l: #eef6d8;
+  --rust: #c84830; --rust-l: #fdf0ed;
+  --gold: #d4a820; --gold-l: #fdf8e8;
+  --radius: 14px;
+}
+body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; padding: 0 0 80px; }
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 50;
+}
+.logo { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; display: flex; align-items: center; gap: 7px; }
+.logo-dot { width: 7px; height: 7px; background: var(--lime); border-radius: 50%; }
+
+/* ── CONTEÚDO ── */
+.content { max-width: 680px; margin: 0 auto; padding: 40px 20px; }
+
+.page-title { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 300; letter-spacing: -.02em; margin-bottom: 6px; }
+.page-sub { font-size: 14px; color: var(--muted); margin-bottom: 36px; }
+
+/* ── STATUS CARD ── */
+.status-card {
+  border-radius: var(--radius); padding: 24px;
+  margin-bottom: 28px; position: relative; overflow: hidden;
+}
+.status-card.free { background: var(--bg2); border: 1.5px solid var(--border); }
+.status-card.pro  { background: var(--ink); border: 1.5px solid var(--ink); color: #f5f2eb; }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
+}
+.status-badge.free { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.status-badge.pro  { background: var(--lime); color: var(--lime-ink); }
+.status-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.status-name { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 300; margin-bottom: 4px; }
+.status-desc { font-size: 14px; opacity: .65; }
+
+.status-meta {
+  display: flex; gap: 20px; flex-wrap: wrap; margin-top: 18px; padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.status-card.free .status-meta { border-color: var(--border); }
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; opacity: .5; font-weight: 600; }
+.meta-val   { font-size: 15px; font-weight: 600; font-family: 'DM Mono', monospace; }
+
+/* barra de uso */
+.uso-wrap { margin-top: 16px; }
+.uso-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.uso-bar { background: var(--bg); height: 8px; border-radius: 4px; overflow: hidden; }
+.uso-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+.uso-fill.ok      { background: var(--lime-d); }
+.uso-fill.warning { background: var(--gold); }
+.uso-fill.danger  { background: var(--rust); }
+
+/* ── PAYWALL (quando free bate limite) ── */
+.paywall {
+  background: var(--cream); border: 1.5px solid var(--lime);
+  border-radius: var(--radius); padding: 24px;
+  margin-bottom: 28px; text-align: center;
+  animation: fadein .3s ease;
+}
+@keyframes fadein { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.paywall-icon { font-size: 32px; margin-bottom: 12px; }
+.paywall-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; margin-bottom: 8px; }
+.paywall-desc  { font-size: 14px; color: var(--muted); max-width: 400px; margin: 0 auto 20px; line-height: 1.65; }
+.paywall-valor {
+  font-family: 'Fraunces', serif; font-size: 42px; font-weight: 300;
+  color: var(--lime-d); margin-bottom: 4px; letter-spacing: -.02em;
+}
+.paywall-periodo { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── PLANOS ── */
+.planos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+.plano-card {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 22px 20px;
+  cursor: pointer; transition: all .2s; position: relative;
+}
+.plano-card:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(14,13,10,.07); }
+.plano-card.selected { border-color: var(--lime-d); background: var(--lime-l); }
+.plano-card.destaque { border-color: var(--ink); }
+
+.plano-badge {
+  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--bg);
+  font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 12px; border-radius: 20px; white-space: nowrap;
+}
+.plano-nome { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.plano-card.selected .plano-nome { color: var(--lime-ink); }
+.plano-val { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 300; letter-spacing: -.02em; line-height: 1; }
+.plano-per { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+.plano-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.plano-lista li { font-size: 12px; color: var(--muted); display: flex; gap: 6px; }
+.plano-lista li::before { content: '✓'; color: var(--lime-d); font-weight: 700; flex-shrink: 0; }
+.plano-card.selected .plano-lista li { color: var(--lime-ink); }
+
+/* ── MÉTODO DE PAGAMENTO ── */
+.metodos { display: flex; gap: 10px; margin-bottom: 20px; }
+.metodo-btn {
+  flex: 1; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px 8px; text-align: center;
+  cursor: pointer; transition: all .2s; font-family: 'Syne', sans-serif;
+}
+.metodo-btn:hover { border-color: var(--border2); }
+.metodo-btn.selected { border-color: var(--lime-d); background: var(--lime-l); }
+.metodo-icon { font-size: 18px; margin-bottom: 4px; }
+.metodo-nome { font-size: 11px; font-weight: 600; color: var(--muted); }
+.metodo-btn.selected .metodo-nome { color: var(--lime-ink); }
+
+/* ── BOTÕES ── */
+.btn-assinar {
+  width: 100%; background: var(--ink); color: var(--bg);
+  border: none; border-radius: 12px; padding: 16px;
+  font-size: 15px; font-weight: 700; font-family: 'Syne', sans-serif;
+  cursor: pointer; transition: all .2s; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-assinar:hover { background: #2a2820; transform: translateY(-1px); }
+.btn-assinar.lime { background: var(--lime); color: var(--lime-ink); }
+.btn-assinar.lime:hover { background: #b8e050; }
+.btn-assinar:disabled { opacity: .35; cursor: default; transform: none; }
+
+.btn-cancelar {
+  width: 100%; background: none; color: var(--muted);
+  border: 1.5px solid var(--border); border-radius: 12px; padding: 13px;
+  font-size: 14px; font-family: 'Syne', sans-serif; cursor: pointer;
+  transition: all .2s; margin-bottom: 10px;
+}
+.btn-cancelar:hover { border-color: var(--rust); color: var(--rust); }
+
+/* ── HISTÓRICO ── */
+.hist-title { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.hist-list { display: flex; flex-direction: column; gap: 8px; }
+.hist-item {
+  background: var(--cream); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.hist-icon { font-size: 16px; flex-shrink: 0; }
+.hist-body { flex: 1; }
+.hist-desc { font-size: 13px; font-weight: 500; }
+.hist-data { font-size: 11px; color: var(--muted); }
+.hist-val  { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--lime-d); }
+
+/* ── MODAL CONFIRMAÇÃO CANCELAMENTO ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(14,13,10,.5); z-index: 100; display: none; }
+.modal-overlay.open { display: flex; align-items: center; justify-content: center; }
+.modal {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 28px; max-width: 360px; width: 90%;
+  animation: fadein .2s ease;
+}
+.modal h3 { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; margin-bottom: 8px; }
+.modal p  { font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 8px; }
+.modal-actions button { flex: 1; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600; font-family: 'Syne', sans-serif; cursor: pointer; border: none; transition: all .15s; }
+.btn-modal-keep { background: var(--ink); color: var(--bg); }
+.btn-modal-keep:hover { background: #2a2820; }
+.btn-modal-cancel { background: var(--rust-l); color: var(--rust); border: 1.5px solid rgba(200,72,48,.3) !important; }
+.btn-modal-cancel:hover { background: #f5d8d3; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--bg); border-radius: 10px;
+  padding: 12px 20px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap; z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div> AgendaPro</div>
+  <div style="font-size:13px;color:var(--muted)">Ana Cabelos</div>
+</div>
+
+<div class="content">
+  <div class="page-title">Plano e cobrança</div>
+  <p class="page-sub">Gerencie sua assinatura e histórico de pagamentos.</p>
+
+  <!-- STATUS CARD dinâmico -->
+  <div id="status-card"></div>
+
+  <!-- PAYWALL (visível só quando free no limite) -->
+  <div class="paywall" id="paywall" style="display:none">
+    <div class="paywall-icon">🚀</div>
+    <div class="paywall-title">Você usou todos os agendamentos do mês</div>
+    <p class="paywall-desc">No plano grátis você tem até 10 agendamentos por mês. Assine o Pro e tenha agendamentos ilimitados + WhatsApp automático.</p>
+    <div class="paywall-valor">R$39</div>
+    <div class="paywall-periodo">/mês · cancele quando quiser</div>
+    <button class="btn-assinar lime" onclick="mostrarUpgrade()">✦ Assinar Pro agora</button>
+  </div>
+
+  <!-- FORMULÁRIO DE UPGRADE (visível só para free) -->
+  <div id="upgrade-form" style="display:none">
+    <div style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Escolha seu plano</div>
+    <div class="planos-grid">
+      <div class="plano-card selected" id="plano-pro" onclick="selecionarPlano('pro',this)">
+        <div class="plano-nome">Pro mensal</div>
+        <div class="plano-val">R$39</div>
+        <div class="plano-per">/mês</div>
+        <ul class="plano-lista">
+          <li>Agendamentos ilimitados</li>
+          <li>WhatsApp automático</li>
+          <li>Lembrete D-1</li>
+          <li>Histórico de clientes</li>
+          <li>Relatório de receita</li>
+        </ul>
+      </div>
+      <div class="plano-card destaque" id="plano-anual" onclick="selecionarPlano('anual',this)">
+        <div class="plano-badge">2 meses grátis</div>
+        <div class="plano-nome">Pro anual</div>
+        <div class="plano-val">R$29</div>
+        <div class="plano-per">/mês · cobrado anualmente</div>
+        <ul class="plano-lista">
+          <li>Tudo do Pro</li>
+          <li>Economia R$120/ano</li>
+          <li>Acesso antecipado</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Forma de pagamento</div>
+    <div class="metodos">
+      <div class="metodo-btn selected" id="m-pix" onclick="selecionarMetodo('PIX',this)">
+        <div class="metodo-icon">⚡</div>
+        <div class="metodo-nome">Pix</div>
+      </div>
+      <div class="metodo-btn" id="m-cartao" onclick="selecionarMetodo('CREDIT_CARD',this)">
+        <div class="metodo-icon">💳</div>
+        <div class="metodo-nome">Cartão</div>
+      </div>
+      <div class="metodo-btn" id="m-boleto" onclick="selecionarMetodo('BOLETO',this)">
+        <div class="metodo-icon">🎫</div>
+        <div class="metodo-nome">Boleto</div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;padding:10px 14px;background:var(--bg2);border-radius:8px;line-height:1.6">
+      💡 <strong>Pix:</strong> aprovação instantânea. <strong>Cartão:</strong> débito automático todo mês. <strong>Boleto:</strong> vence em 3 dias úteis.
+    </div>
+
+    <button class="btn-assinar lime" id="btn-assinar-final" onclick="assinar()">
+      ✦ Assinar Pro — R$<span id="val-botao">39</span>/mês
+    </button>
+    <button class="btn-cancelar" onclick="ocultarUpgrade()">← Voltar</button>
+  </div>
+
+  <!-- GERENCIAR ASSINATURA (visível só para pro) -->
+  <div id="gerenciar-pro" style="display:none">
+    <button class="btn-cancelar" onclick="abrirModalCancelamento()">Cancelar assinatura</button>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="historico-wrap" style="margin-top:32px">
+    <div class="hist-title">Histórico de pagamentos</div>
+    <div class="hist-list" id="hist-list"></div>
+  </div>
+</div>
+
+<!-- MODAL CANCELAMENTO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Cancelar assinatura?</h3>
+    <p>Você continuará com acesso Pro até o fim do período já pago. Depois disso, sua conta volta para o plano grátis (10 agendamentos/mês).</p>
+    <div class="modal-actions">
+      <button class="btn-modal-keep" onclick="fecharModal()">Manter Pro</button>
+      <button class="btn-modal-cancel" onclick="confirmarCancelamento()">Sim, cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ESTADO SIMULADO (em prod: busca do Supabase) ────────────────────────
+const PRESTADOR = {
+  plano: 'free',          // 'free' | 'pro'
+  plano_valido_ate: null,
+  agendamentos_mes: 7,    // contador do mês atual
+  limite_free: 10,
+};
+
+const HISTORICO_MOCK = [
+  { icon: '✅', desc: 'Pagamento recebido — Pro mensal',  data: '01/03/2026', val: 'R$39,00' },
+  { icon: '✅', desc: 'Pagamento recebido — Pro mensal',  data: '01/02/2026', val: 'R$39,00' },
+  { icon: '✅', desc: 'Pagamento recebido — Pro mensal',  data: '01/01/2026', val: 'R$39,00' },
+];
+
+let planoSelecionado = 'pro';
+let metodoSelecionado = 'PIX';
+
+// ── RENDER STATUS CARD ───────────────────────────────────────────────────
+function renderStatus() {
+  const card = document.getElementById('status-card');
+  const isFree = PRESTADOR.plano === 'free';
+  const uso = Math.min(PRESTADOR.agendamentos_mes, PRESTADOR.limite_free);
+  const pct = (uso / PRESTADOR.limite_free) * 100;
+  const corBarra = pct >= 100 ? 'danger' : pct >= 70 ? 'warning' : 'ok';
+
+  if (isFree) {
+    card.innerHTML = `
+      <div class="status-card free">
+        <div class="status-badge free"><div class="dot"></div> Plano Grátis</div>
+        <div class="status-name">Grátis para sempre</div>
+        <div class="status-desc">Até 10 agendamentos por mês, sem WhatsApp automático</div>
+        <div class="uso-wrap">
+          <div class="uso-label">
+            <span>Agendamentos este mês</span>
+            <span><strong>${uso}</strong> / ${PRESTADOR.limite_free}</span>
+          </div>
+          <div class="uso-bar">
+            <div class="uso-fill ${corBarra}" style="width:${pct}%"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('upgrade-form').style.display = 'block';
+    document.getElementById('gerenciar-pro').style.display = 'none';
+    if (pct >= 100) document.getElementById('paywall').style.display = 'block';
+  } else {
+    const validoAte = PRESTADOR.plano_valido_ate
+      ? new Date(PRESTADOR.plano_valido_ate).toLocaleDateString('pt-BR')
+      : '—';
+    card.innerHTML = `
+      <div class="status-card pro">
+        <div class="status-badge pro"><div class="dot"></div> Plano Pro</div>
+        <div class="status-name">Agendamentos ilimitados</div>
+        <div class="status-desc">WhatsApp automático, lembrete D-1, histórico de clientes</div>
+        <div class="status-meta">
+          <div class="meta-item">
+            <div class="meta-label">Próxima cobrança</div>
+            <div class="meta-val">${validoAte}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Valor</div>
+            <div class="meta-val">R$39,00</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Método</div>
+            <div class="meta-val">Pix</div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('upgrade-form').style.display = 'none';
+    document.getElementById('gerenciar-pro').style.display = 'block';
+  }
+}
+
+function renderHistorico() {
+  const list = document.getElementById('hist-list');
+  if (HISTORICO_MOCK.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--faint);padding:16px 0">Nenhum pagamento registrado ainda.</div>';
+    return;
+  }
+  list.innerHTML = HISTORICO_MOCK.map(h => `
+    <div class="hist-item">
+      <div class="hist-icon">${h.icon}</div>
+      <div class="hist-body">
+        <div class="hist-desc">${h.desc}</div>
+        <div class="hist-data">${h.data}</div>
+      </div>
+      <div class="hist-val">${h.val}</div>
+    </div>
+  `).join('');
+}
+
+// ── UPGRADE ──────────────────────────────────────────────────────────────
+function mostrarUpgrade() {
+  document.getElementById('paywall').style.display = 'none';
+  document.getElementById('upgrade-form').style.display = 'block';
+  document.getElementById('upgrade-form').scrollIntoView({ behavior: 'smooth' });
+}
+function ocultarUpgrade() {
+  document.getElementById('upgrade-form').style.display = 'none';
+  if (PRESTADOR.agendamentos_mes >= PRESTADOR.limite_free) {
+    document.getElementById('paywall').style.display = 'block';
+  }
+}
+
+function selecionarPlano(plano, el) {
+  planoSelecionado = plano;
+  document.querySelectorAll('.plano-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const val = plano === 'anual' ? '29' : '39';
+  document.getElementById('val-botao').textContent = val;
+}
+
+function selecionarMetodo(metodo, el) {
+  metodoSelecionado = metodo;
+  document.querySelectorAll('.metodo-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── SUPABASE ──────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://kevqgxmcoxmzbypdjhru.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg';
+
+function getToken() {
+  const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+  if (!key) return null;
+  try { return JSON.parse(localStorage.getItem(key))?.access_token; } catch { return null; }
+}
+
+function getUserId() {
+  const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+  if (!key) return null;
+  try { return JSON.parse(localStorage.getItem(key))?.user?.id; } catch { return null; }
+}
+
+async function callEdge(path, body = {}) {
+  const token = getToken();
+  if (!token) { window.location.href = '/auth'; throw new Error('Sem sessão'); }
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${path}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.erro || data.error || 'Erro');
+  return data;
+}
+
+async function carregarPlanoReal() {
+  const token = getToken();
+  const uid   = getUserId();
+  if (!token || !uid) { window.location.href = '/auth'; return; }
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/prestadores?select=plano,plano_valido_ate,asaas_sub_id&id=eq.${uid}`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON } }
+    );
+    const [row] = await res.json();
+    if (row) { PRESTADOR.plano = row.plano; PRESTADOR.plano_valido_ate = row.plano_valido_ate; }
+  } catch (e) { console.warn('carregarPlanoReal:', e); }
+}
+
+async function carregarHistoricoReal() {
+  const token = getToken();
+  if (!token) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/pagamentos?order=data_evento.desc&limit=10`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON } }
+    );
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+    HISTORICO_MOCK.length = 0;
+    rows.forEach(r => HISTORICO_MOCK.push({
+      icon: r.evento === 'PAYMENT_RECEIVED' ? '✅' : r.evento === 'PAYMENT_REFUNDED' ? '↩️' : '⚠️',
+      desc: r.evento.replace(/_/g,' ').toLowerCase(),
+      data: new Date(r.data_evento).toLocaleDateString('pt-BR'),
+      val:  r.valor ? `R$${Number(r.valor).toFixed(2).replace('.', ',')}` : '—',
+    }));
+    renderHistorico();
+  } catch (e) { console.warn('carregarHistoricoReal:', e); }
+}
+
+async function assinar() {
+  const btn = document.getElementById('btn-assinar-final');
+  btn.disabled = true; btn.textContent = 'Processando…';
+  try {
+    const data = await callEdge('criar-assinatura', {
+      billing_type: metodoSelecionado,
+      plano:        planoSelecionado,
+    });
+    if (data.payment_url) {
+      window.open(data.payment_url, '_blank');
+      showToast('Link de pagamento aberto! Após pagar, seu plano será ativado.');
+    } else {
+      showToast('Assinatura criada. Verifique seu e-mail para concluir o pagamento.');
+    }
+    // Fica verificando até o webhook ativar o plano (máx 60s)
+    let tentativas = 0;
+    const checar = setInterval(async () => {
+      tentativas++;
+      await carregarPlanoReal();
+      if (PRESTADOR.plano === 'pro' || tentativas > 20) {
+        clearInterval(checar);
+        if (PRESTADOR.plano === 'pro') {
+          renderStatus(); renderHistorico(); ocultarUpgrade();
+          showToast('🎉 Plano Pro ativado!');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">39</span>/mês';
+      }
+    }, 3000);
+  } catch (e) {
+    showToast('Erro: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">39</span>/mês';
+  }
+}
+
+// ── CANCELAMENTO ─────────────────────────────────────────────────────────
+function abrirModalCancelamento() { document.getElementById('modal-overlay').classList.add('open'); }
+function fecharModal()            { document.getElementById('modal-overlay').classList.remove('open'); }
+
+async function confirmarCancelamento() {
+  fecharModal();
+  try {
+    await callEdge('cancelar-assinatura');
+    await carregarPlanoReal();
+    renderStatus(); renderHistorico();
+    showToast('Assinatura cancelada. Acesso Pro até o fim do período pago.');
+  } catch (e) { showToast('Erro ao cancelar: ' + e.message); }
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+(async () => {
+  await carregarPlanoReal();
+  renderStatus();
+  await carregarHistoricoReal();
+})();
+
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModal();
+});
+</script>
+</body>
+</html>

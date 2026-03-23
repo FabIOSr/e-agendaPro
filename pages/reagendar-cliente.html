@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reagendar — AgendaPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&family=Fraunces:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0f;
+      --card:     #181818;
+      --input:    #222222;
+      --text:     #f0ede6;
+      --muted:    #8a8778;
+      --lime:     #c8f060;
+      --border:   #2a2724;
+      --danger:   #ff5a5a;
+      --radius:   14px;
+      --radius-s: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      color: var(--lime);
+      margin-bottom: 40px;
+      letter-spacing: -0.5px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 26px;
+    }
+    .icon.primary { background: rgba(200, 240, 96, 0.12); }
+    .icon.success { background: rgba(200, 240, 96, 0.12); }
+    .icon.warning { background: rgba(255, 180, 50, 0.12); }
+    .icon.danger  { background: rgba(255, 90, 90, 0.12); }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    p.sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Agendamento atual */
+    .info-box {
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 16px 20px;
+      margin-bottom: 28px;
+    }
+    .info-box-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row label { color: var(--muted); font-size: 13px; }
+    .info-row span  { color: var(--text); font-size: 13px; font-weight: 500; text-align: right; }
+
+    /* Steps */
+    .step { display: none; }
+    .step.active { display: block; }
+
+    /* Calendário */
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cal-header span {
+      font-weight: 600;
+      font-size: 15px;
+      text-transform: capitalize;
+    }
+    .cal-nav {
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .cal-nav:hover { background: #2e2e2e; }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-day-name {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 4px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .cal-day.empty { cursor: default; }
+    .cal-day.past { color: var(--muted); cursor: not-allowed; opacity: 0.4; }
+    .cal-day.indisponivel { color: var(--muted); cursor: not-allowed; opacity: 0.5; }
+    .cal-day.disponivel:hover { background: rgba(200, 240, 96, 0.1); color: var(--lime); }
+    .cal-day.selecionado { background: var(--lime); color: #0f0f0f; font-weight: 700; }
+    .cal-day.hoje::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--lime);
+    }
+    .cal-day.selecionado.hoje::after { background: #0f0f0f; }
+
+    /* Slots de horário */
+    .slots-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 24px 0 12px;
+    }
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .slot {
+      padding: 10px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--input);
+      text-align: center;
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .slot:hover { border-color: var(--lime); }
+    .slot.selecionado { background: var(--lime); color: #0f0f0f; border-color: var(--lime); font-weight: 600; }
+    .slot.ocupado { opacity: 0.35; cursor: not-allowed; border-color: transparent; }
+    .slots-vazio { color: var(--muted); font-size: 13px; text-align: center; padding: 20px 0; }
+
+    .slot-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 16px 0;
+    }
+
+    /* Botões */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-s);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover:not(:disabled) { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--lime); color: #0f0f0f; margin-bottom: 12px; }
+    .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    /* Resumo */
+    .resumo-box {
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .resumo-box .info-row label { color: var(--muted); font-size: 13px; }
+    .resumo-box .info-row span  { color: var(--text); font-size: 13px; font-weight: 500; }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #0f0f0f;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    .spinner.white {
+      border-color: rgba(255,255,255,0.3);
+      border-top-color: #fff;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--input) 25%, #2a2a2a 50%, var(--input) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .footer-link a { color: var(--lime); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="logo">AgendaPro</div>
+
+  <!-- Card principal -->
+  <div class="card" id="card-main" style="display:none">
+
+    <!-- Step 1: Escolher nova data/hora -->
+    <div class="step active" id="step-1">
+      <div class="card-header">
+        <div class="icon primary">📅</div>
+        <h1>Reagendar</h1>
+        <p class="sub">Escolha uma nova data e horário para seu agendamento.</p>
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-label">Agendamento atual</div>
+        <div class="info-row">
+          <label>Serviço</label>
+          <span id="info-servico">—</span>
+        </div>
+        <div class="info-row">
+          <label>Data e hora</label>
+          <span id="info-data-atual">—</span>
+        </div>
+        <div class="info-row">
+          <label>Profissional</label>
+          <span id="info-prestador">—</span>
+        </div>
+      </div>
+
+      <!-- Calendário -->
+      <div class="cal-header">
+        <div class="cal-nav" onclick="navegarMes(-1)">‹</div>
+        <span id="cal-titulo"></span>
+        <div class="cal-nav" onclick="navegarMes(1)">›</div>
+      </div>
+      <div class="cal-grid" id="cal-grid">
+        <div class="cal-day-name">Dom</div>
+        <div class="cal-day-name">Seg</div>
+        <div class="cal-day-name">Ter</div>
+        <div class="cal-day-name">Qua</div>
+        <div class="cal-day-name">Qui</div>
+        <div class="cal-day-name">Sex</div>
+        <div class="cal-day-name">Sáb</div>
+      </div>
+
+      <!-- Slots -->
+      <div id="slots-area" style="display:none">
+        <div class="slots-label" id="slots-label">Horários disponíveis</div>
+        <div class="slots-grid" id="slots-grid"></div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-proxima" onclick="irStep2()" disabled>
+        Continuar
+      </button>
+      <button class="btn btn-ghost" onclick="window.history.back()">Cancelar</button>
+    </div>
+
+    <!-- Step 2: Confirmação -->
+    <div class="step" id="step-2">
+      <div class="card-header">
+        <div class="icon primary">✓</div>
+        <h1>Confirmar reagendamento</h1>
+        <p class="sub">Revise os dados antes de confirmar.</p>
+      </div>
+
+      <div class="resumo-box">
+        <div class="info-row">
+          <label>Serviço</label>
+          <span id="resumo-servico">—</span>
+        </div>
+        <div class="info-row">
+          <label>Nova data e hora</label>
+          <span id="resumo-data">—</span>
+        </div>
+        <div class="info-row">
+          <label>Profissional</label>
+          <span id="resumo-prestador">—</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-confirmar" onclick="confirmarReagendamento()">
+        Confirmar reagendamento
+      </button>
+      <button class="btn btn-ghost" onclick="voltarStep1()">Voltar e alterar</button>
+    </div>
+
+    <!-- Step 3: Sucesso -->
+    <div class="step" id="step-3">
+      <div class="card-header" style="padding-bottom: 0">
+        <div class="icon success">🎉</div>
+        <h1>Reagendado!</h1>
+        <p class="sub" id="msg-sucesso">Seu agendamento foi reagendado com sucesso. Até lá!</p>
+      </div>
+      <div class="footer-link" style="margin-top:40px">Powered by <a href="/">AgendaPro</a></div>
+    </div>
+
+  </div>
+
+  <!-- Erro / expirado / não encontrado -->
+  <div class="card" id="card-erro" style="display:none; text-align:center">
+    <div class="icon warning" style="margin: 0 auto 20px">⚠️</div>
+    <h1>Link inválido ou expirado</h1>
+    <p class="sub" id="msg-erro" style="margin-top:12px">Este link de reagendamento não é válido ou já foi utilizado.</p>
+  </div>
+
+  <!-- Skeleton de carregamento -->
+  <div class="card" id="card-loading">
+    <div class="skeleton" style="width:64px;height:64px;border-radius:50%;margin:0 auto 20px"></div>
+    <div class="skeleton" style="width:60%;height:22px;margin:0 auto 10px"></div>
+    <div class="skeleton" style="width:85%;height:14px;margin:0 auto 32px"></div>
+    <div class="skeleton" style="width:100%;height:120px;margin-bottom:24px"></div>
+    <div class="skeleton" style="width:100%;height:200px;margin-bottom:24px"></div>
+    <div class="skeleton" style="width:100%;height:48px;border-radius:10px"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/config.js"></script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+    // ---------- estado global ----------
+    let AGENDAMENTO   = null;   // registro completo do agendamento
+    let PRESTADOR     = null;   // {id, nome, slug}
+    let SERVICO       = null;   // {id, nome, duracao_min}
+    let DISPONIBILIDADE = [];   // [{dia_semana, hora_inicio, hora_fim}]
+    const TOKEN = new URLSearchParams(window.location.search).get('token');
+
+    let calMes, calAno;
+    let diaSelecionado = null;  // "YYYY-MM-DD"
+    let horaSelecionada = null; // "HH:MM"
+
+    // ---------- utilitários ----------
+    function showToast(msg, dur = 3500) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), dur);
+    }
+
+    function formatarDataHora(iso) {
+      const d = new Date(iso);
+      return d.toLocaleString('pt-BR', {
+        weekday: 'long', day: '2-digit', month: 'long',
+        year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function formatarDia(iso) {
+      const [, , dd] = iso.split('-');
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    }
+
+    function mostrarStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-' + n).classList.add('active');
+    }
+
+    // ---------- inicialização ----------
+    async function init() {
+      if (!TOKEN) { mostrarErro('Token não informado.'); return; }
+
+      try {
+        const { data, error } = await supabase
+          .from('agendamentos')
+          .select(`
+            id, status, data_hora, servico_id, cancel_token,
+            servicos ( id, nome, duracao_min ),
+            prestadores ( id, nome, slug )
+          `)
+          .eq('cancel_token', TOKEN)
+          .single();
+
+        if (error || !data) { mostrarErro('Agendamento não encontrado.'); return; }
+
+        if (['cancelado', 'concluido'].includes(data.status)) {
+          mostrarErro(
+            data.status === 'cancelado'
+              ? 'Este agendamento já foi cancelado e não pode ser reagendado.'
+              : 'Este agendamento já foi concluído.'
+          );
+          return;
+        }
+
+        AGENDAMENTO = data;
+        PRESTADOR   = data.prestadores;
+        SERVICO     = data.servicos;
+
+        // Carregar disponibilidade do prestador
+        const { data: disp } = await supabase
+          .from('disponibilidade')
+          .select('dia_semana, hora_inicio, hora_fim')
+          .eq('prestador_id', PRESTADOR.id);
+
+        DISPONIBILIDADE = disp ?? [];
+
+        // Preencher info
+        document.getElementById('info-servico').textContent    = SERVICO.nome;
+        document.getElementById('info-data-atual').textContent = formatarDataHora(AGENDAMENTO.data_hora);
+        document.getElementById('info-prestador').textContent  = PRESTADOR.nome;
+        document.getElementById('resumo-prestador').textContent = PRESTADOR.nome;
+        document.getElementById('resumo-servico').textContent  = SERVICO.nome;
+
+        // Iniciar calendário no mês atual
+        const hoje = new Date();
+        calMes = hoje.getMonth();
+        calAno = hoje.getFullYear();
+        renderCal();
+
+        document.getElementById('card-loading').style.display = 'none';
+        document.getElementById('card-main').style.display    = 'block';
+
+      } catch (e) {
+        console.error(e);
+        mostrarErro('Erro inesperado. Tente novamente mais tarde.');
+      }
+    }
+
+    function mostrarErro(msg) {
+      document.getElementById('card-loading').style.display  = 'none';
+      document.getElementById('msg-erro').textContent        = msg;
+      document.getElementById('card-erro').style.display     = 'block';
+    }
+
+    // ---------- calendário ----------
+    function renderCal() {
+      const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                     'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      document.getElementById('cal-titulo').textContent = `${meses[calMes]} ${calAno}`;
+
+      const grid = document.getElementById('cal-grid');
+      // Limpar dias antigos (mantém cabeçalhos — primeiros 7 filhos)
+      while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+      const hoje    = new Date(); hoje.setHours(0,0,0,0);
+      const primDia = new Date(calAno, calMes, 1).getDay();
+      const ultDia  = new Date(calAno, calMes + 1, 0).getDate();
+
+      // Dias do prestador disponíveis (0=Dom … 6=Sáb)
+      const diasDisp = new Set(DISPONIBILIDADE.map(d => d.dia_semana));
+
+      // células vazias
+      for (let i = 0; i < primDia; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day empty';
+        grid.appendChild(el);
+      }
+
+      for (let d = 1; d <= ultDia; d++) {
+        const data  = new Date(calAno, calMes, d);
+        const iso   = `${calAno}-${String(calMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const diaSem = data.getDay();
+        const isPast = data < hoje;
+        const isDisp = diasDisp.has(diaSem);
+
+        const el = document.createElement('div');
+        el.textContent = d;
+        el.className   = 'cal-day';
+
+        if (data.toDateString() === hoje.toDateString()) el.classList.add('hoje');
+
+        if (isPast) {
+          el.classList.add('past');
+        } else if (!isDisp) {
+          el.classList.add('indisponivel');
+        } else if (iso === diaSelecionado) {
+          el.classList.add('selecionado');
+        } else {
+          el.classList.add('disponivel');
+          el.addEventListener('click', () => selecionarDia(iso, diaSem, el));
+        }
+
+        grid.appendChild(el);
+      }
+    }
+
+    async function selecionarDia(iso, diaSem, elClicado) {
+      // Desmarcar anterior
+      document.querySelectorAll('.cal-day.selecionado')
+        .forEach(e => { e.classList.remove('selecionado'); e.classList.add('disponivel'); });
+      elClicado.classList.remove('disponivel');
+      elClicado.classList.add('selecionado');
+
+      diaSelecionado = iso;
+      horaSelecionada = null;
+      document.getElementById('btn-proxima').disabled = true;
+
+      // Mostrar área de slots com loading
+      const slotsArea = document.getElementById('slots-area');
+      slotsArea.style.display = 'block';
+      document.getElementById('slots-label').textContent = 'Carregando horários...';
+      document.getElementById('slots-grid').innerHTML = `
+        <div class="slot-loading" style="grid-column:1/-1">
+          <span class="spinner white" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;width:16px;height:16px;border-width:2px"></span>
+          Buscando horários...
+        </div>`;
+
+      try {
+        // Tentar Edge Function — só usa resultado se vier array com pelo menos 1 item
+        let slots = null;
+        try {
+          const r = await fetch(`${window.SUPABASE_URL}/functions/v1/horarios-disponiveis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${window.SUPABASE_ANON}` },
+            body: JSON.stringify({
+              prestador_slug: PRESTADOR.slug,
+              servico_id: SERVICO.id,
+              data: iso
+            })
+          });
+          if (r.ok) {
+            const body = await r.json();
+            const candidato = body.slots ?? body;
+            if (Array.isArray(candidato) && candidato.length > 0) {
+              slots = candidato;
+            }
+          }
+        } catch (_) {}
+
+        // Fallback local (sempre roda se Edge Function não retornou nada)
+        if (!slots) {
+          slots = await calcularSlotsLocais(iso, diaSem);
+        }
+
+        renderSlots(slots);
+
+      } catch (e) {
+        console.error(e);
+        document.getElementById('slots-label').textContent = 'Erro ao carregar horários';
+        document.getElementById('slots-grid').innerHTML = '';
+      }
+    }
+
+    async function calcularSlotsLocais(iso, diaSem) {
+      const durMin = SERVICO.duracao_min ?? 60;
+
+      // Buscar TODOS os agendamentos do dia (inclui o próprio cliente —
+      // o horário atual permanece ocupado até confirmar um novo slot)
+      // data_hora está em UTC → usar -03:00 para cobrir o dia inteiro em BRT
+      const iniciodia = `${iso}T00:00:00-03:00`;
+      const fimDia    = `${iso}T23:59:59-03:00`;
+      const { data: agsDia } = await supabase
+        .from('agendamentos')
+        .select('data_hora')
+        .eq('prestador_id', PRESTADOR.id)
+        .gte('data_hora', iniciodia)
+        .lte('data_hora', fimDia)
+        .in('status', ['pendente', 'confirmado']);
+
+      // data_hora vem como "2026-03-27 12:00:00+00" (UTC)
+      // new Date() converte para horário local do browser (BRT = UTC-3 → 09:00)
+      // hora_inicio/hora_fim já estão em horário local → comparar no mesmo fuso
+      const horasOcupadas = new Set(
+        (agsDia ?? []).map(a => {
+          const d = new Date(a.data_hora);
+          return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        })
+      );
+
+      // Gerar apenas slots livres dentro do horário de trabalho
+      const faixas = DISPONIBILIDADE.filter(d => d.dia_semana === diaSem);
+      const slots = [];
+
+      for (const faixa of faixas) {
+        const [hI, mI] = faixa.hora_inicio.split(':').map(Number);
+        const [hF, mF] = faixa.hora_fim.split(':').map(Number);
+        let cur = hI * 60 + mI;
+        const fim = hF * 60 + mF;
+
+        while (cur + durMin <= fim) {
+          const hh = String(Math.floor(cur / 60)).padStart(2, '0');
+          const mm = String(cur % 60).padStart(2, '0');
+          const horaStr = `${hh}:${mm}`;
+          if (!horasOcupadas.has(horaStr)) slots.push(horaStr);
+          cur += 30;
+        }
+      }
+      return slots;
+    }
+
+    function renderSlots(slots) {
+      const label = document.getElementById('slots-label');
+      const grid  = document.getElementById('slots-grid');
+
+      // slots é array de strings "HH:MM" — apenas os livres
+      const livres = Array.isArray(slots) ? slots : [];
+
+      label.textContent = livres.length > 0
+        ? `Horários disponíveis para ${formatarDia(diaSelecionado)}`
+        : 'Nenhum horário disponível neste dia';
+
+      if (livres.length === 0) {
+        grid.innerHTML = '<div class="slots-vazio">Sem horários disponíveis. Escolha outro dia.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      livres.forEach(hora => {
+        const el = document.createElement('div');
+        el.className = 'slot';
+        el.textContent = hora;
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.slot.selecionado').forEach(e => e.classList.remove('selecionado'));
+          el.classList.add('selecionado');
+          horaSelecionada = hora;
+          document.getElementById('btn-proxima').disabled = false;
+        });
+        grid.appendChild(el);
+      });
+    }
+
+    window.navegarMes = function(delta) {
+      calMes += delta;
+      if (calMes > 11) { calMes = 0; calAno++; }
+      if (calMes < 0)  { calMes = 11; calAno--; }
+      renderCal();
+    };
+
+    window.irStep2 = function() {
+      if (!diaSelecionado || !horaSelecionada) return;
+
+      const dataHoraISO = `${diaSelecionado}T${horaSelecionada}:00`;
+      const dataFormatada = new Date(dataHoraISO).toLocaleString('pt-BR', {
+        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+
+      document.getElementById('resumo-data').textContent = dataFormatada;
+      mostrarStep(2);
+    };
+
+    window.voltarStep1 = function() {
+      mostrarStep(1);
+    };
+
+    window.confirmarReagendamento = async function() {
+      const btn = document.getElementById('btn-confirmar');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Confirmando...';
+
+      const novaDataHora = `${diaSelecionado}T${horaSelecionada}:00`;
+
+      try {
+        // Tentar Edge Function
+        let sucesso = false;
+        try {
+          const r = await fetch(`${window.SUPABASE_URL}/functions/v1/reagendar-cliente`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: TOKEN, nova_data_hora: novaDataHora })
+          });
+          if (r.ok) sucesso = true;
+        } catch (_) {}
+
+        // Fallback: atualizar direto via REST
+        if (!sucesso) {
+          // Manter o status original do agendamento (não alterar — só muda data_hora)
+          // novaDataHora precisa incluir offset BRT para gravar corretamente em UTC no banco
+          const novaDataHoraBRT = `${diaSelecionado}T${horaSelecionada}:00-03:00`;
+          const { error } = await supabase
+            .from('agendamentos')
+            .update({ data_hora: novaDataHoraBRT })
+            .eq('id', AGENDAMENTO.id)
+            .eq('cancel_token', TOKEN);
+          if (error) throw error;
+        }
+
+        const dataFormatada = new Date(novaDataHora).toLocaleString('pt-BR', {
+          weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+        document.getElementById('msg-sucesso').textContent =
+          `Seu agendamento foi marcado para ${dataFormatada}. Até lá! 😊`;
+
+        mostrarStep(3);
+
+      } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.innerHTML = 'Confirmar reagendamento';
+        showToast('Erro ao reagendar. Tente novamente.');
+      }
+    };
+
+    // Iniciar
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaliar Atendimento — AgendaPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&family=Fraunces:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0f;
+      --card:     #181818;
+      --input:    #222222;
+      --text:     #f0ede6;
+      --muted:    #8a8778;
+      --lime:     #c8f060;
+      --border:   #2a2724;
+      --danger:   #ff5a5a;
+      --radius:   14px;
+      --radius-s: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      color: var(--lime);
+      margin-bottom: 40px;
+      letter-spacing: -0.5px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    .icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 32px;
+    }
+    .icon.star    { background: rgba(255, 210, 50, 0.12); }
+    .icon.success { background: rgba(200, 240, 96, 0.12); }
+    .icon.warning { background: rgba(255, 180, 50, 0.12); }
+
+    /* Avatar do prestador */
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 0 auto 20px;
+      display: block;
+      background: var(--input);
+      border: 2px solid var(--border);
+    }
+    .avatar-initials {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--lime);
+      color: #0f0f0f;
+      font-weight: 700;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    p.sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    /* Info do serviço */
+    .service-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .service-tag strong { color: var(--text); }
+
+    /* Estrelas */
+    .stars-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .star {
+      font-size: 42px;
+      cursor: pointer;
+      transition: transform 0.15s, filter 0.15s;
+      filter: grayscale(1) brightness(0.5);
+      line-height: 1;
+      user-select: none;
+    }
+    .star:hover,
+    .star.hover,
+    .star.ativo {
+      filter: none;
+      transform: scale(1.15);
+    }
+    .star.ativo { transform: scale(1.1); }
+
+    .star-desc {
+      font-size: 13px;
+      color: var(--muted);
+      height: 18px;
+      margin-bottom: 28px;
+      transition: color 0.2s;
+    }
+    .star-desc.filled { color: #ffd232; }
+
+    /* Textarea */
+    textarea {
+      width: 100%;
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 14px 16px;
+      resize: none;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.2s;
+      margin-bottom: 24px;
+    }
+    textarea:focus { border-color: var(--lime); }
+    textarea::placeholder { color: var(--muted); }
+
+    .char-count {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: -20px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-s);
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover:not(:disabled) { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--lime); color: #0f0f0f; margin-bottom: 12px; }
+    .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); font-size: 13px; padding: 10px; }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0,0,0,0.25);
+      border-top-color: #0f0f0f;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--input) 25%, #2a2a2a 50%, var(--input) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    .footer-link {
+      margin-top: 28px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .footer-link a { color: var(--lime); text-decoration: none; }
+
+    /* Já avaliado */
+    .rating-display {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin: 20px 0;
+      font-size: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo">AgendaPro</div>
+
+  <!-- Loading skeleton -->
+  <div class="card" id="card-loading">
+    <div class="skeleton" style="width:72px;height:72px;border-radius:50%;margin:0 auto 20px"></div>
+    <div class="skeleton" style="width:65%;height:22px;margin:0 auto 10px"></div>
+    <div class="skeleton" style="width:80%;height:14px;margin:0 auto 10px"></div>
+    <div class="skeleton" style="width:70%;height:14px;margin:0 auto 32px"></div>
+    <div class="skeleton" style="width:60%;height:14px;margin:0 auto 16px"></div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:28px">
+      <div class="skeleton" style="width:42px;height:42px;border-radius:4px"></div>
+      <div class="skeleton" style="width:42px;height:42px;border-radius:4px"></div>
+      <div class="skeleton" style="width:42px;height:42px;border-radius:4px"></div>
+      <div class="skeleton" style="width:42px;height:42px;border-radius:4px"></div>
+      <div class="skeleton" style="width:42px;height:42px;border-radius:4px"></div>
+    </div>
+    <div class="skeleton" style="width:100%;height:100px;margin-bottom:24px;border-radius:10px"></div>
+    <div class="skeleton" style="width:100%;height:48px;border-radius:10px"></div>
+  </div>
+
+  <!-- Formulário de avaliação -->
+  <div class="card" id="card-form" style="display:none">
+    <div id="avatar-area"></div>
+    <h1 id="titulo-form">Como foi o atendimento?</h1>
+    <p class="sub" id="sub-form">Sua opinião ajuda o profissional a melhorar e outros clientes a escolher.</p>
+
+    <div class="service-tag">
+      <span>✂️</span>
+      <span id="info-servico">—</span>
+      <span>·</span>
+      <strong id="info-data">—</strong>
+    </div>
+
+    <div class="stars-label">Toque nas estrelas para avaliar</div>
+    <div class="stars" id="stars">
+      <span class="star" data-v="1">⭐</span>
+      <span class="star" data-v="2">⭐</span>
+      <span class="star" data-v="3">⭐</span>
+      <span class="star" data-v="4">⭐</span>
+      <span class="star" data-v="5">⭐</span>
+    </div>
+    <div class="star-desc" id="star-desc"></div>
+
+    <textarea id="comentario" rows="4" maxlength="500"
+      placeholder="Deixe um comentário opcional... (ex: super atenciosa, pontual, ambiente ótimo!)"
+      oninput="atualizarContador()"></textarea>
+    <div class="char-count"><span id="char-count">0</span>/500</div>
+
+    <button class="btn btn-primary" id="btn-enviar" onclick="enviarAvaliacao()" disabled>
+      Enviar avaliação
+    </button>
+    <button class="btn btn-ghost" onclick="pularAvaliacao()">Prefiro não avaliar agora</button>
+  </div>
+
+  <!-- Já avaliado -->
+  <div class="card" id="card-ja-avaliado" style="display:none">
+    <div class="icon star">⭐</div>
+    <h1>Você já avaliou!</h1>
+    <p class="sub">Sua avaliação deste atendimento já foi registrada. Obrigado pelo feedback!</p>
+    <div class="rating-display" id="rating-display"></div>
+    <p class="footer-link">Powered by <a href="/">AgendaPro</a></p>
+  </div>
+
+  <!-- Sucesso -->
+  <div class="card" id="card-sucesso" style="display:none">
+    <div class="icon success">🙏</div>
+    <h1>Obrigado!</h1>
+    <p class="sub" id="msg-sucesso">Sua avaliação foi enviada com sucesso. Ela ajuda muito o profissional!</p>
+    <p class="footer-link" style="margin-top:40px">Powered by <a href="/">AgendaPro</a></p>
+  </div>
+
+  <!-- Erro -->
+  <div class="card" id="card-erro" style="display:none">
+    <div class="icon warning">⚠️</div>
+    <h1>Link inválido</h1>
+    <p class="sub" id="msg-erro">Este link de avaliação não é válido ou expirou.</p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/config.js"></script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+    const TOKEN = new URLSearchParams(window.location.search).get('token');
+
+    let AGENDAMENTO = null;
+    let notaSelecionada = 0;
+
+    const descs = ['', 'Péssimo 😞', 'Ruim 😕', 'Regular 😐', 'Bom 😊', 'Excelente! 🤩'];
+
+    // ---------- utilitários ----------
+    function showToast(msg, dur = 3500) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), dur);
+    }
+
+    function mostrar(id) {
+      ['card-loading','card-form','card-ja-avaliado','card-sucesso','card-erro']
+        .forEach(e => document.getElementById(e).style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+    }
+
+    // ---------- estrelas ----------
+    const starsEls = document.querySelectorAll('.star');
+
+    starsEls.forEach(s => {
+      s.addEventListener('mouseenter', () => highlightStars(+s.dataset.v, true));
+      s.addEventListener('mouseleave', () => highlightStars(notaSelecionada, false));
+      s.addEventListener('click',      () => selecionarNota(+s.dataset.v));
+    });
+
+    function highlightStars(n, hover) {
+      starsEls.forEach(s => {
+        const v = +s.dataset.v;
+        if (v <= n) {
+          s.classList.add(hover ? 'hover' : 'ativo');
+          s.classList.remove(hover ? 'ativo' : 'hover');
+        } else {
+          s.classList.remove('hover', 'ativo');
+        }
+      });
+    }
+
+    function selecionarNota(n) {
+      notaSelecionada = n;
+      highlightStars(n, false);
+      const desc = document.getElementById('star-desc');
+      desc.textContent = descs[n];
+      desc.className = 'star-desc filled';
+      document.getElementById('btn-enviar').disabled = false;
+    }
+
+    window.atualizarContador = function() {
+      const v = document.getElementById('comentario').value.length;
+      document.getElementById('char-count').textContent = v;
+    };
+
+    // ---------- inicialização ----------
+    async function init() {
+      if (!TOKEN) { mostrarErro('Token não informado.'); return; }
+
+      try {
+        // Tentar buscar via Edge Function primeiro
+        let agData = null;
+        try {
+          const r = await fetch(
+            `${window.SUPABASE_URL}/functions/v1/avaliacoes?token=${TOKEN}`,
+            { headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON}` } }
+          );
+          if (r.ok) agData = await r.json();
+        } catch (_) {}
+
+        // Fallback: buscar diretamente
+        if (!agData) {
+          const { data, error } = await supabase
+            .from('agendamentos')
+            .select(`
+              id, data_hora, status,
+              servicos ( nome ),
+              prestadores ( id, nome, foto_url )
+            `)
+            .eq('cancel_token', TOKEN)
+            .single();
+
+          if (error || !data) { mostrarErro('Agendamento não encontrado.'); return; }
+          agData = data;
+        }
+
+        if (!agData || agData.error) { mostrarErro(agData?.error ?? 'Agendamento não encontrado.'); return; }
+
+        // Verificar se já foi avaliado
+        const { data: avalExist } = await supabase
+          .from('avaliacoes')
+          .select('nota, comentario')
+          .eq('agendamento_id', agData.id)
+          .maybeSingle();
+
+        if (avalExist) {
+          // Mostrar avaliação já feita
+          const stars = Array.from({ length: 5 }, (_, i) =>
+            i < avalExist.nota ? '⭐' : '☆'
+          ).join('');
+          document.getElementById('rating-display').textContent = stars;
+          mostrar('card-ja-avaliado');
+          return;
+        }
+
+        // Verificar se o agendamento está concluído
+        if (agData.status !== 'concluido') {
+          mostrarErro('Este link só pode ser usado após a conclusão do atendimento.');
+          return;
+        }
+
+        AGENDAMENTO = agData;
+
+        // Preencher avatar
+        const avatarArea = document.getElementById('avatar-area');
+        const nome = agData.prestadores?.nome ?? '';
+        const foto = agData.prestadores?.foto_url;
+
+        if (foto) {
+          avatarArea.innerHTML = `<img class="avatar" src="${foto}" alt="${nome}" onerror="this.style.display='none'">`;
+        } else {
+          const ini = nome.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+          avatarArea.innerHTML = `<div class="avatar-initials">${ini}</div>`;
+        }
+
+        // Preencher info
+        const dataFmt = new Date(agData.data_hora).toLocaleDateString('pt-BR', {
+          day: '2-digit', month: 'long', year: 'numeric'
+        });
+        document.getElementById('titulo-form').textContent =
+          `Como foi o atendimento com ${nome.split(' ')[0]}?`;
+        document.getElementById('sub-form').textContent =
+          'Sua opinião ajuda o profissional a melhorar e outros clientes a escolher.';
+        document.getElementById('info-servico').textContent = agData.servicos?.nome ?? 'Serviço';
+        document.getElementById('info-data').textContent    = dataFmt;
+
+        mostrar('card-form');
+
+      } catch (e) {
+        console.error(e);
+        mostrarErro('Erro inesperado. Tente novamente mais tarde.');
+      }
+    }
+
+    function mostrarErro(msg) {
+      document.getElementById('msg-erro').textContent = msg;
+      mostrar('card-erro');
+    }
+
+    window.enviarAvaliacao = async function() {
+      if (!notaSelecionada) return;
+
+      const btn = document.getElementById('btn-enviar');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+      const comentario = document.getElementById('comentario').value.trim();
+
+      try {
+        // Tentar Edge Function
+        let sucesso = false;
+        try {
+          const r = await fetch(`${window.SUPABASE_URL}/functions/v1/avaliacoes`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${window.SUPABASE_ANON}`
+            },
+            body: JSON.stringify({ token: TOKEN, nota: notaSelecionada, comentario })
+          });
+          if (r.ok) sucesso = true;
+        } catch (_) {}
+
+        // Fallback: inserir direto
+        if (!sucesso) {
+          const { error } = await supabase
+            .from('avaliacoes')
+            .insert({
+              prestador_id:   AGENDAMENTO.prestadores.id,
+              agendamento_id: AGENDAMENTO.id,
+              nota:           notaSelecionada,
+              comentario:     comentario || null
+            });
+          if (error) throw error;
+        }
+
+        document.getElementById('msg-sucesso').textContent =
+          notaSelecionada >= 4
+            ? 'Que ótimo! Sua avaliação foi enviada. Fico feliz que tenha gostado! 🎉'
+            : 'Sua avaliação foi enviada. O profissional agradece o feedback honesto!';
+
+        mostrar('card-sucesso');
+
+      } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.innerHTML = 'Enviar avaliação';
+        showToast('Erro ao enviar avaliação. Tente novamente.');
+      }
+    };
+
+    window.pularAvaliacao = function() {
+      document.getElementById('msg-sucesso').textContent =
+        'Tudo bem! Se quiser avaliar depois, use o mesmo link enviado por WhatsApp.';
+      mostrar('card-sucesso');
+    };
+
+    init();
+  </script>
+</body>
+</html>
