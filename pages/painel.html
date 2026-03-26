@@ -457,6 +457,40 @@ body {
   pointer-events: none;
 }
 .empty-day p { font-size: 13px; color: var(--faint); }
+
+/* ── RESPONSIVO ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .layout { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 35vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    order: -1;
+  }
+  .agenda-scroll { overflow: visible; }
+  .agenda-grid { min-width: 100%; }
+  .agenda-row { min-height: 50px; }
+  .agenda-col-time { width: 45px; font-size: 10px; }
+  .agenda-col-events { flex: 1; }
+  .event-card { padding: 3px 5px; font-size: 11px; }
+  .event-card .event-time { display: none; }
+  .topbar { padding: 0 12px; }
+  .topbar-center { display: none; }
+  .logo { font-size: 14px; }
+  .btn-new { padding: 8px 12px; font-size: 13px; }
+  .topbar-right { gap: 8px; }
+}
+
+@media (max-width: 480px) {
+  :root { --hour-h: 36px; }
+  .sidebar { max-height: 30vh; }
+  .sidebar-section { padding: 10px; }
+  .mini-cal-grid .day { padding: 3px; font-size: 10px; }
+  .agenda-row { min-height: 36px; }
+  .event-card { font-size: 10px; padding: 2px 4px; }
+}
 </style>
 </head>
 <body>
