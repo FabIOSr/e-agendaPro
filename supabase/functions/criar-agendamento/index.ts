@@ -226,6 +226,33 @@ Deno.serve(async (req: Request) => {
     console.warn("Erro ao upsert cliente (não crítico):", errCliente.message);
   }
 
+  // ── 7. Sincronizar com Google Calendar (não crítico) ───────────────────
+  // Chamada fire-and-forget — falha silenciosa para não bloquear o agendamento
+  try {
+    const gcalUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/google-calendar-sync`;
+    const gcalResp = await fetch(gcalUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type":  "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        "apikey":        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      },
+      body: JSON.stringify({
+        action:         "criar",
+        agendamento_id: agendamento.id,
+      }),
+    });
+    const gcalData = await gcalResp.json();
+    if (gcalData.sincronizado) {
+      console.log(`📅 Google Calendar sincronizado: evento ${gcalData.evento_id}`);
+    } else {
+      console.log(`📅 Google Calendar não sincronizado: ${gcalData.motivo ?? "sem motivo"}`);
+    }
+  } catch (errGcal) {
+    // Nunca falha o agendamento por causa do Calendar
+    console.warn("Erro ao sincronizar Google Calendar (não crítico):", String(errGcal));
+  }
+
   console.log(`✅ Agendamento criado: ${agendamento.id} — prestador: ${prestador_id}`);
 
   return Response.json(

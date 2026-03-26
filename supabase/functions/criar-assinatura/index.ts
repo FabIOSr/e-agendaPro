@@ -12,8 +12,10 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ASAAS_URL = "https://api.asaas.com/v3";   // produção
-// const ASAAS_URL = "https://sandbox.asaas.com/api/v3"; // sandbox para testes
+// URL alternada pelo secret ASAAS_SANDBOX — nunca hardcode
+const ASAAS_URL = Deno.env.get("ASAAS_SANDBOX") === "true"
+  ? "https://sandbox.asaas.com/api/v3"
+  : "https://api.asaas.com/v3";
 
 const PLANOS = {
   pro:   { valor: 39.00, descricao: "AgendaPro Pro — mensal" },
