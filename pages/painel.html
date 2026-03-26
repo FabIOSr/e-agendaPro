@@ -849,27 +849,33 @@ window.fecharDetalhe = function() {
   document.getElementById('detail-panel').classList.remove('open');
 };
 
+const inputStyle = "width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none";
+const monoStyle  = "width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none";
+
 window.abrirNovoAgendamento = function() {
   document.getElementById('dp-title').textContent = 'Novo agendamento';
   document.getElementById('dp-body').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px">
       <div>
         <div class="detail-row-label" style="margin-bottom:4px">Cliente</div>
-        <input id="novo-cliente" placeholder="Nome do cliente" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <input id="novo-cliente" placeholder="Nome do cliente" style="${inputStyle}">
       </div>
       <div>
         <div class="detail-row-label" style="margin-bottom:4px">Telefone</div>
-        <input id="novo-tel" placeholder="(11) 99999-0000" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <input id="novo-tel" placeholder="(11) 99999-0000" style="${inputStyle}">
       </div>
       <div>
         <div class="detail-row-label" style="margin-bottom:4px">Serviço</div>
-        <select id="novo-servico" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <select id="novo-servico" onchange="carregarSlotsNoModal()" style="${inputStyle}">
           <option value="">Carregando serviços…</option>
         </select>
       </div>
       <div>
-        <div class="detail-row-label" style="margin-bottom:4px">Horário</div>
-        <input type="time" id="novo-hora" value="09:00" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none">
+        <div class="detail-row-label" style="margin-bottom:4px">Horário disponível</div>
+        <select id="novo-hora" style="${monoStyle}">
+          <option value="">← Selecione o serviço primeiro</option>
+        </select>
+        <div id="novo-slots-loading" style="font-size:11px;color:var(--muted);margin-top:4px;display:none">Carregando horários…</div>
       </div>
       <div id="novo-erro" style="color:#e05;font-size:12px;display:none"></div>
     </div>
@@ -880,7 +886,6 @@ window.abrirNovoAgendamento = function() {
   `;
   document.getElementById('overlay').classList.add('open');
   document.getElementById('detail-panel').classList.add('open');
-  // Carrega serviços reais
   carregarServicosNoSelect();
 };
 
@@ -892,47 +897,208 @@ async function carregarServicosNoSelect() {
     .eq('ativo', true);
   const sel = document.getElementById('novo-servico');
   if (!sel) return;
-  sel.innerHTML = (servicos || []).map(s =>
-    `<option value="${s.id}" data-dur="${s.duracao_min}" data-preco="${s.preco}">${s.nome} — ${s.duracao_min}min — R$${s.preco}</option>`
-  ).join('') || '<option>Nenhum serviço cadastrado</option>';
+  sel.innerHTML = '<option value="">Selecione o serviço…</option>'
+    + (servicos || []).map(s =>
+      `<option value="${s.id}" data-dur="${s.duracao_min}" data-preco="${s.preco}">${s.nome} — ${s.duracao_min}min — R$${Number(s.preco).toFixed(0)}</option>`
+    ).join('');
+  if (servicos?.length === 1) {
+    sel.selectedIndex = 1;
+    carregarSlotsNoModal();
+  }
+}
+
+window.carregarSlotsNoModal = async function() {
+  const sel     = document.getElementById('novo-servico');
+  const horaSel = document.getElementById('novo-hora');
+  const loading = document.getElementById('novo-slots-loading');
+  if (!sel?.value || !horaSel) return;
+
+  horaSel.innerHTML = '<option value="">Buscando horários…</option>';
+  if (loading) loading.style.display = 'block';
+
+  try {
+    const dataStr = diaAtual.toISOString().slice(0, 10);
+    const slug    = prestador?.slug;
+
+    if (!slug) throw new Error('Slug não encontrado');
+
+    const resp = await fetch(
+      `${window.SUPABASE_URL}/functions/v1/horarios-disponiveis`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': window.SUPABASE_ANON,
+          'Authorization': `Bearer ${window.SUPABASE_ANON}`,
+        },
+        body: JSON.stringify({
+          prestador_slug: slug,
+          servico_id:     sel.value,
+          data:           dataStr,
+        }),
+      }
+    );
+
+    const resultado = await resp.json();
+    const slots = (resultado.slots || []).filter(s => s.disponivel);
+
+    if (slots.length === 0) {
+      horaSel.innerHTML = '<option value="">Sem horários disponíveis neste dia</option>';
+    } else {
+      horaSel.innerHTML = slots.map(s =>
+        `<option value="${s.hora}">${s.hora}</option>`
+      ).join('');
+    }
+  } catch(e) {
+    console.warn('Fallback slots painel:', e);
+    // Fallback: busca manual considerando bloqueios
+    await carregarSlotsFallbackModal();
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
+};
+
+async function carregarSlotsFallbackModal() {
+  const sel     = document.getElementById('novo-servico');
+  const horaSel = document.getElementById('novo-hora');
+  if (!sel?.value || !horaSel) return;
+
+  const duracao    = parseInt(sel.selectedOptions[0]?.dataset.dur || '60');
+  const diaSemana  = diaAtual.getDay();
+  const inicioDia  = new Date(diaAtual); inicioDia.setHours(0,0,0,0);
+  const fimDia     = new Date(diaAtual); fimDia.setHours(23,59,59,999);
+
+  const { data: disp } = await supabase
+    .from('disponibilidade')
+    .select('hora_inicio, hora_fim')
+    .eq('prestador_id', userId)
+    .eq('dia_semana', diaSemana)
+    .maybeSingle();
+
+  if (!disp) {
+    horaSel.innerHTML = '<option value="">Prestador não atende neste dia</option>';
+    return;
+  }
+
+  const [hIni] = disp.hora_inicio.split(':').map(Number);
+  const [hFim] = disp.hora_fim.split(':').map(Number);
+  const [mIni] = disp.hora_inicio.split(':').map(Number).slice(1);
+  const [mFim] = disp.hora_fim.split(':').map(Number).slice(1);
+  const inicioMin = hIni * 60 + (mIni || 0);
+  const fimMin    = hFim * 60 + (mFim || 0);
+
+  // Busca agendamentos e bloqueios em paralelo
+  const [{ data: ags }, { data: bls }] = await Promise.all([
+    supabase.from('agendamentos')
+      .select('data_hora, servicos(duracao_min)')
+      .eq('prestador_id', userId)
+      .gte('data_hora', inicioDia.toISOString())
+      .lte('data_hora', fimDia.toISOString())
+      .in('status', ['confirmado', 'pendente']),
+    supabase.from('bloqueios')
+      .select('inicio, fim')
+      .eq('prestador_id', userId)
+      .lt('inicio', fimDia.toISOString())
+      .gt('fim', inicioDia.toISOString()),
+  ]);
+
+  const minutosOcupados = new Set();
+  (ags || []).forEach(ag => {
+    const t   = new Date(ag.data_hora);
+    const ini = t.getHours() * 60 + t.getMinutes();
+    const dur = ag.servicos?.duracao_min || duracao;
+    for (let m = ini; m < ini + dur; m++) minutosOcupados.add(m);
+  });
+  (bls || []).forEach(bl => {
+    const ini = new Date(bl.inicio);
+    const fim = new Date(bl.fim);
+    const iniM = ini.getHours() * 60 + ini.getMinutes();
+    const fimM = fim.getHours() * 60 + fim.getMinutes();
+    for (let m = iniM; m < fimM; m++) minutosOcupados.add(m);
+  });
+
+  const agora    = new Date();
+  const agoraMin = agora.toDateString() === diaAtual.toDateString()
+    ? agora.getHours() * 60 + agora.getMinutes() : -1;
+
+  const livres = [];
+  for (let m = inicioMin; m + duracao <= fimMin; m += 30) {
+    if (agoraMin >= 0 && m <= agoraMin) continue;
+    let livre = true;
+    for (let t = m; t < m + duracao; t++) {
+      if (minutosOcupados.has(t)) { livre = false; break; }
+    }
+    if (livre) {
+      const hh = String(Math.floor(m / 60)).padStart(2, '0');
+      const mm = String(m % 60).padStart(2, '0');
+      livres.push(`${hh}:${mm}`);
+    }
+  }
+
+  horaSel.innerHTML = livres.length
+    ? livres.map(h => `<option value="${h}">${h}</option>`).join('')
+    : '<option value="">Sem horários disponíveis neste dia</option>';
 }
 
 window.salvarNovoAgendamento = async function() {
   const cliente = document.getElementById('novo-cliente')?.value.trim();
   const tel     = document.getElementById('novo-tel')?.value.trim();
   const sel     = document.getElementById('novo-servico');
-  const hora    = document.getElementById('novo-hora')?.value;
+  const horaSel = document.getElementById('novo-hora');
+  const hora    = horaSel?.value;
   const erroEl  = document.getElementById('novo-erro');
 
   if (!cliente || !hora || !sel?.value) {
-    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = 'Preencha todos os campos obrigatórios.'; }
+    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = 'Preencha todos os campos e selecione um horário disponível.'; }
     return;
   }
 
   const servicoId = sel.value;
   const [hh, mm]  = hora.split(':').map(Number);
-  const dataHora  = new Date(diaAtual);
-  dataHora.setHours(hh, mm, 0, 0);
+  // Offset BRT explícito para gravar UTC correto no banco
+  const pad = n => String(n).padStart(2, '0');
+  const dataStr = diaAtual.toISOString().slice(0,10);
+  const dataHoraBRT = `${dataStr}T${pad(hh)}:${pad(mm)}:00-03:00`;
 
-  const { error } = await supabase.from('agendamentos').insert({
-    prestador_id:  userId,
-    servico_id:    servicoId,
-    cliente_nome:  cliente,
-    cliente_tel:   tel || null,
-    data_hora:     dataHora.toISOString(),
-    status:        'confirmado',
-    cancel_token:  crypto.randomUUID(),
-  });
+  const btn = document.querySelector('#dp-actions .btn-conclude');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
-  if (error) {
-    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = 'Erro ao salvar: ' + error.message; }
-    return;
+  try {
+    // Usa a Edge Function criar-agendamento que valida bloqueios no backend
+    const resp = await fetch(
+      `${window.SUPABASE_URL}/functions/v1/criar-agendamento`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': window.SUPABASE_ANON,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          prestador_id: userId,
+          servico_id:   servicoId,
+          cliente_nome: cliente,
+          cliente_tel:  tel || '',
+          data_hora:    dataHoraBRT,
+        }),
+      }
+    );
+
+    const resultado = await resp.json();
+
+    if (!resp.ok || !resultado.ok) {
+      throw new Error(resultado.erro || 'Erro desconhecido');
+    }
+
+    const chave = diaAtual.toISOString().slice(0,10);
+    delete dadosPorDia[chave];
+    fecharDetalhe();
+    renderAgenda();
+  } catch(e) {
+    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = e.message || 'Erro ao salvar.'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirmar'; }
   }
-
-  const chave = diaAtual.toISOString().slice(0,10);
-  delete dadosPorDia[chave];
-  fecharDetalhe();
-  renderAgenda();
 };
 
 window.abrirNovoBloqueio = function() {
