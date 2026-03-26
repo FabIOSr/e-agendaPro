@@ -10,18 +10,42 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ZAPI_URL = `https://api.z-api.io/instances/${Deno.env.get("ZAPI_INSTANCE_ID")}/token/${Deno.env.get("ZAPI_TOKEN")}/send-text`;
-const APP_URL  = Deno.env.get("APP_URL") ?? "https://SEU_PROJETO.supabase.co";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://e-agendapro.web.app";
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
-  await fetch(ZAPI_URL, {
+  const token = Deno.env.get("ZAPI_TOKEN");
+  const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
+  const clientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+  
+  if (!token || !instanceId || !clientToken) return;
+  
+  await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Client-Token": Deno.env.get("ZAPI_CLIENT_TOKEN")!,
+      "Client-Token": clientToken,
     },
     body: JSON.stringify({ phone: telefone.replace(/\D/g, ""), message: mensagem }),
   }).catch(e => console.error("WhatsApp error:", e));
+}
+
+async function enviarEmail(to: string, subject: string, html: string) {
+  const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
+  if (!sendgridKey) return;
+
+  await fetch("https://api.sendgrid.com/v3/mail/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${sendgridKey}`,
+    },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
+      subject: subject,
+      content: [{ type: "text/html", value: html }],
+    }),
+  }).catch(e => console.error("Email error:", e));
 }
 
 function paginaReagendar(ag: any, token: string, slots: any[]): string {
@@ -225,7 +249,7 @@ Deno.serve(async (req: Request) => {
     // Busca o agendamento atual
     const { data: ag } = await supabase
       .from("agendamentos")
-      .select("*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp)")
+      .select("*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email), cliente_email")
       .eq("cancel_token", token)
       .single();
 
@@ -253,6 +277,13 @@ Deno.serve(async (req: Request) => {
       .update({ data_hora: novaDataHora })
       .eq("id", ag.id);
 
+    // Busca dados atualizados com email
+    const { data: agAtualizado } = await supabase
+      .from("agendamentos")
+      .select("*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email)")
+      .eq("id", ag.id)
+      .single();
+
     // Notifica prestador e cliente
     const dataFmt = new Date(novaDataHora).toLocaleDateString("pt-BR", {
       day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo",
@@ -261,19 +292,52 @@ Deno.serve(async (req: Request) => {
       hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
     });
 
-    if (ag.prestadores?.whatsapp) {
-      await enviarWhatsApp(ag.prestadores.whatsapp,
+    // WhatsApp do prestador
+    if (agAtualizado?.prestadores?.whatsapp) {
+      await enviarWhatsApp(agAtualizado.prestadores.whatsapp,
         `🔄 *Agendamento remarcado*\n\n` +
-        `👤 *Cliente:* ${ag.cliente_nome}\n` +
-        `📋 *Serviço:* ${ag.servicos?.nome}\n` +
+        `👤 *Cliente:* ${agAtualizado.cliente_nome}\n` +
+        `📋 *Serviço:* ${agAtualizado.servicos?.nome}\n` +
         `📅 *Novo horário:* ${dataFmt} às ${horaFmt}`
       );
     }
 
-    await enviarWhatsApp(ag.cliente_tel,
-      `✅ Remarcado! Seu atendimento com *${ag.prestadores?.nome}* foi remarcado para *${dataFmt} às ${horaFmt}*.\n\n` +
-      `Se precisar cancelar: ${APP_URL}/functions/v1/cancelar-agendamento-cliente?token=${ag.cancel_token}`
+    // Email para prestador
+    if (agAtualizado?.prestadores?.email) {
+      await enviarEmail(
+        agAtualizado.prestadores.email,
+        `🔄 Agendamento remarcado por ${agAtualizado.cliente_nome}`,
+        `<div style="font-family: sans-serif;">
+          <h2>🔄 Agendamento Remarcado</h2>
+          <p><strong>Cliente:</strong> ${agAtualizado.cliente_nome}</p>
+          <p><strong>Serviço:</strong> ${agAtualizado.servicos?.nome}</p>
+          <p><strong>Novo horário:</strong> ${dataFmt} às ${horaFmt}</p>
+        </div>`
+      );
+    }
+
+    // WhatsApp do cliente
+    await enviarWhatsApp(agAtualizado?.cliente_tel || ag.cliente_tel,
+      `✅ Remarcado! Seu atendimento com *${agAtualizado?.prestadores?.nome || ag.prestadores?.nome}* foi remarcado para *${dataFmt} às ${horaFmt}*.\n\n` +
+      `Se precisar cancelar: ${APP_URL}/cancelar?token=${ag.cancel_token}`
     );
+
+    // Email para cliente
+    if (agAtualizado?.cliente_email) {
+      await enviarEmail(
+        agAtualizado.cliente_email,
+        `✅ Agendamento remarcado com ${agAtualizado.prestadores?.nome}`,
+        `<div style="font-family: sans-serif;">
+          <h2>✅ Agendamento Remarcado</h2>
+          <p>Seu atendimento foi remarcado para <strong>${dataFmt} às ${horaFmt}</strong>.</p>
+          <p><strong>Serviço:</strong> ${agAtualizado.servicos?.nome}</p>
+          <p><strong>Profissional:</strong> ${agAtualizado.prestadores?.nome}</p>
+          <p style="margin-top: 20px;">
+            <a href="${APP_URL}/cancelar?token=${ag.cancel_token}" style="color: #c84830;">Cancelar agendamento</a>
+          </p>
+        </div>`
+      );
+    }
 
     return Response.json({ ok: true, nova_data_hora: novaDataHora });
   }

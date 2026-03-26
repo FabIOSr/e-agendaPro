@@ -332,28 +332,26 @@
       try {
         // Tentar via Edge Function primeiro
         const edgeFnURL = `${window.SUPABASE_URL}/functions/v1/cancelar-agendamento-cliente`;
+        console.log("Chamando Edge Function:", edgeFnURL);
+        
         const res = await fetch(edgeFnURL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
         });
+        
+        console.log("Resposta Edge Function:", res.status, res.statusText);
+        
+        const data = await res.json();
+        console.log("Dados da resposta:", data);
 
         if (res.ok) {
           mostrar('estado-cancelado');
           return;
         }
-
-        // Fallback: atualizar diretamente via Supabase
-        const agId = window.__agendamento_id;
-        const { error } = await supabase
-          .from('agendamentos')
-          .update({ status: 'cancelado' })
-          .eq('id', agId)
-          .eq('cancel_token', token); // double-check segurança
-
-        if (error) throw error;
-
-        mostrar('estado-cancelado');
+        
+        // Se a Edge Function falhar, mostra erro
+        throw new Error(data.erro || 'Erro ao cancelar');
 
       } catch (e) {
         console.error(e);

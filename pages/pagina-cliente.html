@@ -1100,7 +1100,10 @@
 
     // ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
     window.irPara = function (n) {
-      document.getElementById('step-' + state.step)?.classList.remove('active');
+      // Remove active de todos os steps
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById('step-' + i)?.classList.remove('active');
+      }
       state.step = n;
       document.getElementById('step-' + n)?.classList.add('active');
       atualizarStepsNav();
@@ -1560,7 +1563,7 @@
     window.reiniciar = function () {
       Object.assign(state, {
         step: 1, servicoId: null, servico: null, duracaoMin: null, preco: null, icone: null,
-        data: null, dataLabel: null, hora: null, nome: '', tel: ''
+        data: null, dataLabel: null, hora: null, nome: '', tel: '', email: ''
       });
       document.querySelectorAll('.servico-card').forEach(c => {
         c.classList.remove('selected');
@@ -1569,8 +1572,10 @@
       });
       const nome = document.getElementById('input-nome');
       const tel = document.getElementById('input-tel');
+      const email = document.getElementById('input-email');
       if (nome) nome.value = '';
       if (tel) tel.value = '';
+      if (email) email.value = '';
       window.irPara(1);
     };
 

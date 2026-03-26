@@ -10,20 +10,70 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  };
+}
+
 const ZAPI_URL = `https://api.z-api.io/instances/${Deno.env.get("ZAPI_INSTANCE_ID")}/token/${Deno.env.get("ZAPI_TOKEN")}/send-text`;
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
-  await fetch(ZAPI_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Client-Token": Deno.env.get("ZAPI_CLIENT_TOKEN")!,
-    },
-    body: JSON.stringify({
-      phone: telefone.replace(/\D/g, ""),
-      message: mensagem,
-    }),
-  });
+  const token = Deno.env.get("ZAPI_TOKEN");
+  const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
+  const clientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+  
+  if (!token || !instanceId || !clientToken) return;
+  
+  try {
+    const res = await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Client-Token": clientToken,
+      },
+      body: JSON.stringify({
+        phone: telefone.replace(/\D/g, ""),
+        message: mensagem,
+      }),
+    });
+    
+    if (!res.ok) {
+      console.error("Z-API erro:", res.status);
+    }
+  } catch (e) {
+    console.error("Erro ao enviar WhatsApp:", e);
+  }
+}
+
+async function enviarEmail(to: string, subject: string, html: string) {
+  const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
+  if (!sendgridKey) return;
+
+  try {
+    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sendgridKey}`,
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: to }] }],
+        from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
+        subject: subject,
+        content: [{ type: "text/html", value: html }],
+      }),
+    });
+    
+    if (!res.ok) {
+      const erro = await res.text();
+      console.error("SendGrid erro:", res.status, erro);
+    }
+  } catch (e) {
+    console.error("Erro ao enviar email:", e);
+  }
 }
 
 // HTML da página de confirmação de cancelamento
@@ -121,6 +171,17 @@ async function cancelar() {
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
+  
+  // CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      },
+    });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -159,14 +220,16 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(paginaConfirmacao(ag, token), {
-      headers: { "Content-Type": "text/html" },
+      headers: { "Content-Type": "text/html", ...corsHeaders() },
     });
   }
 
   // POST → executa o cancelamento
   if (req.method === "POST") {
     const { token } = await req.json();
-    if (!token) return Response.json({ erro: "Token ausente" }, { status: 400 });
+    if (!token) return Response.json({ erro: "Token ausente" }, { status: 400, headers: corsHeaders() });
+
+    console.log("Tentando cancelar com token:", token);
 
     // Busca e cancela atomicamente
     const { data: ag, error } = await supabase
@@ -174,19 +237,21 @@ Deno.serve(async (req: Request) => {
       .update({ status: "cancelado" })
       .eq("cancel_token", token)
       .neq("status", "cancelado")   // idempotente
-      .select("*, servicos(nome), prestadores(nome, whatsapp)")
+      .select("*, servicos(nome), prestadores(nome, whatsapp, email)")
       .single();
 
+    console.log("Resultado cancelamento:", { ag, error });
+
     if (error || !ag) {
-      return Response.json({ erro: "Agendamento não encontrado ou já cancelado" }, { status: 404 });
+      return Response.json({ erro: "Agendamento não encontrado ou já cancelado" }, { status: 404, headers: corsHeaders() });
     }
+
+    const d = new Date(ag.data_hora);
+    const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+    const data = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
 
     // Notifica o prestador via WhatsApp
     if (ag.prestadores?.whatsapp) {
-      const d    = new Date(ag.data_hora);
-      const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-      const data = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
-
       try {
         await enviarWhatsApp(
           ag.prestadores.whatsapp,
@@ -201,8 +266,27 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return Response.json({ ok: true, mensagem: "Agendamento cancelado com sucesso." });
+    // Notifica o prestador via email
+    if (ag.prestadores?.email) {
+      try {
+        await enviarEmail(
+          ag.prestadores.email,
+          `❌ Agendamento cancelado por ${ag.cliente_nome}`,
+          `<div style="font-family: sans-serif;">
+            <h2>❌ Agendamento cancelado</h2>
+            <p><strong>Cliente:</strong> ${ag.cliente_nome}</p>
+            <p><strong>Serviço:</strong> ${ag.servicos?.nome}</p>
+            <p><strong>Horário:</strong> ${data} às ${hora}</p>
+            <p>O horário foi liberado automaticamente.</p>
+          </div>`
+        );
+      } catch (e) {
+        console.error("Erro ao enviar email para prestador:", e);
+      }
+    }
+
+    return Response.json({ ok: true, mensagem: "Agendamento cancelado com sucesso." }, { headers: corsHeaders() });
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return new Response("Method not allowed", { status: 405, headers: corsHeaders() });
 });
