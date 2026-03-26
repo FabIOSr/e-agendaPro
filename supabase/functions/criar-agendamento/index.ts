@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
     return Response.json({ erro: "Body inválido" }, { status: 400, headers: CORS });
   }
 
-  const { prestador_id, servico_id, cliente_nome, cliente_tel, data_hora } = body;
+  const { prestador_id, servico_id, cliente_nome, cliente_tel, cliente_email, data_hora } = body;
 
   if (!prestador_id || !servico_id || !cliente_nome || !cliente_tel || !data_hora) {
     return Response.json(
@@ -197,6 +197,7 @@ Deno.serve(async (req: Request) => {
       servico_id,
       cliente_nome: cliente_nome.trim(),
       cliente_tel:  cliente_tel.trim(),
+      cliente_email: cliente_email?.trim() || null,
       data_hora:    dataHoraDate.toISOString(),
       status:       "confirmado",
       cancel_token: crypto.randomUUID(),
