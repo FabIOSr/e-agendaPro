@@ -1249,11 +1249,12 @@
         : '';
 
       const dataStr = state.data.toISOString().slice(0, 10);
+      const cacheKey = dataStr + '_' + state.servicoId;
       let slots = [];
 
       // Usa cache se disponível (invalida ao confirmar)
-      if (slotsCache[dataStr]) {
-        slots = slotsCache[dataStr];
+      if (slotsCache[cacheKey]) {
+        slots = slotsCache[cacheKey];
       } else {
         // Tenta Edge Function
         try {
@@ -1285,7 +1286,7 @@
           slots = await gerarSlotsFallback();
         }
 
-        slotsCache[dataStr] = slots;
+        slotsCache[cacheKey] = slots;
       }
 
       grid.innerHTML = '';
@@ -1550,8 +1551,8 @@
           console.error('Erro ao enviar notificação:', notifErr);
         }
 
-        // Limpa cache do dia para que na próxima visita os slots sejam rebuscados
-        const chave = d.toISOString().slice(0, 10);
+        // Limpa cache do dia e serviço para que na próxima visita os slots sejam rebuscados
+        const chave = d.toISOString().slice(0, 10) + '_' + state.servicoId;
         delete slotsCache[chave];
 
         // Tela de sucesso
