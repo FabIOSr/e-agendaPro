@@ -376,7 +376,7 @@ async function contarAgendamentosMes() {
 async function carregarHistoricoReal() {
   const { data: rows, error } = await supabase
     .from('pagamentos')
-    .select('evento, data_evento, valor, descricao')
+    .select('evento, data_evento, valor')
     .eq('prestador_id', userId)
     .order('data_evento', { ascending: false })
     .limit(10);

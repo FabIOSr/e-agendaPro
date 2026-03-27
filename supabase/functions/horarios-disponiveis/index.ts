@@ -216,7 +216,7 @@ Deno.serve(async (req: Request) => {
     // 1. Resolve o prestador pelo slug
     const { data: prestador, error: errP } = await supabase
       .from("prestadores")
-      .select("id, intervalo_min")
+      .select("id, intervalo_min, intervalo_slot")
       .eq("slug", prestador_slug)
       .single();
 
@@ -226,6 +226,7 @@ Deno.serve(async (req: Request) => {
 
     const prestadorId = prestador.id;
     const intervaloMin = prestador.intervalo_min ?? 0;
+    const intervaloSlotConfig = prestador.intervalo_slot; // null ou 0 = usa duração do serviço
 
     console.log('DEBUG intervaloMin:', intervaloMin, 'prestador_slug:', prestador_slug);
 
@@ -302,7 +303,7 @@ Deno.serve(async (req: Request) => {
       servico.duracao_min,
       agendamentosNorm,
       bloqueios ?? [],
-      intervalo_slot ?? 30,
+      intervaloSlotConfig || servico.duracao_min,
       intervaloMin
     );
 

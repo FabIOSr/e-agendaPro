@@ -1317,13 +1317,17 @@
     async function gerarSlotsFallback() {
       if (!PRESTADOR || !state.data) return [];
       
-      // Busca intervalo_min do prestador
+      // Busca intervalo_min e intervalo_slot do prestador
       const { data: prestador } = await supabase
         .from('prestadores')
-        .select('intervalo_min')
+        .select('intervalo_min, intervalo_slot')
         .eq('id', PRESTADOR.id)
         .single();
       const bufferMin = prestador?.intervalo_min ?? 0;
+      const duracaoServico = state.duracaoMin || 60;
+      // Se intervalo_slot for null ou 0, usa duração do serviço
+      const intervaloSlotConfig = prestador?.intervalo_slot;
+      const intervalo = intervaloSlotConfig || duracaoServico;
       
       const diaSemana = state.data.getDay();
       const { data: disp } = await supabase
@@ -1338,8 +1342,7 @@
       const [hFim, mFim] = disp.hora_fim.split(':').map(Number);
       const inicioMin = hIni * 60 + mIni;
       const fimMin = hFim * 60 + mFim;
-      const durServico = state.duracaoMin || 60;
-      const intervalo = 30 + bufferMin;
+      const durServico = duracaoServico;
 
       const inicioDia = new Date(state.data); inicioDia.setHours(0, 0, 0, 0);
       const fimDia = new Date(state.data); fimDia.setHours(23, 59, 59, 999);
