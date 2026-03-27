@@ -22,6 +22,7 @@ interface Disponibilidade {
 interface Agendamento {
   data_hora: string;   // ISO 8601
   duracao_min: number; // duração do serviço já agendado
+  intervalo_min: number; // buffer após o agendamento
 }
 
 interface Bloqueio {
@@ -40,17 +41,28 @@ interface Slot {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Converte "data + hora local BRT" para Date em UTC.
+ * Usa offset fixo -03:00 para garantir consistência com o banco,
+ * que salva tudo em UTC com offset BRT explícito.
+ */
 function horaParaDate(data: string, hora: string): Date {
-  return new Date(`${data}T${hora}:00`);
+  return new Date(`${data}T${hora}:00-03:00`);
 }
 
+/**
+ * Converte Date UTC para string "HH:MM" no fuso BRT (UTC-3).
+ */
 function dateParaHora(d: Date): string {
-  return d.toISOString().slice(11, 16);
+  // Subtrai 3h para converter UTC → BRT
+  const brt = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+  return brt.toISOString().slice(11, 16);
 }
 
 /**
  * Conflito entre dois intervalos semi-abertos [a, b) e [c, d):
  * existe sobreposição quando a < d E b > c.
+ * Todas as datas devem estar em UTC para a comparação ser correta.
  */
 function conflita(
   inicioSlot: Date, fimSlot: Date,
@@ -69,10 +81,19 @@ function gerarSlots(
   duracaoServico: number,
   agendamentos: Agendamento[],
   bloqueios: Bloqueio[],
-  intervaloSlot = 30
+  intervaloSlot = 30,   // cadência de exibição dos slots (ex: a cada 30min)
+  intervaloMin = 0      // buffer após cada serviço (não afeta cadência)
 ): Slot[] {
   const agora = new Date();
   const slots: Slot[] = [];
+
+  // O cursor avança pela cadência dos slots (intervaloSlot), não pelo buffer.
+  // O buffer (intervaloMin) é somado à duração do serviço para calcular
+  // o espaço ocupado — mas não muda de onde o próximo slot começa na grade.
+  const cadencia = intervaloSlot; // minutos entre início de cada slot exibido
+
+  // Duração real ocupada por um agendamento deste serviço (serviço + buffer)
+  const duracaoOcupada = duracaoServico + intervaloMin;
 
   for (const disp of disponibilidades) {
     const expedienteInicio = horaParaDate(data, disp.hora_inicio);
@@ -82,17 +103,19 @@ function gerarSlots(
 
     while (cursor < expedienteFim) {
       const inicioSlot = new Date(cursor);
-      const fimSlot    = new Date(cursor.getTime() + duracaoServico * 60_000);
+      // fimSlot = fim real do serviço + buffer — o que precisa caber no expediente
+      // e o que não pode conflitar com bloqueios/agendamentos
+      const fimSlot = new Date(cursor.getTime() + duracaoOcupada * 60_000);
 
-      // Regra 1 — slot precisa caber inteiro no expediente
+      // Regra 1 — serviço + buffer precisa caber inteiro no expediente
       if (fimSlot > expedienteFim) {
-        cursor = new Date(cursor.getTime() + intervaloSlot * 60_000);
+        cursor = new Date(cursor.getTime() + cadencia * 60_000);
         continue;
       }
 
       // Regra 2 — não exibir horários passados
       if (inicioSlot <= agora) {
-        cursor = new Date(cursor.getTime() + intervaloSlot * 60_000);
+        cursor = new Date(cursor.getTime() + cadencia * 60_000);
         continue;
       }
 
@@ -100,9 +123,12 @@ function gerarSlots(
       let motivoBloqueio: string | undefined;
 
       // Regra 3 — conflito com agendamentos confirmados
+      // O agendamento existente ocupa: sua duração + buffer do prestador
       for (const ag of agendamentos) {
         const inicioAg = new Date(ag.data_hora);
-        const fimAg    = new Date(inicioAg.getTime() + ag.duracao_min * 60_000);
+        const fimAg    = new Date(
+          inicioAg.getTime() + (ag.duracao_min + (ag.intervalo_min ?? 0)) * 60_000
+        );
 
         if (conflita(inicioSlot, fimSlot, inicioAg, fimAg)) {
           disponivel = false;
@@ -112,6 +138,7 @@ function gerarSlots(
       }
 
       // Regra 4 — conflito com bloqueios manuais
+      // bloqueios chegam do banco em UTC — comparação correta pois fimSlot também é UTC
       if (disponivel) {
         for (const bl of bloqueios) {
           const inicioBl = new Date(bl.inicio);
@@ -131,7 +158,8 @@ function gerarSlots(
         ...(motivoBloqueio && { motivo_bloqueio: motivoBloqueio }),
       });
 
-      cursor = new Date(cursor.getTime() + intervaloSlot * 60_000);
+      // Cursor avança pela cadência — não pela duração ocupada
+      cursor = new Date(cursor.getTime() + cadencia * 60_000);
     }
   }
 
@@ -157,6 +185,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    console.log('DEBUG: Recebendo requisição para horarios-disponiveis');
+    
     const {
       prestador_slug,
       servico_id,
@@ -186,7 +216,7 @@ Deno.serve(async (req: Request) => {
     // 1. Resolve o prestador pelo slug
     const { data: prestador, error: errP } = await supabase
       .from("prestadores")
-      .select("id")
+      .select("id, intervalo_min")
       .eq("slug", prestador_slug)
       .single();
 
@@ -195,6 +225,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const prestadorId = prestador.id;
+    const intervaloMin = prestador.intervalo_min ?? 0;
+
+    console.log('DEBUG intervaloMin:', intervaloMin, 'prestador_slug:', prestador_slug);
 
     // 2. Serviço e sua duração
     const { data: servico, error: errS } = await supabase
@@ -232,7 +265,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 4. Agendamentos confirmados no dia (JOIN com duração do serviço agendado)
+    // 4. Agendamentos confirmados no dia (JOIN com duração do serviço + buffer do prestador)
     const { data: agendamentos, error: errA } = await supabase
       .from("agendamentos")
       .select("data_hora, servicos(duracao_min)")
@@ -247,6 +280,7 @@ Deno.serve(async (req: Request) => {
       (ag: any) => ({
         data_hora: ag.data_hora,
         duracao_min: ag.servicos?.duracao_min ?? 60,
+        intervalo_min: intervaloMin,
       })
     );
 
@@ -268,7 +302,8 @@ Deno.serve(async (req: Request) => {
       servico.duracao_min,
       agendamentosNorm,
       bloqueios ?? [],
-      intervalo_slot ?? 30
+      intervalo_slot ?? 30,
+      intervaloMin
     );
 
     return Response.json(

@@ -1185,9 +1185,20 @@
                 <input type="time" class="time-input" id="hora-fim" value="18:00">
               </div>
             </div>
+
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--bord)">
+              <label class="label">Intervalo entre agendamentos (Buffer)</label>
+              <div style="display:flex; align-items:center; gap:12px">
+                <input type="number" class="input mono" id="p-intervalo" value="0" min="0" max="120" style="width:100px">
+                <span style="font-size:13px; color:var(--muted)">minutos de respiro após cada serviço</span>
+              </div>
+              <p style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5">
+                Ex: Se você tem um serviço de 30min e define 10min de intervalo, o sistema bloqueará 40min na sua agenda, garantindo tempo para limpeza ou descanso.
+              </p>
+            </div>
           </div>
           <div class="card-footer">
-            <button class="btn-save" onclick="salvar('agenda')">Salvar horários</button>
+            <button class="btn-save" onclick="salvar('agenda')">Salvar agenda</button>
           </div>
         </div>
 
@@ -1466,7 +1477,7 @@
     async function carregarPerfil() {
       const { data, error } = await supabase
         .from('prestadores')
-        .select('nome, slug, bio, whatsapp, foto_url, cidade, endereco')
+        .select('nome, slug, bio, whatsapp, foto_url, cidade, endereco, intervalo_min')
         .eq('id', userId)
         .single();
       if (error || !data) return;
@@ -1477,6 +1488,7 @@
       document.getElementById('p-wpp').value = data.whatsapp ?? '';
       document.getElementById('p-cidade').value = data.cidade ?? '';
       document.getElementById('p-endereco').value = data.endereco ?? '';
+      document.getElementById('p-intervalo').value = data.intervalo_min ?? 0;
 
       // Avatar
       const circle = document.getElementById('foto-circle');
@@ -1714,8 +1726,13 @@
       try {
         const horaIni = document.getElementById('hora-ini').value || '09:00';
         const horaFim = document.getElementById('hora-fim').value || '18:00';
+        const intervalo = Number(document.getElementById('p-intervalo').value) || 0;
 
-        // Delete all + reinsert (estratégia mais simples)
+        // 1. Atualiza intervalo no perfil do prestador
+        const { error: pErr } = await supabase.from('prestadores').update({ intervalo_min: intervalo }).eq('id', userId);
+        if (pErr) throw pErr;
+
+        // 2. Atualiza horários (Delete all + reinsert)
         const { error: delErr } = await supabase.from('disponibilidade').delete().eq('prestador_id', userId);
         if (delErr) throw delErr;
 
@@ -1730,10 +1747,10 @@
           if (insErr) throw insErr;
         }
 
-        toast('✓ Horários salvos!');
+        toast('✓ Agenda salva!');
       } catch (e) {
         console.error(e);
-        toast('Erro ao salvar horários', false);
+        toast('Erro ao salvar agenda', false);
       } finally {
         if (btn) { btn.textContent = orig; btn.disabled = false; }
       }

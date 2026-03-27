@@ -1316,6 +1316,15 @@
 
     async function gerarSlotsFallback() {
       if (!PRESTADOR || !state.data) return [];
+      
+      // Busca intervalo_min do prestador
+      const { data: prestador } = await supabase
+        .from('prestadores')
+        .select('intervalo_min')
+        .eq('id', PRESTADOR.id)
+        .single();
+      const bufferMin = prestador?.intervalo_min ?? 0;
+      
       const diaSemana = state.data.getDay();
       const { data: disp } = await supabase
         .from('disponibilidade')
@@ -1330,7 +1339,7 @@
       const inicioMin = hIni * 60 + mIni;
       const fimMin = hFim * 60 + mFim;
       const durServico = state.duracaoMin || 60;
-      const intervalo = 30;
+      const intervalo = 30 + bufferMin;
 
       const inicioDia = new Date(state.data); inicioDia.setHours(0, 0, 0, 0);
       const fimDia = new Date(state.data); fimDia.setHours(23, 59, 59, 999);
@@ -1352,12 +1361,12 @@
           .gt('fim', inicioDia.toISOString()),
       ]);
 
-      // Marca minutos ocupados por agendamentos
+      // Marca minutos ocupados por agendamentos (inclui buffer)
       const minutosOcupados = new Set();
       (ags || []).forEach(ag => {
         const t = new Date(ag.data_hora);
         const ini = t.getHours() * 60 + t.getMinutes();
-        const dur = ag.servicos?.duracao_min || durServico;
+        const dur = (ag.servicos?.duracao_min || durServico) + bufferMin;
         for (let m = ini; m < ini + dur; m++) minutosOcupados.add(m);
       });
 
@@ -1365,7 +1374,6 @@
       (bls || []).forEach(bl => {
         const ini = new Date(bl.inicio);
         const fim = new Date(bl.fim);
-        // Converte para minutos do dia (hora local)
         const iniMin = ini.getHours() * 60 + ini.getMinutes();
         const fimMin = fim.getHours() * 60 + fim.getMinutes();
         for (let m = iniMin; m < fimMin; m++) minutosOcupados.add(m);
@@ -1377,14 +1385,13 @@
         && agora.getMonth() === state.data.getMonth()
         && agora.getDate() === state.data.getDate()
         ? agora.getHours() * 60 + agora.getMinutes()
-        : -1; // dia futuro — nenhum slot é passado
+        : -1;
 
-      for (let m = inicioMin; m + durServico <= fimMin; m += intervalo) {
-        // Ignora slots no passado
+      for (let m = inicioMin; m + durServico + bufferMin <= fimMin; m += intervalo) {
         if (agoraMin >= 0 && m <= agoraMin) continue;
 
         let livre = true;
-        for (let t = m; t < m + durServico; t++) {
+        for (let t = m; t < m + durServico + bufferMin; t++) {
           if (minutosOcupados.has(t)) { livre = false; break; }
         }
         const hh = String(Math.floor(m / 60)).padStart(2, '0');
