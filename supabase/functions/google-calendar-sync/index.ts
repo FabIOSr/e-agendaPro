@@ -138,9 +138,22 @@ async function deletarEvento(accessToken: string, eventoId: string) {
 // ---------------------------------------------------------------------------
 // Handler HTTP
 // ---------------------------------------------------------------------------
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+
 Deno.serve(async (req: Request) => {
+  // CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: CORS_HEADERS });
+  }
+
   const url    = new URL(req.url);
   const action = url.searchParams.get("action") ?? "";
+  
+  console.log("DEBUG google-calendar-sync:", req.method, "action:", action);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -187,22 +200,32 @@ Deno.serve(async (req: Request) => {
       expires_at:    new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     }, { onConflict: "prestador_id" });
 
-    return new Response(
-      `<html><body style="font-family:sans-serif;text-align:center;padding:60px 20px">
-        <h2>✅ Google Calendar conectado!</h2>
-        <p style="color:#888;margin-top:8px">Seus agendamentos serão sincronizados automaticamente.</p>
-        <script>setTimeout(() => window.close(), 2000)</script>
-      </body></html>`,
-      { headers: { "Content-Type": "text/html" } }
-    );
+    // Redireciona de volta para o app com status de sucesso
+    const appUrl = Deno.env.get("APP_URL") || "https://e-agendapro.web.app";
+    return Response.redirect(`${appUrl}/pages/configuracoes.html?gcal=gcal_connected&secao=agenda`, 302);
   }
 
   // ── OPERAÇÕES ───────────────────────────────────────────────────────────
   if (req.method === "POST") {
-    const { action: op, agendamento_id } = await req.json();
+    const body = await req.json();
+    const op = body.action;
+    const prestadorId = body.prestador_id;
+
+    // Status — verifica se está conectado
+    if (op === "status" && prestadorId) {
+      const { data: tokenRow } = await supabase
+        .from("google_calendar_tokens")
+        .select("prestador_id")
+        .eq("prestador_id", prestadorId)
+        .single();
+      
+      return Response.json({ conectado: !!tokenRow }, { headers: CORS_HEADERS });
+    }
+
+    const agendamento_id = body.agendamento_id;
 
     if (!op || !agendamento_id) {
-      return Response.json({ erro: "action e agendamento_id obrigatórios" }, { status: 400 });
+      return Response.json({ erro: "action e agendamento_id obrigatórios" }, { status: 400, headers: CORS_HEADERS });
     }
 
     const { data: ag } = await supabase
@@ -211,7 +234,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", agendamento_id)
       .single();
 
-    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404 });
+    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: CORS_HEADERS });
 
     // Prestador tem Calendar conectado?
     const { data: tokenRow } = await supabase
@@ -222,7 +245,7 @@ Deno.serve(async (req: Request) => {
 
     if (!tokenRow) {
       // Silenciosamente ignora — Calendar não conectado
-      return Response.json({ ok: true, sincronizado: false, motivo: "Calendar não conectado" });
+      return Response.json({ ok: true, sincronizado: false, motivo: "Calendar não conectado" }, { headers: CORS_HEADERS });
     }
 
     const accessToken = await getAccessToken(supabase, ag.prestador_id);
@@ -233,26 +256,26 @@ Deno.serve(async (req: Request) => {
       await supabase.from("agendamentos")
         .update({ google_event_id: eventoId })
         .eq("id", agendamento_id);
-      return Response.json({ ok: true, sincronizado: true, evento_id: eventoId });
+      return Response.json({ ok: true, sincronizado: true, evento_id: eventoId }, { headers: CORS_HEADERS });
     }
 
     if (op === "reagendar") {
       if (!ag.google_event_id) {
-        return Response.json({ erro: "Evento não encontrado no Calendar" }, { status: 404 });
+        return Response.json({ erro: "Evento não encontrado no Calendar" }, { status: 404, headers: CORS_HEADERS });
       }
       await atualizarEvento(accessToken, ag.google_event_id, ag);
-      return Response.json({ ok: true, sincronizado: true });
+      return Response.json({ ok: true, sincronizado: true }, { headers: CORS_HEADERS });
     }
 
     if (op === "cancelar") {
       if (ag.google_event_id) {
         await deletarEvento(accessToken, ag.google_event_id);
       }
-      return Response.json({ ok: true, sincronizado: true });
+      return Response.json({ ok: true, sincronizado: true }, { headers: CORS_HEADERS });
     }
 
-    return Response.json({ erro: "action inválida" }, { status: 400 });
+    return Response.json({ erro: "action inválida" }, { status: 400, headers: CORS_HEADERS });
   }
 
-  return new Response("Not found", { status: 404 });
+  return new Response("Not found", { status: 404, headers: CORS_HEADERS });
 });
