@@ -1779,9 +1779,16 @@
         .select('id, motivo, inicio, fim')
         .eq('prestador_id', userId)
         .order('inicio');
-      if (error) return;
+      if (error) {
+        console.error('Erro ao carregar bloqueios:', error);
+        toast('Erro ao carregar bloqueios: ' + error.message, false);
+        return;
+      }
       bloqueios = data ?? [];
       renderBloqueios();
+      if (bloqueios.length > 0) {
+        console.log('Bloqueios carregados:', bloqueios.length);
+      }
     }
 
     window.renderBloqueios = function renderBloqueios() {
@@ -1793,21 +1800,27 @@
       body.innerHTML = bloqueios.map(b => {
         const ini = new Date(b.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         const fim = new Date(b.fim).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const idEsc = b.id.replace(/"/g, '&quot;');
         return `
       <div class="bloqueio-item">
         <div class="bl-info">
           <div class="bl-nome">${b.motivo}</div>
           <div class="bl-range">${ini} → ${fim}</div>
         </div>
-        <button class="bl-del" onclick="deletarBloqueio(${b.id})">Remover</button>
+        <button class="bl-del" onclick="deletarBloqueio('${idEsc}')">Remover</button>
       </div>
     `;
       }).join('');
     };
 
     window.deletarBloqueio = async function (id) {
+      console.log('Deletando bloqueio:', id, 'para prestador:', userId);
       const { error } = await supabase.from('bloqueios').delete().eq('id', id).eq('prestador_id', userId);
-      if (error) { toast('Erro ao remover bloqueio', false); return; }
+      if (error) { 
+        console.error('Erro ao deletar:', error);
+        toast('Erro ao remover bloqueio: ' + error.message, false); 
+        return; 
+      }
       bloqueios = bloqueios.filter(b => b.id !== id);
       renderBloqueios();
       toast('Bloqueio removido');
