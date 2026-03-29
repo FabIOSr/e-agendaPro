@@ -352,13 +352,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. Gera os slots e retorna
+    // Cadência: usa intervaloSlot (Pro) ou duração do serviço + buffer (Free)
+    const cadenciaSlots = intervaloSlotConfig || (servico.duracao_min + intervaloMin);
+
     const slots = gerarSlots(
       data,
       disponibilidades,
       servico.duracao_min,
       agendamentosNorm,
       bloqueios ?? [],
-      intervaloSlotConfig || servico.duracao_min,
+      cadenciaSlots,
       intervaloMin,
       bloqueiosRecorrentes ?? []
     );
