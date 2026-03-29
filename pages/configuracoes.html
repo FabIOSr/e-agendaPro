@@ -2437,24 +2437,57 @@
       }
     };
 
-    // ── PERIGO ────────────────────────────────────────────────────────────────
+    // ── EXPORTAÇÃO ────────────────────────────────────────────────────────────────
     window.exportarDados = async function () {
       toast('⬇ Gerando exportação…');
       try {
-        const [{ data: ag }, { data: cl }, { data: sv }] = await Promise.all([
+        // Busca todos os dados do prestador em paralelo
+        const [
+          { data: prestador },
+          { data: agendamentos },
+          { data: clientes },
+          { data: servicos },
+          { data: disponibilidade },
+          { data: bloqueios },
+          { data: bloqueiosRecorrentes },
+          { data: preferenciasNotif },
+        ] = await Promise.all([
+          supabase.from('prestadores').select('id, nome, slug, email, whatsapp, intervalo_min, intervalo_slot, plano, moeda, timezone, criado_em').eq('id', userId).single(),
           supabase.from('agendamentos').select('*').eq('prestador_id', userId),
           supabase.from('clientes').select('*').eq('prestador_id', userId),
           supabase.from('servicos').select('*').eq('prestador_id', userId),
+          supabase.from('disponibilidade').select('*').eq('prestador_id', userId),
+          supabase.from('bloqueios').select('*').eq('prestador_id', userId),
+          supabase.from('bloqueios_recorrentes').select('*').eq('prestador_id', userId),
+          supabase.from('preferencias_notificacao').select('*').eq('prestador_id', userId).single(),
         ]);
-        const blob = new Blob([JSON.stringify({ agendamentos: ag, clientes: cl, servicos: sv }, null, 2)], { type: 'application/json' });
+
+        const dadosExportacao = {
+          exportado_em: new Date().toISOString(),
+          prestador,
+          dados: {
+            agendamentos: agendamentos ?? [],
+            clientes: clientes ?? [],
+            servicos: servicos ?? [],
+            disponibilidade: disponibilidade ?? [],
+            bloqueios: bloqueios ?? [],
+            bloqueios_recorrentes: bloqueiosRecorrentes ?? [],
+            preferencias_notificacao: preferenciasNotif ?? null,
+          },
+        };
+
+        const blob = new Blob([JSON.stringify(dadosExportacao, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `agendapro-dados-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `agendapro-backup-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
       } catch (e) {
+        console.error('Erro ao exportar:', e);
         toast('Erro ao exportar dados', false);
       }
     };
+
+    // ── PERIGO ────────────────────────────────────────────────────────────────
 
     window.confirmarExclusao = function () { document.getElementById('modal-excluir').classList.add('open'); };
     window.fecharModal = function (id) { document.getElementById(id).classList.remove('open'); };
