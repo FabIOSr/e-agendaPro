@@ -2462,11 +2462,27 @@
       fecharModal('modal-excluir');
       toast('Excluindo conta…');
       try {
-        // Soft delete: apagar dados principais e deslogar
-        await supabase.from('prestadores').delete().eq('id', userId);
+        // Chama Edge Function para excluir conta (Auth + Banco)
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${window.SUPABASE_URL}/functions/v1/excluir-conta`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': window.SUPABASE_ANON,
+          },
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.erro || 'Erro ao excluir');
+        }
+
+        // Desloga e redireciona
         await supabase.auth.signOut();
-        setTimeout(() => window.location.href = '/', 1500);
+        window.location.href = '/';
       } catch (e) {
+        console.error('Erro ao excluir:', e);
         toast('Erro ao excluir conta', false);
       }
     };
