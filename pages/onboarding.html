@@ -990,6 +990,52 @@ window.finalizar = async function() {
       if (errD) throw errD;
     }
 
+    // 4. Inserir bloqueios recorrentes (Almoço, Café, etc.)
+    if (state.bloqueios.length > 0 && diasArray.length > 0) {
+      const rows = [];
+
+      // Mapeamento manual dos bloqueios fixos
+      const mapaBloqueios = {
+        '🍽️ Almoço (12–13h)': { motivo: 'Almoço', inicio: '12:00', fim: '13:00' },
+        '☕ Café (10–10:30h)': { motivo: 'Café manhã', inicio: '10:00', fim: '10:30' },
+        '☕ Café (15–15:30h)': { motivo: 'Café tarde', inicio: '15:00', fim: '15:30' },
+        '🧹 Limpeza (19–19:30h)': { motivo: 'Limpeza final', inicio: '19:00', fim: '19:30' },
+      };
+
+      state.bloqueios.forEach(blq => {
+        const config = mapaBloqueios[blq];
+        if (!config) {
+          console.warn('Bloqueio não encontrado no mapa:', blq);
+          return;
+        }
+
+        // Cria um registro para cada dia da semana selecionado
+        diasArray.forEach(dia => {
+          rows.push({
+            prestador_id: userId,
+            dia_semana: dia,
+            hora_inicio: config.inicio,
+            hora_fim: config.fim,
+            motivo: config.motivo,
+            ativo: true,
+          });
+        });
+      });
+
+      console.log('Bloqueios recorrentes para salvar:', rows);
+
+      if (rows.length > 0) {
+        const { error: errB } = await supabase
+          .from('bloqueios_recorrentes')
+          .insert(rows);
+        if (errB) {
+          console.error('Erro ao salvar bloqueios recorrentes:', errB);
+        } else {
+          console.log('✓ Bloqueios recorrentes salvos:', rows.length);
+        }
+      }
+    }
+
     // Sucesso
     document.getElementById('link-final').textContent = `${appDomain}/${state.slug}`;
     irPara(4);
