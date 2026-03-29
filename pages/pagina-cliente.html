@@ -1345,8 +1345,11 @@
       const fimMin = hFim * 60 + mFim;
       const durServico = duracaoServico;
 
-      const inicioDia = new Date(state.data); inicioDia.setHours(0, 0, 0, 0);
-      const fimDia = new Date(state.data); fimDia.setHours(23, 59, 59, 999);
+      // Ranges com offset BRT explícito para não depender do timezone do browser
+      const _sd = state.data;
+      const _sds = `${_sd.getFullYear()}-${String(_sd.getMonth()+1).padStart(2,'0')}-${String(_sd.getDate()).padStart(2,'0')}`;
+      const inicioDia = new Date(`${_sds}T00:00:00-03:00`);
+      const fimDia    = new Date(`${_sds}T23:59:59-03:00`);
 
       // Busca agendamentos e bloqueios em paralelo
       const [{ data: ags }, { data: bls }] = await Promise.all([
@@ -1468,15 +1471,20 @@
     }
 
     function mostrarErroBanner(mensagem) {
-      const container = document.getElementById('servicos-container');
-      if (container) {
-        container.innerHTML = `
-      <div class="limite-banner">
-        <div class="limite-banner-icon">⚠️</div>
-        <h3>Horário indisponível</h3>
-        <p>${mensagem}</p>
-      </div>`;
+      let banner = document.getElementById('erro-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'erro-banner';
+        banner.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff3cd;border:1px solid #f0c896;border-radius:12px;padding:16px 24px;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:90%;width:360px;text-align:center;';
+        document.body.appendChild(banner);
       }
+      banner.innerHTML = `
+        <div style="font-size:24px;margin-bottom:8px">⚠️</div>
+        <div style="font-size:16px;font-weight:600;color:#856404;margin-bottom:4px">Horário indisponível</div>
+        <div style="font-size:13px;color:#856404;line-height:1.5">${mensagem}</div>
+      `;
+      banner.style.display = 'block';
+      setTimeout(() => { banner.style.display = 'none'; }, 5000);
       document.getElementById('sticky-footer')?.classList.remove('visible');
     }
 
@@ -1489,12 +1497,15 @@
       try {
         const d = state.data;
         const [hh, mm] = state.hora.split(':').map(Number);
-        // Monta data_hora com offset BRT explícito para gravar UTC correto no banco
-        const dataHora = new Date(d);
-        dataHora.setHours(hh, mm, 0, 0);
-        // Formata com offset -03:00 em vez de toISOString() (que usa UTC)
+        // Monta data_hora com offset BRT explícito (-03:00).
+        // NÃO usar setHours + getTime() + 3h — o browser já converte
+        // o horário local para UTC internamente, somar 3h duplica a conversão.
         const pad = n => String(n).padStart(2, '0');
-        const dataHoraBRT = `${dataHora.getFullYear()}-${pad(dataHora.getMonth() + 1)}-${pad(dataHora.getDate())}T${pad(hh)}:${pad(mm)}:00-03:00`;
+        const _dy = d.getFullYear();
+        const _dm = String(d.getMonth() + 1).padStart(2, '0');
+        const _dd = String(d.getDate()).padStart(2, '0');
+        const dataHoraBRT = `${_dy}-${_dm}-${_dd}T${pad(hh)}:${pad(mm)}:00-03:00`;
+        const dataHoraISO = new Date(dataHoraBRT).toISOString();
 
         const EDGE_URL = `${window.SUPABASE_URL}/functions/v1/criar-agendamento`;
 
@@ -1511,7 +1522,7 @@
             cliente_nome: state.nome,
             cliente_tel: state.tel,
             cliente_email: state.email,
-            data_hora: dataHoraBRT,
+            data_hora: dataHoraISO,
           }),
         });
 
@@ -1526,8 +1537,11 @@
         }
 
         // Horário ocupado (409) — outro cliente pegou o slot no mesmo instante
-        if (resp.status === 409) {
-          mostrarErroBanner(resultado.erro || 'Horário não disponível. Por favor, escolha outro horário.');
+        if (resp.status === 409 || (resultado.erro && resultado.erro.includes('indisponível'))) {
+          const msg = resultado.erro || 'Horário não disponível. Por favor, escolha outro horário.';
+          console.log('Erro de conflito:', msg, 'hora:', state.hora, 'dataHora UTC:', dataHoraISO);
+          console.log('Debug:', resultado.debug);
+          mostrarErroBanner(msg + ' (debug: ' + JSON.stringify(resultado.debug) + ')');
           window.irPara(3);
           if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
           return;
@@ -1566,7 +1580,8 @@
 
       } catch (err) {
         console.error('Erro ao confirmar:', err);
-        alert('Erro ao confirmar agendamento. Tente novamente.');
+        const msg = err.message || 'Erro ao confirmar agendamento. Tente novamente.';
+        mostrarErroBanner(msg);
         if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
       }
     };

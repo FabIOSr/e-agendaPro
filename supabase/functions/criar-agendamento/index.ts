@@ -175,14 +175,15 @@ Deno.serve(async (req: Request) => {
   // Conflito se: bloqueio.inicio < fimAgendamento E bloqueio.fim > dataHoraDate
   const { data: bloqueiosConflito } = await supabase
     .from("bloqueios")
-    .select("id, motivo")
+    .select("id, motivo, inicio, fim")
     .eq("prestador_id", prestador_id)
     .lt("inicio", fimAgendamento)
     .gt("fim",    dataHoraDate.toISOString());
 
   if (bloqueiosConflito && bloqueiosConflito.length > 0) {
-    const motivo = bloqueiosConflito[0].motivo || "bloqueio";
-    console.log(`Bloqueio impediu agendamento: ${motivo} — prestador: ${prestador_id}`);
+    const b = bloqueiosConflito[0];
+    const motivo = b.motivo || "bloqueio";
+    console.log(`Bloqueio impediu: ${motivo} — prestador: ${prestador_id} — slot: ${dataHoraDate.toISOString()}`);
     return Response.json(
       { erro: "Horário indisponível: " + motivo + ". Por favor, escolha outro horário." },
       { status: 409, headers: CORS }
@@ -195,10 +196,10 @@ Deno.serve(async (req: Request) => {
     .insert({
       prestador_id,
       servico_id,
-      cliente_nome: cliente_nome.trim(),
-      cliente_tel:  cliente_tel.trim(),
+      cliente_nome:  cliente_nome.trim(),
+      cliente_tel:   cliente_tel.trim(),
       cliente_email: cliente_email?.trim() || null,
-      data_hora:    dataHoraDate.toISOString(),
+      data_hora:     dataHoraDate.toISOString(),
       status:       "confirmado",
       cancel_token: crypto.randomUUID(),
     })

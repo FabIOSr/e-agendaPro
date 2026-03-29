@@ -31,6 +31,13 @@ interface Bloqueio {
   motivo?: string;
 }
 
+interface BloqueioRecorrente {
+  dia_semana: number; // 0=Dom … 6=Sáb
+  hora_inicio: string; // "12:00"
+  hora_fim: string;    // "13:00"
+  motivo?: string;
+}
+
 interface Slot {
   hora: string;             // "10:00"
   disponivel: boolean;
@@ -47,7 +54,9 @@ interface Slot {
  * que salva tudo em UTC com offset BRT explícito.
  */
 function horaParaDate(data: string, hora: string): Date {
-  return new Date(`${data}T${hora}:00-03:00`);
+  // Remove segundos se presentes (banco retorna "09:00:00")
+  const horaLimpa = hora.slice(0, 5);
+  return new Date(`${data}T${horaLimpa}:00-03:00`);
 }
 
 /**
@@ -81,8 +90,9 @@ function gerarSlots(
   duracaoServico: number,
   agendamentos: Agendamento[],
   bloqueios: Bloqueio[],
-  intervaloSlot = 30,   // cadência de exibição dos slots (ex: a cada 30min)
-  intervaloMin = 0      // buffer após cada serviço (não afeta cadência)
+  intervaloSlot = 30,
+  intervaloMin = 0,
+  bloqueiosRecorrentes: BloqueioRecorrente[] = []
 ): Slot[] {
   const agora = new Date();
   const slots: Slot[] = [];
@@ -137,7 +147,7 @@ function gerarSlots(
         }
       }
 
-      // Regra 4 — conflito com bloqueios manuais
+      // Regra 4 — conflito com bloqueios pontuais
       // bloqueios chegam do banco em UTC — comparação correta pois fimSlot também é UTC
       if (disponivel) {
         for (const bl of bloqueios) {
@@ -147,6 +157,31 @@ function gerarSlots(
           if (conflita(inicioSlot, fimSlot, inicioBl, fimBl)) {
             disponivel = false;
             motivoBloqueio = bl.motivo ?? "bloqueado";
+            break;
+          }
+        }
+      }
+
+      // Regra 5 — conflito com bloqueios recorrentes (dia da semana + horário)
+      // Convertendo slot UTC para BRT para comparar com hora_inicio/hora_fim do banco
+      if (disponivel && bloqueiosRecorrentes.length > 0) {
+        const slotBRT = new Date(inicioSlot.getTime() - 3 * 60 * 60 * 1000);
+        const diaSemanaSlot = slotBRT.getUTCDay();
+        const hIniSlot = slotBRT.getUTCHours() * 60 + slotBRT.getUTCMinutes();
+        const hFimSlot = (hIniSlot + duracaoOcupada);
+
+        for (const br of bloqueiosRecorrentes) {
+          if (br.dia_semana !== diaSemanaSlot) continue;
+          // Remove segundos se presentes (banco retorna "12:00:00")
+          const [hBrIni, mBrIni] = br.hora_inicio.slice(0, 5).split(":").map(Number);
+          const [hBrFim, mBrFim] = br.hora_fim.slice(0, 5).split(":").map(Number);
+          const minBrIni = hBrIni * 60 + mBrIni;
+          const minBrFim = hBrFim * 60 + mBrFim;
+
+          // Conflito: slot começa antes do fim do bloqueio E slot termina depois do início
+          if (hIniSlot < minBrFim && hFimSlot > minBrIni) {
+            disponivel = false;
+            motivoBloqueio = br.motivo ?? "bloqueado";
             break;
           }
         }
@@ -285,8 +320,8 @@ Deno.serve(async (req: Request) => {
       })
     );
 
-    // 5. Bloqueios que tocam o dia inteiro
-    //    (inclui bloqueios longos que começaram antes e terminam depois — ex: férias)
+    // 5. Bloqueios pontuais que tocam o dia
+    //    (inclui bloqueios longos — ex: férias de vários dias)
     const { data: bloqueios, error: errB } = await supabase
       .from("bloqueios")
       .select("inicio, fim, motivo")
@@ -296,7 +331,20 @@ Deno.serve(async (req: Request) => {
 
     if (errB) throw errB;
 
-    // 6. Gera os slots e retorna
+    // 6. Bloqueios recorrentes (dia da semana + horário)
+    //    Ex: almoço toda segunda a sexta das 12:00 às 13:00
+    const { data: bloqueiosRecorrentes, error: errBR } = await supabase
+      .from("bloqueios_recorrentes")
+      .select("dia_semana, hora_inicio, hora_fim, motivo")
+      .eq("prestador_id", prestadorId)
+      .eq("dia_semana", diaSemana)
+      .eq("ativo", true);
+
+    if (errBR) {
+      console.warn("Erro ao buscar bloqueios recorrentes:", errBR.message);
+    }
+
+    // 7. Gera os slots e retorna
     const slots = gerarSlots(
       data,
       disponibilidades,
@@ -304,7 +352,8 @@ Deno.serve(async (req: Request) => {
       agendamentosNorm,
       bloqueios ?? [],
       intervaloSlotConfig || servico.duracao_min,
-      intervaloMin
+      intervaloMin,
+      bloqueiosRecorrentes ?? []
     );
 
     return Response.json(

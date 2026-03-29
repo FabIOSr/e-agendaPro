@@ -609,6 +609,19 @@
       color: var(--rust);
     }
 
+    /* bloqueios recorrentes */
+    .dias-semana-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .dia-bl { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--bord); color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; user-select:none; }
+    .dia-bl:hover { border-color:var(--bord2); color:var(--text); }
+    .dia-bl.on { border-color:var(--lime-d); background:var(--lime-t); color:var(--lime); }
+    .recorrente-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--bord); }
+    .recorrente-item:last-child { border-bottom:none; }
+    .rec-dias { display:flex; gap:3px; flex-wrap:wrap; }
+    .rec-dia-badge { width:22px; height:22px; border-radius:50%; background:var(--lime-t); color:var(--lime); font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .rec-info { flex:1; }
+    .rec-nome { font-size:13px; font-weight:500; }
+    .rec-hora { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
+
     /* google calendar */
     .gcal-card {
       display: flex;
@@ -1213,10 +1226,59 @@
           </div>
         </div>
 
+        <!-- ── BLOQUEIOS RECORRENTES ── -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Bloqueios</div>
-            <div class="card-desc">Férias, almoço fixo, consultas — qualquer período de indisponibilidade</div>
+            <div class="card-title">Bloqueios recorrentes</div>
+            <div class="card-desc">Almoço, reunião semanal — repetição automática por dia da semana</div>
+          </div>
+          <div class="card-body" id="bloqueios-rec-body">
+            <div style="font-size:13px;color:var(--faint);padding:4px 0">Carregando…</div>
+          </div>
+          <div class="card-footer">
+            <button class="btn-ghost" onclick="toggleNovoRecorrente()">+ Novo recorrente</button>
+          </div>
+        </div>
+
+        <!-- form novo bloqueio recorrente -->
+        <div class="novo-bl" id="novo-rec-form">
+          <div style="margin-bottom:10px">
+            <label class="label">Dias da semana</label>
+            <div class="dias-semana-row" id="rec-dias-row">
+              <div class="dia-bl" data-dia="0" onclick="toggleDiaBl(this)">Dom</div>
+              <div class="dia-bl" data-dia="1" onclick="toggleDiaBl(this)">Seg</div>
+              <div class="dia-bl" data-dia="2" onclick="toggleDiaBl(this)">Ter</div>
+              <div class="dia-bl" data-dia="3" onclick="toggleDiaBl(this)">Qua</div>
+              <div class="dia-bl" data-dia="4" onclick="toggleDiaBl(this)">Qui</div>
+              <div class="dia-bl" data-dia="5" onclick="toggleDiaBl(this)">Sex</div>
+              <div class="dia-bl" data-dia="6" onclick="toggleDiaBl(this)">Sáb</div>
+            </div>
+          </div>
+          <div class="novo-bl-grid">
+            <div>
+              <label class="label">Motivo</label>
+              <input class="input" id="rec-motivo" placeholder="Ex: Almoço">
+            </div>
+            <div>
+              <label class="label">Início</label>
+              <input class="input mono" id="rec-inicio" type="time" value="12:00">
+            </div>
+            <div>
+              <label class="label">Fim</label>
+              <input class="input mono" id="rec-fim" type="time" value="13:00">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" onclick="toggleNovoRecorrente()">Cancelar</button>
+            <button class="btn-save" id="btn-salvar-rec" onclick="adicionarRecorrente()">Adicionar</button>
+          </div>
+        </div>
+
+        <!-- ── BLOQUEIOS PONTUAIS ── -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Bloqueios pontuais</div>
+            <div class="card-desc">Férias, feriados, consulta médica — datas e períodos específicos</div>
           </div>
           <div class="card-body" id="bloqueios-body">
             <!-- preenchido pelo JS -->
@@ -1452,7 +1514,7 @@
     async function init() {
       await Promise.all([
         carregarPerfil(), carregarServicos(),
-        carregarDisponibilidade(), carregarBloqueios(),
+        carregarDisponibilidade(), carregarBloqueios(), carregarBloqueiosRecorrentes(),
         carregarPlano(), carregarStatusGcal(),
       ]);
       const appUrl = (window.APP_URL || '').replace(/\/$/, '');
@@ -1836,6 +1898,12 @@
       const fim = document.getElementById('bl-fim').value;
       if (!motivo || !inicio || !fim) { toast('Preencha todos os campos', false); return; }
 
+      // Valida que datetime-local tem data E hora (não apenas hora)
+      if (inicio.length <= 5 || fim.length <= 5) {
+        toast('Selecione data E horário completos', false);
+        return;
+      }
+
       const btn = document.querySelector('#novo-bl-form .btn-save');
       btn.textContent = 'Salvando…'; btn.disabled = true;
 
@@ -1857,6 +1925,130 @@
         toast('Erro ao adicionar bloqueio', false);
       } finally {
         btn.textContent = 'Adicionar bloqueio'; btn.disabled = false;
+      }
+    };
+
+    // ── BLOQUEIOS RECORRENTES ──────────────────────────────────────────────────
+    let bloqueiosRec = [];
+    const DIAS_NOMES_CURTOS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+    async function carregarBloqueiosRecorrentes() {
+      const { data, error } = await supabase
+        .from('bloqueios_recorrentes')
+        .select('id, dia_semana, hora_inicio, hora_fim, motivo, ativo')
+        .eq('prestador_id', userId)
+        .eq('ativo', true)
+        .order('dia_semana')
+        .order('hora_inicio');
+      if (error) { console.warn('Erro ao carregar bloqueios recorrentes:', error.message); return; }
+      bloqueiosRec = data ?? [];
+      renderBloqueiosRecorrentes();
+    }
+
+    window.renderBloqueiosRecorrentes = function() {
+      const body = document.getElementById('bloqueios-rec-body');
+      if (!body) return;
+      if (bloqueiosRec.length === 0) {
+        body.innerHTML = '<div style="font-size:13px;color:var(--faint);padding:4px 0">Nenhum bloqueio recorrente. Use para almoço, reunião semanal, etc.</div>';
+        return;
+      }
+
+      // Agrupa por motivo + horário para exibir os dias juntos
+      const grupos = {};
+      bloqueiosRec.forEach(b => {
+        const chave = `${b.motivo}|${b.hora_inicio}|${b.hora_fim}`;
+        if (!grupos[chave]) grupos[chave] = { motivo: b.motivo, hora_inicio: b.hora_inicio, hora_fim: b.hora_fim, dias: [], ids: [] };
+        grupos[chave].dias.push(b.dia_semana);
+        grupos[chave].ids.push(b.id);
+      });
+
+      body.innerHTML = Object.values(grupos).map(g => {
+        const diasBadges = g.dias.sort((a,b) => a-b).map(d =>
+          `<div class="rec-dia-badge" title="${DIAS_NOMES_CURTOS[d]}">${DIAS_NOMES_CURTOS[d]}</div>`
+        ).join('');
+        const horaIni = g.hora_inicio.slice(0,5);
+        const horaFim = g.hora_fim.slice(0,5);
+        const idsEsc  = JSON.stringify(g.ids).replace(/"/g, '&quot;');
+        return `
+          <div class="recorrente-item">
+            <div class="rec-dias">${diasBadges}</div>
+            <div class="rec-info">
+              <div class="rec-nome">${g.motivo || 'Bloqueio'}</div>
+              <div class="rec-hora">${horaIni} → ${horaFim}</div>
+            </div>
+            <button class="bl-del" onclick="deletarRecorrente(${idsEsc})">Remover</button>
+          </div>`;
+      }).join('');
+    };
+
+    window.deletarRecorrente = async function(ids) {
+      if (!Array.isArray(ids)) ids = [ids];
+      const { error } = await supabase
+        .from('bloqueios_recorrentes')
+        .delete()
+        .eq('prestador_id', userId)  // Primeiro filtra pelo prestador (segurança)
+        .in('id', ids);               // Depois filtra pelos IDs
+      if (error) { toast('Erro ao remover: ' + error.message, false); return; }
+      bloqueiosRec = bloqueiosRec.filter(b => !ids.includes(b.id));
+      renderBloqueiosRecorrentes();
+      toast('Bloqueio recorrente removido');
+    };
+
+    window.toggleNovoRecorrente = function() {
+      const form = document.getElementById('novo-rec-form');
+      form.classList.toggle('open');
+      // Limpar seleção de dias ao abrir
+      if (form.classList.contains('open')) {
+        document.querySelectorAll('#rec-dias-row .dia-bl').forEach(el => el.classList.remove('on'));
+      }
+    };
+
+    window.toggleDiaBl = function(el) {
+      el.classList.toggle('on');
+    };
+
+    window.adicionarRecorrente = async function() {
+      const motivo  = document.getElementById('rec-motivo').value.trim();
+      const inicio  = document.getElementById('rec-inicio').value;
+      const fim     = document.getElementById('rec-fim').value;
+      const diasSel = [...document.querySelectorAll('#rec-dias-row .dia-bl.on')]
+        .map(el => parseInt(el.dataset.dia));
+
+      if (!motivo)          { toast('Informe o motivo', false); return; }
+      if (diasSel.length === 0) { toast('Selecione pelo menos um dia', false); return; }
+      if (!inicio || !fim)  { toast('Informe início e fim', false); return; }
+      if (inicio >= fim)    { toast('Horário de fim deve ser após o início', false); return; }
+
+      const btn = document.getElementById('btn-salvar-rec');
+      btn.textContent = 'Salvando…'; btn.disabled = true;
+
+      try {
+        // Insere um registro por dia selecionado
+        const rows = diasSel.map(dia => ({
+          prestador_id: userId,
+          dia_semana:   dia,
+          hora_inicio:  inicio,
+          hora_fim:     fim,
+          motivo,
+          ativo: true,
+        }));
+        const { data, error } = await supabase
+          .from('bloqueios_recorrentes')
+          .insert(rows)
+          .select();
+        if (error) throw error;
+        bloqueiosRec.push(...(data ?? []));
+        renderBloqueiosRecorrentes();
+        toggleNovoRecorrente();
+        document.getElementById('rec-motivo').value = '';
+        document.getElementById('rec-inicio').value = '12:00';
+        document.getElementById('rec-fim').value    = '13:00';
+        toast('✓ Bloqueio recorrente adicionado!');
+      } catch(e) {
+        console.error(e);
+        toast('Erro ao adicionar: ' + e.message, false);
+      } finally {
+        btn.textContent = 'Adicionar'; btn.disabled = false;
       }
     };
 

@@ -310,24 +310,24 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { tipo, agendamento_id } = body;
 
-    if (!tipo) return Response.json({ erro: "Campo obrigatório: tipo" }, { status: 400 });
+    if (!tipo) return Response.json({ erro: "Campo obrigatório: tipo" }, { status: 400, headers: cors });
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     if (tipo === "confirmacao") {
-      if (!agendamento_id) return Response.json({ erro: "agendamento_id obrigatório" }, { status: 400 });
+      if (!agendamento_id) return Response.json({ erro: "agendamento_id obrigatório" }, { status: 400, headers: cors });
       const resultado = await handleConfirmacao(supabase, agendamento_id);
-      return Response.json({ ok: true, ...resultado });
+      return Response.json({ ok: true, ...resultado }, { headers: cors });
     }
 
     if (tipo === "lembrete_d1") {
       const resultado = await handleLembreteD1(supabase);
-      return Response.json({ ok: true, ...resultado });
+      return Response.json({ ok: true, ...resultado }, { headers: cors });
     }
 
-    return Response.json({ erro: `Tipo inválido: ${tipo}` }, { status: 400 });
+    return Response.json({ erro: `Tipo inválido: ${tipo}` }, { status: 400, headers: cors });
   } catch (err) {
     console.error("Erro:", err);
-    return Response.json({ erro: "Erro interno", detalhe: String(err) }, { status: 500 });
+    return Response.json({ erro: "Erro interno", detalhe: String(err) }, { status: 500, headers: cors });
   }
 });
