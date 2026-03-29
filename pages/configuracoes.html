@@ -314,17 +314,86 @@
 
     .prefix {
       position: absolute;
+      padding-right: 5px;
       left: 12px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 12px;
+      font-size: 13px;
       color: var(--muted);
       font-family: 'DM Mono', monospace;
       pointer-events: none;
+      white-space: nowrap;
+      z-index: 1;
     }
 
     .input.has-prefix {
-      padding-left: 148px;
+      padding-left: 172px;
+    }
+
+    @media (max-width: 600px) {
+      .prefix {
+        font-size: 11px;
+      }
+      .input.has-prefix {
+        padding-left: 135px;
+      }
+    }
+
+    /* slug com ações */
+    .slug-with-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .slug-with-actions .prefix-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .slug-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .btn-icon {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--bord);
+      background: var(--bg);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .2s;
+      flex-shrink: 0;
+    }
+
+    .btn-icon:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .btn-icon:active {
+      transform: scale(0.95);
+    }
+
+    @media (max-width: 600px) {
+      .slug-with-actions {
+        flex-direction: column;
+      }
+
+      .slug-actions {
+        width: 100%;
+        margin-top: 8px;
+      }
+
+      .btn-icon {
+        flex: 1;
+      }
     }
 
     /* foto */
@@ -1121,10 +1190,35 @@
             </div>
 
             <div class="field">
+              <label class="label">Email (contato)</label>
+              <div id="p-email" style="padding: 10px 12px; background: var(--bg-card); border-radius: 8px; color: var(--muted); font-size: 14px;">—</div>
+            </div>
+
+            <div class="field">
               <label class="label">Link personalizado</label>
-              <div class="prefix-wrap">
-                <span class="prefix">agendapro.com.br/</span>
-                <input class="input has-prefix mono" id="p-slug" value="ana-cabelos">
+              <div class="slug-with-actions">
+                <div class="prefix-wrap">
+                  <span class="prefix">agendapro.com.br/</span>
+                  <input class="input has-prefix mono" id="p-slug" value="ana-cabelos">
+                </div>
+                <div class="slug-actions">
+                  <button class="btn-icon" id="btn-abrir-pagina" title="Abrir página pública" onclick="abrirPaginaPublica()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </button>
+                  <button class="btn-icon" id="btn-compartilhar" title="Compartilhar link" onclick="compartilharLinkPublico()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1579,7 +1673,7 @@
     async function carregarPerfil() {
       const { data, error } = await supabase
         .from('prestadores')
-        .select('nome, slug, bio, whatsapp, foto_url, cidade, endereco, intervalo_min, intervalo_slot')
+        .select('nome, slug, bio, whatsapp, email, foto_url, cidade, endereco, intervalo_min, intervalo_slot')
         .eq('id', userId)
         .single();
       if (error || !data) return;
@@ -1587,6 +1681,7 @@
       document.getElementById('p-nome').value = data.nome ?? '';
       document.getElementById('p-slug').value = data.slug ?? '';
       document.getElementById('p-bio').value = data.bio ?? '';
+      document.getElementById('p-email').textContent = data.email ?? '—';
       document.getElementById('p-wpp').value = data.whatsapp ?? '';
       document.getElementById('p-cidade').value = data.cidade ?? '';
       document.getElementById('p-endereco').value = data.endereco ?? '';
@@ -1750,6 +1845,35 @@
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       document.getElementById('p-slug').value = slug;
+    };
+
+    // Retorna a URL completa da página pública
+    function getUrlPublica() {
+      const slug = document.getElementById('p-slug').value.trim();
+      const appDomain = (window.APP_URL || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+      return `https://${appDomain}/${slug}`;
+    }
+
+    // Abre a página pública em nova aba
+    window.abrirPaginaPublica = function () {
+      const url = getUrlPublica();
+      window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    // Compartilha o link da página pública
+    window.compartilharLinkPublico = function () {
+      const url = getUrlPublica();
+      const titulo = 'Meu link de agendamento';
+
+      if (navigator.share) {
+        navigator.share({ title: titulo, url });
+      } else {
+        navigator.clipboard?.writeText(url).then(() => {
+          toast('✓ Link copiado!');
+        }).catch(() => {
+          toast('Erro ao copiar link', false);
+        });
+      }
     };
 
     // ── SERVIÇOS ──────────────────────────────────────────────────────────────
