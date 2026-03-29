@@ -1348,28 +1348,57 @@
                 <div class="notif-title">Novo agendamento</div>
                 <div class="notif-desc">Receba mensagem quando um cliente agendar.</div>
               </div>
-              <div class="switch on" onclick="this.classList.toggle('on')"></div>
+              <div class="switch" id="n-whatsapp-novo" onclick="this.classList.toggle('on')"></div>
             </div>
             <div class="notif-row">
               <div class="notif-info">
                 <div class="notif-title">Lembrete D-1</div>
                 <div class="notif-desc">Resumo dos agendamentos do dia seguinte às 18h.</div>
               </div>
-              <div class="switch on" onclick="this.classList.toggle('on')"></div>
+              <div class="switch" id="n-whatsapp-lembrete" onclick="this.classList.toggle('on')"></div>
             </div>
             <div class="notif-row">
               <div class="notif-info">
                 <div class="notif-title">Cancelamento pelo cliente</div>
                 <div class="notif-desc">Avise quando um cliente cancelar via link.</div>
               </div>
-              <div class="switch on" onclick="this.classList.toggle('on')"></div>
+              <div class="switch" id="n-whatsapp-cancel" onclick="this.classList.toggle('on')"></div>
             </div>
             <div class="notif-row">
               <div class="notif-info">
                 <div class="notif-title">Agenda vazia</div>
                 <div class="notif-desc">Avise quando o dia seguinte não tiver nenhum agendamento.</div>
               </div>
-              <div class="switch" onclick="this.classList.toggle('on')"></div>
+              <div class="switch" id="n-whatsapp-vazia" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Email</div>
+          </div>
+          <div class="card-body">
+            <div class="notif-row">
+              <div class="notif-info">
+                <div class="notif-title">Novo agendamento</div>
+                <div class="notif-desc">Receba email quando um cliente agendar.</div>
+              </div>
+              <div class="switch" id="n-email-novo" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-info">
+                <div class="notif-title">Lembrete D-1</div>
+                <div class="notif-desc">Resumo dos agendamentos do dia seguinte às 18h.</div>
+              </div>
+              <div class="switch" id="n-email-lembrete" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-info">
+                <div class="notif-title">Cancelamento pelo cliente</div>
+                <div class="notif-desc">Avise quando um cliente cancelar via link.</div>
+              </div>
+              <div class="switch" id="n-email-cancel" onclick="this.classList.toggle('on')"></div>
             </div>
           </div>
           <div class="card-footer">
@@ -1515,7 +1544,7 @@
       await Promise.all([
         carregarPerfil(), carregarServicos(),
         carregarDisponibilidade(), carregarBloqueios(), carregarBloqueiosRecorrentes(),
-        carregarPlano(), carregarStatusGcal(),
+        carregarPlano(), carregarStatusGcal(), carregarNotif(),
       ]);
       const appUrl = (window.APP_URL || '').replace(/\/$/, '');
       const appDomain = appUrl.replace(/^https?:\/\//, '');
@@ -1578,8 +1607,75 @@
       if (secao === 'perfil') await salvarPerfil();
       if (secao === 'servicos') await salvarServicos();
       if (secao === 'agenda') await salvarAgenda();
-      if (secao === 'notif') toast('✓ Preferências salvas!');
+      if (secao === 'notif') await salvarNotif();
     };
+
+    // ── NOTIFICAÇÕES ───────────────────────────────────────────────────────────
+    async function carregarNotif() {
+      const { data, error } = await supabase
+        .from('preferencias_notificacao')
+        .select('*')
+        .eq('prestador_id', userId)
+        .single();
+
+      if (error || !data) {
+        // Usa defaults se não tiver registro
+        console.log('Usando preferências padrão');
+        return;
+      }
+
+      // WhatsApp
+      setSwitch('n-whatsapp-novo', data.whatsapp_novo_agendamento);
+      setSwitch('n-whatsapp-lembrete', data.whatsapp_lembrete_d1);
+      setSwitch('n-whatsapp-cancel', data.whatsapp_cancelamento);
+      setSwitch('n-whatsapp-vazia', data.whatsapp_agenda_vazia);
+
+      // Email
+      setSwitch('n-email-novo', data.email_novo_agendamento);
+      setSwitch('n-email-lembrete', data.email_lembrete_d1);
+      setSwitch('n-email-cancel', data.email_cancelamento);
+    }
+
+    function setSwitch(id, valor) {
+      const el = document.getElementById(id);
+      if (el) {
+        if (valor) el.classList.add('on');
+        else el.classList.remove('on');
+      }
+    }
+
+    async function salvarNotif() {
+      const btn = document.querySelector('[onclick="salvar(\'notif\')"]');
+      const orig = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Salvando…'; btn.disabled = true; }
+
+      try {
+        const payload = {
+          prestador_id: userId,
+          // WhatsApp
+          whatsapp_novo_agendamento: document.getElementById('n-whatsapp-novo').classList.contains('on'),
+          whatsapp_lembrete_d1: document.getElementById('n-whatsapp-lembrete').classList.contains('on'),
+          whatsapp_cancelamento: document.getElementById('n-whatsapp-cancel').classList.contains('on'),
+          whatsapp_agenda_vazia: document.getElementById('n-whatsapp-vazia').classList.contains('on'),
+          // Email
+          email_novo_agendamento: document.getElementById('n-email-novo').classList.contains('on'),
+          email_lembrete_d1: document.getElementById('n-email-lembrete').classList.contains('on'),
+          email_cancelamento: document.getElementById('n-email-cancel').classList.contains('on'),
+        };
+
+        const { error } = await supabase
+          .from('preferencias_notificacao')
+          .upsert(payload, { onConflict: 'prestador_id' });
+
+        if (error) throw error;
+        toast('✓ Preferências salvas!');
+      } catch (err) {
+        console.error('Erro ao salvar notificações:', err);
+        toast('Erro ao salvar. Tente novamente.', false);
+      } finally {
+        if (btn) { btn.textContent = orig; btn.disabled = false; }
+      }
+    }
 
     async function salvarPerfil() {
       const btn = document.querySelector('[onclick="salvar(\'perfil\')"]');

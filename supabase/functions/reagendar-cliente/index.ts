@@ -259,7 +259,7 @@ Deno.serve(async (req: Request) => {
     // Busca o agendamento atual
     const { data: ag } = await supabase
       .from("agendamentos")
-      .select("*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email), cliente_email")
+      .select("*, prestador_id, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email), cliente_email")
       .eq("cancel_token", token)
       .single();
 
@@ -294,6 +294,17 @@ Deno.serve(async (req: Request) => {
       .eq("id", ag.id)
       .single();
 
+    // Busca preferências de notificação do prestador
+    const { data: prefs } = await supabase
+      .from("preferencias_notificacao")
+      .select("*")
+      .eq("prestador_id", ag.prestador_id)
+      .single();
+
+    // Defaults se não tiver preferências
+    const notifWpp = prefs?.whatsapp_novo_agendamento ?? true;
+    const notifEmail = prefs?.email_novo_agendamento ?? true;
+
     // Notifica prestador e cliente
     const dataFmt = new Date(novaDataHora).toLocaleDateString("pt-BR", {
       day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo",
@@ -302,8 +313,8 @@ Deno.serve(async (req: Request) => {
       hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
     });
 
-    // WhatsApp do prestador
-    if (agAtualizado?.prestadores?.whatsapp) {
+    // WhatsApp do prestador (se preferência ativa)
+    if (agAtualizado?.prestadores?.whatsapp && notifWpp) {
       await enviarWhatsApp(agAtualizado.prestadores.whatsapp,
         `🔄 *Agendamento remarcado*\n\n` +
         `👤 *Cliente:* ${agAtualizado.cliente_nome}\n` +
@@ -312,8 +323,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Email para prestador
-    if (agAtualizado?.prestadores?.email) {
+    // Email para prestador (se preferência ativa)
+    if (agAtualizado?.prestadores?.email && notifEmail) {
       await enviarEmail(
         agAtualizado.prestadores.email,
         `🔄 Agendamento remarcado por ${agAtualizado.cliente_nome}`,

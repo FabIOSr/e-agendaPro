@@ -237,7 +237,7 @@ Deno.serve(async (req: Request) => {
       .update({ status: "cancelado" })
       .eq("cancel_token", token)
       .neq("status", "cancelado")   // idempotente
-      .select("*, servicos(nome), prestadores(nome, whatsapp, email), cliente_email, cliente_tel")
+      .select("*, prestador_id, servicos(nome), prestadores(nome, whatsapp, email), cliente_email, cliente_tel")
       .single();
 
     console.log("Resultado cancelamento:", { ag, error });
@@ -246,12 +246,23 @@ Deno.serve(async (req: Request) => {
       return Response.json({ erro: "Agendamento não encontrado ou já cancelado" }, { status: 404, headers: corsHeaders() });
     }
 
+    // Busca preferências de notificação do prestador
+    const { data: prefs } = await supabase
+      .from("preferencias_notificacao")
+      .select("*")
+      .eq("prestador_id", ag.prestador_id)
+      .single();
+
+    // Defaults se não tiver preferências (enviar tudo exceto agenda_vazia que não se aplica aqui)
+    const notifWpp = prefs?.whatsapp_cancelamento ?? true;
+    const notifEmail = prefs?.email_cancelamento ?? true;
+
     const d = new Date(ag.data_hora);
     const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
     const data = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
 
-    // Notifica o prestador via WhatsApp
-    if (ag.prestadores?.whatsapp) {
+    // Notifica o prestador via WhatsApp (se preferência ativa)
+    if (ag.prestadores?.whatsapp && notifWpp) {
       try {
         await enviarWhatsApp(
           ag.prestadores.whatsapp,
@@ -266,8 +277,8 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Notifica o prestador via email
-    if (ag.prestadores?.email) {
+    // Notifica o prestador via email (se preferência ativa)
+    if (ag.prestadores?.email && notifEmail) {
       try {
         await enviarEmail(
           ag.prestadores.email,
