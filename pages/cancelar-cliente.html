@@ -209,7 +209,7 @@
     <button class="btn btn-danger" id="btn-confirmar" onclick="confirmarCancelamento()">
       Sim, cancelar agendamento
     </button>
-    <button class="btn btn-ghost" onclick="window.history.back()">
+    <button class="btn btn-ghost" onclick="window.voltar()">
       Voltar
     </button>
   </div>
@@ -286,7 +286,7 @@
           .select(`
             id, status, data_hora,
             servicos ( nome ),
-            prestadores ( nome )
+            prestadores ( nome, slug )
           `)
           .eq('cancel_token', token)
           .single();
@@ -315,8 +315,9 @@
 
         mostrar('estado-dados');
 
-        // Guardar ID para usar no cancelamento
+        // Guardar ID e slug para usar no cancelamento e voltar
         window.__agendamento_id = data.id;
+        window.__prestador_slug = data.prestadores?.slug;
 
       } catch (e) {
         console.error(e);
@@ -358,6 +359,16 @@
         btn.disabled = false;
         btn.innerHTML = 'Sim, cancelar agendamento';
         showToast('Erro ao cancelar. Tente novamente.');
+      }
+    };
+
+    // Redireciona para a página pública do profissional
+    window.voltar = function() {
+      const slug = window.__prestador_slug;
+      if (slug) {
+        window.location.href = `/${slug}`;
+      } else {
+        window.location.href = '/';
       }
     };
   </script>

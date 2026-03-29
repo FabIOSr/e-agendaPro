@@ -356,7 +356,7 @@
       <button class="btn btn-primary" id="btn-proxima" onclick="irStep2()" disabled>
         Continuar
       </button>
-      <button class="btn btn-ghost" onclick="window.history.back()">Cancelar</button>
+      <button class="btn btn-ghost" onclick="window.cancelar()">Cancelar</button>
     </div>
 
     <!-- Step 2: Confirmação -->
@@ -792,6 +792,15 @@
         btn.disabled = false;
         btn.innerHTML = 'Confirmar reagendamento';
         showToast('Erro ao reagendar. Tente novamente.');
+      }
+    };
+
+    // Redireciona para a página pública do profissional
+    window.cancelar = function() {
+      if (PRESTADOR?.slug) {
+        window.location.href = `/${PRESTADOR.slug}`;
+      } else {
+        window.location.href = '/';
       }
     };
 
