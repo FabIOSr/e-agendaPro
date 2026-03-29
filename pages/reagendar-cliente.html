@@ -628,7 +628,14 @@
           slots = await calcularSlotsLocais(iso, diaSem);
         }
 
-        renderSlots(slots);
+        // Converter slots da Edge Function para formato esperado
+        // Edge Function retorna: [{hora: "HH:MM", disponivel: true/false}]
+        // Precisamos apenas das horas disponíveis: ["HH:MM", ...]
+        const slotsFormatados = slots
+          .filter(s => typeof s === 'string' || s.disponivel !== false)
+          .map(s => typeof s === 'string' ? s : s.hora);
+
+        renderSlots(slotsFormatados);
 
       } catch (e) {
         console.error(e);
