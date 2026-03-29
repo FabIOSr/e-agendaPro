@@ -1235,7 +1235,7 @@
           <div class="card-body" id="bloqueios-rec-body">
             <div style="font-size:13px;color:var(--faint);padding:4px 0">Carregando…</div>
           </div>
-          <div class="card-footer">
+          <div class="card-footer" id="bloqueios-rec-footer">
             <button class="btn-ghost" onclick="toggleNovoRecorrente()">+ Novo recorrente</button>
           </div>
         </div>
@@ -1945,7 +1945,7 @@
       bloqueios = data ?? [];
       renderBloqueios();
       if (bloqueios.length > 0) {
-        console.log('Bloqueios carregados:', bloqueios.length);
+        //console.log('Bloqueios carregados:', bloqueios.length);
       }
     }
 
@@ -2043,38 +2043,50 @@
 
     window.renderBloqueiosRecorrentes = function() {
       const body = document.getElementById('bloqueios-rec-body');
+      const footer = document.getElementById('bloqueios-rec-footer');
       if (!body) return;
       if (bloqueiosRec.length === 0) {
         body.innerHTML = '<div style="font-size:13px;color:var(--faint);padding:4px 0">Nenhum bloqueio recorrente. Use para almoço, reunião semanal, etc.</div>';
-        return;
+      } else {
+        // Agrupa por motivo + horário para exibir os dias juntos
+        const grupos = {};
+        bloqueiosRec.forEach(b => {
+          const chave = `${b.motivo}|${b.hora_inicio}|${b.hora_fim}`;
+          if (!grupos[chave]) grupos[chave] = { motivo: b.motivo, hora_inicio: b.hora_inicio, hora_fim: b.hora_fim, dias: [], ids: [] };
+          grupos[chave].dias.push(b.dia_semana);
+          grupos[chave].ids.push(b.id);
+        });
+
+        body.innerHTML = Object.values(grupos).map(g => {
+          const diasBadges = g.dias.sort((a,b) => a-b).map(d =>
+            `<div class="rec-dia-badge" title="${DIAS_NOMES_CURTOS[d]}">${DIAS_NOMES_CURTOS[d]}</div>`
+          ).join('');
+          const horaIni = g.hora_inicio.slice(0,5);
+          const horaFim = g.hora_fim.slice(0,5);
+          const idsEsc  = JSON.stringify(g.ids).replace(/"/g, '&quot;');
+          return `
+            <div class="recorrente-item">
+              <div class="rec-dias">${diasBadges}</div>
+              <div class="rec-info">
+                <div class="rec-nome">${g.motivo || 'Bloqueio'}</div>
+                <div class="rec-hora">${horaIni} → ${horaFim}</div>
+              </div>
+              <button class="bl-del" onclick="deletarRecorrente(${idsEsc})">Remover</button>
+            </div>`;
+        }).join('');
       }
 
-      // Agrupa por motivo + horário para exibir os dias juntos
-      const grupos = {};
-      bloqueiosRec.forEach(b => {
-        const chave = `${b.motivo}|${b.hora_inicio}|${b.hora_fim}`;
-        if (!grupos[chave]) grupos[chave] = { motivo: b.motivo, hora_inicio: b.hora_inicio, hora_fim: b.hora_fim, dias: [], ids: [] };
-        grupos[chave].dias.push(b.dia_semana);
-        grupos[chave].ids.push(b.id);
-      });
+      // Atualiza footer baseado no plano e quantidade de bloqueios
+      if (footer) {
+        const isPro = window.PRESTADOR_IS_PRO;
+        const count = bloqueiosRec.length;
 
-      body.innerHTML = Object.values(grupos).map(g => {
-        const diasBadges = g.dias.sort((a,b) => a-b).map(d =>
-          `<div class="rec-dia-badge" title="${DIAS_NOMES_CURTOS[d]}">${DIAS_NOMES_CURTOS[d]}</div>`
-        ).join('');
-        const horaIni = g.hora_inicio.slice(0,5);
-        const horaFim = g.hora_fim.slice(0,5);
-        const idsEsc  = JSON.stringify(g.ids).replace(/"/g, '&quot;');
-        return `
-          <div class="recorrente-item">
-            <div class="rec-dias">${diasBadges}</div>
-            <div class="rec-info">
-              <div class="rec-nome">${g.motivo || 'Bloqueio'}</div>
-              <div class="rec-hora">${horaIni} → ${horaFim}</div>
-            </div>
-            <button class="bl-del" onclick="deletarRecorrente(${idsEsc})">Remover</button>
-          </div>`;
-      }).join('');
+        if (!isPro && count >= 1) {
+          footer.innerHTML = `<button class="btn-upgrade" onclick="irSecao('plano')">Fazer upgrade para adicionar mais →</button>`;
+        } else {
+          footer.innerHTML = `<button class="btn-ghost" onclick="toggleNovoRecorrente()">+ Novo recorrente</button>`;
+        }
+      }
     };
 
     window.deletarRecorrente = async function(ids) {
@@ -2091,6 +2103,12 @@
     };
 
     window.toggleNovoRecorrente = function() {
+      // Verifica se usuário Free já tem 1 bloqueio
+      if (!window.PRESTADOR_IS_PRO && bloqueiosRec.length >= 1) {
+        irSecao('plano');
+        return;
+      }
+
       const form = document.getElementById('novo-rec-form');
       form.classList.toggle('open');
       // Limpar seleção de dias ao abrir
@@ -2104,6 +2122,13 @@
     };
 
     window.adicionarRecorrente = async function() {
+      // Verifica limite Free (1 bloqueio recorrente)
+      if (!window.PRESTADOR_IS_PRO && bloqueiosRec.length >= 1) {
+        toast('Disponível apenas no plano Pro', false);
+        irSecao('plano');
+        return;
+      }
+
       const motivo  = document.getElementById('rec-motivo').value.trim();
       const inicio  = document.getElementById('rec-inicio').value;
       const fim     = document.getElementById('rec-fim').value;
