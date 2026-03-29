@@ -12,6 +12,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 // URL alternada pelo secret ASAAS_SANDBOX — nunca hardcode
 const ASAAS_URL = Deno.env.get("ASAAS_SANDBOX") === "true"
   ? "https://sandbox.asaas.com/api/v3"
@@ -74,12 +79,7 @@ async function garantirCliente(prestador: any): Promise<string> {
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   try {
@@ -87,12 +87,12 @@ Deno.serve(async (req: Request) => {
 
     // Valida plano
     if (!PLANOS[plano as keyof typeof PLANOS]) {
-      return Response.json({ erro: "Plano inválido" }, { status: 400 });
+      return Response.json({ erro: "Plano inválido" }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Autentica o prestador pelo JWT do Supabase
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401 });
+    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401, headers: CORS_HEADERS });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
     // Decodifica o JWT para pegar o user_id
     const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
     if (authErr || !user) {
-      return Response.json({ erro: "Token inválido" }, { status: 401 });
+      return Response.json({ erro: "Token inválido" }, { status: 401, headers: CORS_HEADERS });
     }
 
     // Busca dados do prestador
@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (pErr || !prestador) {
-      return Response.json({ erro: "Prestador não encontrado" }, { status: 404 });
+      return Response.json({ erro: "Prestador não encontrado" }, { status: 404, headers: CORS_HEADERS });
     }
 
     // Já tem assinatura ativa?
@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
       return Response.json({
         aviso: "Você já tem uma assinatura Pro ativa.",
         asaas_sub_id: prestador.asaas_sub_id,
-      });
+      }, { headers: CORS_HEADERS });
     }
 
     // Garante cliente no Asaas
@@ -186,13 +186,13 @@ Deno.serve(async (req: Request) => {
           ? "Assinatura criada. Redirecione o usuário para inserir o cartão."
           : `Assinatura criada. Pague via ${billing_type} para ativar o plano Pro.`,
       },
-      { headers: { "Access-Control-Allow-Origin": "*" } }
+      { headers: CORS_HEADERS }
     );
   } catch (err) {
     console.error("Erro criar-assinatura:", err);
     return Response.json(
       { erro: "Erro interno", detalhe: String(err) },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 });

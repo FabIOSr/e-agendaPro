@@ -11,6 +11,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 // ---------------------------------------------------------------------------
 // HTML da página de avaliação
 // ---------------------------------------------------------------------------
@@ -115,6 +120,11 @@ async function enviarAvaliacao() {
 // Handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
+  // OPTIONS para CORS
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: CORS_HEADERS });
+  }
+
   const url = new URL(req.url);
 
   const supabase = createClient(
@@ -193,7 +203,7 @@ Deno.serve(async (req: Request) => {
     const { token, nota, comentario } = await req.json();
 
     if (!token || !nota || nota < 1 || nota > 5) {
-      return Response.json({ erro: "token e nota (1–5) são obrigatórios" }, { status: 400 });
+      return Response.json({ erro: "token e nota (1–5) são obrigatórios" }, { status: 400, headers: CORS_HEADERS });
     }
 
     const { data: ag } = await supabase
@@ -203,7 +213,7 @@ Deno.serve(async (req: Request) => {
       .eq("status", "concluido")
       .single();
 
-    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404 });
+    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: CORS_HEADERS });
 
     const { error } = await supabase.from("avaliacoes").insert({
       agendamento_id: ag.id,
@@ -214,12 +224,12 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error?.code === "23505") {
-      return Response.json({ erro: "Já avaliado" }, { status: 409 });
+      return Response.json({ erro: "Já avaliado" }, { status: 409, headers: CORS_HEADERS });
     }
     if (error) throw error;
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true }, { headers: CORS_HEADERS });
   }
 
-  return new Response("Not found", { status: 404 });
+  return new Response("Not found", { status: 404, headers: CORS_HEADERS });
 });

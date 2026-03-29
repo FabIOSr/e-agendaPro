@@ -12,6 +12,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const APP_URL = Deno.env.get("APP_URL") ?? "https://e-agendapro.web.app";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 async function enviarWhatsApp(telefone: string, mensagem: string) {
   const token = Deno.env.get("ZAPI_TOKEN");
   const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
@@ -193,6 +198,11 @@ async function confirmar() {
 // Handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
+  // OPTIONS para CORS
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: CORS_HEADERS });
+  }
+
   const url = new URL(req.url);
 
   const supabase = createClient(
@@ -202,7 +212,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const token = url.searchParams.get("token");
-    if (!token) return new Response("Token inválido", { status: 400 });
+    if (!token) return new Response("Token inválido", { status: 400, headers: CORS_HEADERS });
 
     const { data: ag } = await supabase
       .from("agendamentos")
@@ -210,7 +220,7 @@ Deno.serve(async (req: Request) => {
       .eq("cancel_token", token)
       .single();
 
-    if (!ag) return new Response("Agendamento não encontrado", { status: 404 });
+    if (!ag) return new Response("Agendamento não encontrado", { status: 404, headers: CORS_HEADERS });
 
     // Busca slots disponíveis para hoje como ponto de partida
     const hoje = new Date().toISOString().slice(0, 10);
@@ -236,14 +246,14 @@ Deno.serve(async (req: Request) => {
     } catch {}
 
     return new Response(paginaReagendar(ag, token, slots), {
-      headers: { "Content-Type": "text/html" },
+      headers: { "Content-Type": "text/html; charset=utf-8", ...CORS_HEADERS },
     });
   }
 
   if (req.method === "POST") {
     const { token, data, hora } = await req.json();
     if (!token || !data || !hora) {
-      return Response.json({ erro: "Campos obrigatórios: token, data, hora" }, { status: 400 });
+      return Response.json({ erro: "Campos obrigatórios: token, data, hora" }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Busca o agendamento atual
@@ -253,7 +263,7 @@ Deno.serve(async (req: Request) => {
       .eq("cancel_token", token)
       .single();
 
-    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404 });
+    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: CORS_HEADERS });
 
     // Verifica se o novo horário ainda está disponível
     const novaDataHora = new Date(`${data}T${hora}:00`).toISOString();
@@ -268,7 +278,7 @@ Deno.serve(async (req: Request) => {
       .lt("data_hora", new Date(`${data}T${hora}:00`).getTime() + (ag.servicos?.duracao_min ?? 60) * 60000 + "");
 
     if ((count ?? 0) > 0) {
-      return Response.json({ erro: "Horário não disponível. Escolha outro." }, { status: 409 });
+      return Response.json({ erro: "Horário não disponível. Escolha outro." }, { status: 409, headers: CORS_HEADERS });
     }
 
     // Atualiza o agendamento
@@ -339,8 +349,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    return Response.json({ ok: true, nova_data_hora: novaDataHora });
+    return Response.json({ ok: true, nova_data_hora: novaDataHora }, { headers: CORS_HEADERS });
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return new Response("Method not allowed", { status: 405, headers: CORS_HEADERS });
 });

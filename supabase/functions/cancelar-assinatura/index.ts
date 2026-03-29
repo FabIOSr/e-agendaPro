@@ -23,19 +23,19 @@ async function asaas(method: string, path: string): Promise<any> {
   return res.status !== 204 ? res.json() : null;
 }
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   try {
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401 });
+    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401, headers: CORS_HEADERS });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
     );
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
-    if (authErr || !user) return Response.json({ erro: "Token inválido" }, { status: 401 });
+    if (authErr || !user) return Response.json({ erro: "Token inválido" }, { status: 401, headers: CORS_HEADERS });
 
     const { data: prestador } = await supabase
       .from("prestadores")
@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (!prestador?.asaas_sub_id) {
-      return Response.json({ erro: "Nenhuma assinatura ativa encontrada." }, { status: 400 });
+      return Response.json({ erro: "Nenhuma assinatura ativa encontrada." }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Cancela no Asaas (DELETE = cancela ao fim do período)
@@ -83,10 +83,10 @@ Deno.serve(async (req: Request) => {
         mensagem: `Assinatura cancelada. Seu plano Pro permanece ativo até ${validoAte}.`,
         plano_valido_ate: prestador.plano_valido_ate,
       },
-      { headers: { "Access-Control-Allow-Origin": "*" } }
+      { headers: CORS_HEADERS }
     );
   } catch (err) {
     console.error("Erro cancelar-assinatura:", err);
-    return Response.json({ erro: "Erro interno", detalhe: String(err) }, { status: 500 });
+    return Response.json({ erro: "Erro interno", detalhe: String(err) }, { status: 500, headers: CORS_HEADERS });
   }
 });
