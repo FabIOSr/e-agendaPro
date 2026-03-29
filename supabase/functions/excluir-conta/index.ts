@@ -27,7 +27,13 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
     // Decodifica o JWT para pegar o user_id
@@ -37,11 +43,11 @@ Deno.serve(async (req: Request) => {
     }
 
     const userId = user.id;
+    console.log("Excluindo conta do usuário:", userId);
 
-    // 1. Remove do Supabase Auth (usando Admin API)
-    // Nota: Isso não é suportado diretamente pelo client, precisamos usar a API REST
-    const authUrl = `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users/${userId}`;
-    const authRes = await fetch(authUrl, {
+    // 1. Remove do Supabase Auth usando Admin API (GoTrue Admin)
+    const authAdminUrl = `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users/${userId}`;
+    const authRes = await fetch(authAdminUrl, {
       method: "DELETE",
       headers: {
         "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
@@ -50,10 +56,15 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!authRes.ok) {
-      const erro = await authRes.text();
-      console.error("Erro ao deletar do Auth:", authRes.status, erro);
-      // Continua mesmo assim para tentar apagar do banco
+      const erroTexto = await authRes.text();
+      console.error("Erro ao deletar do Auth:", authRes.status, erroTexto);
+      return Response.json(
+        { erro: "Erro ao excluir usuário do Auth", status: authRes.status, detalhe: erroTexto },
+        { status: 500, headers: CORS_HEADERS }
+      );
     }
+
+    console.log("Usuário removido do Auth com sucesso");
 
     // 2. Remove do banco (CASCADE apaga dados relacionados)
     const { error: errP } = await supabase
@@ -64,10 +75,12 @@ Deno.serve(async (req: Request) => {
     if (errP) {
       console.error("Erro ao deletar prestador:", errP);
       return Response.json(
-        { erro: "Erro ao excluir conta", detalhe: errP.message },
+        { erro: "Erro ao excluir conta do banco", detalhe: errP.message },
         { status: 500, headers: CORS_HEADERS }
       );
     }
+
+    console.log("Prestador removido do banco com sucesso");
 
     return Response.json(
       { ok: true, mensagem: "Conta excluída com sucesso" },
