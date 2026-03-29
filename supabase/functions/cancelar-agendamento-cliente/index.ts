@@ -237,7 +237,7 @@ Deno.serve(async (req: Request) => {
       .update({ status: "cancelado" })
       .eq("cancel_token", token)
       .neq("status", "cancelado")   // idempotente
-      .select("*, servicos(nome), prestadores(nome, whatsapp, email)")
+      .select("*, servicos(nome), prestadores(nome, whatsapp, email), cliente_email, cliente_tel")
       .single();
 
     console.log("Resultado cancelamento:", { ag, error });
@@ -282,6 +282,42 @@ Deno.serve(async (req: Request) => {
         );
       } catch (e) {
         console.error("Erro ao enviar email para prestador:", e);
+      }
+    }
+
+    // Notifica o cliente via WhatsApp
+    if (ag.cliente_tel) {
+      try {
+        await enviarWhatsApp(
+          ag.cliente_tel,
+          `❌ *Agendamento cancelado*\n\n` +
+          `Olá, *${ag.cliente_nome}*! Seu agendamento com *${ag.prestadores?.nome}* foi cancelado.\n\n` +
+          `📋 *Serviço:* ${ag.servicos?.nome}\n` +
+          `📅 *Horário:* ${data} às ${hora}\n\n` +
+          `Se desejar remarcar, entre em contato com o profissional.`
+        );
+      } catch (e) {
+        console.error("Erro ao notificar cliente via WhatsApp:", e);
+      }
+    }
+
+    // Notifica o cliente via email
+    if (ag.cliente_email) {
+      try {
+        await enviarEmail(
+          ag.cliente_email,
+          `❌ Agendamento cancelado com ${ag.prestadores?.nome}`,
+          `<div style="font-family: sans-serif;">
+            <h2>❌ Agendamento cancelado</h2>
+            <p>Olá, <strong>${ag.cliente_nome}</strong>!</p>
+            <p>Seu agendamento com <strong>${ag.prestadores?.nome}</strong> foi cancelado.</p>
+            <p><strong>Serviço:</strong> ${ag.servicos?.nome}</p>
+            <p><strong>Horário:</strong> ${data} às ${hora}</p>
+            <p style="margin-top: 20px;">Se desejar remarcar, entre em contato com o profissional.</p>
+          </div>`
+        );
+      } catch (e) {
+        console.error("Erro ao enviar email para cliente:", e);
       }
     }
 
