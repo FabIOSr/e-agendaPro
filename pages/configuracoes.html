@@ -2162,6 +2162,21 @@
         && new Date(data.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
       window.PRESTADOR_IS_PRO = isPro; // usado pelo card do Google Calendar
 
+      // Desabilita intervalo entre slots para usuários free
+      const intervaloSlotField = document.getElementById('p-intervalo-slot');
+      if (intervaloSlotField) {
+        if (isPro) {
+          intervaloSlotField.disabled = false;
+          intervaloSlotField.placeholder = '0';
+          intervaloSlotField.title = '';
+        } else {
+          intervaloSlotField.disabled = true;
+          intervaloSlotField.value = '';
+          intervaloSlotField.placeholder = 'Pro';
+          intervaloSlotField.title = 'Disponível apenas no plano Pro';
+        }
+      }
+
       const body = document.getElementById('plano-body');
       if (!body) return;
 
