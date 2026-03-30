@@ -261,6 +261,104 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 .gate-feat  { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; text-align: left; }
 .gate-feat::before { content: '✓'; color: var(--lime-d); font-weight: 700; flex-shrink: 0; }
 
+/* ── BANNER UPGRADE (Free) ── */
+.banner-upgrade {
+  background: var(--lime-t);
+  border: 1.5px solid rgba(200, 240, 96, .3);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.banner-text {
+  flex: 1;
+  color: var(--text);
+}
+.banner-text strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.banner-text p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+.banner-actions {
+  flex-shrink: 0;
+}
+.btn-banner {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  transition: background .2s;
+}
+.btn-banner:hover {
+  background: #b8e050;
+}
+@media (max-width: 600px) {
+  .banner-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .banner-actions {
+    width: 100%;
+  }
+  .btn-banner {
+    width: 100%;
+  }
+}
+
+/* ── TOP SERVIÇOS (Free) ── */
+.free-only {
+  display: block;
+}
+.pro-only {
+  display: none;
+}
+.top-servicos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+.top-servico-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.top-servico-nome {
+  font-size: 14px;
+  font-weight: 500;
+}
+.top-servico-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+}
+.top-servico-agend {
+  color: var(--muted);
+}
+.top-servico-valor {
+  font-family: 'DM Mono', monospace;
+  color: var(--lime);
+  font-weight: 600;
+}
+
 /* ── TOGGLE PLANO (simulação) ── */
 .demo-toggle {
   display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted);
@@ -332,27 +430,35 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
       <div class="kpi lime">
         <div class="kpi-label">Receita do mês</div>
         <div class="kpi-val lime" id="kpi-mes">R$3.740</div>
-        <div class="kpi-delta up" id="kpi-mes-delta">↑ +12% vs mês anterior</div>
+        <div class="kpi-delta up pro-only" id="kpi-mes-delta">↑ +12% vs mês anterior</div>
       </div>
       <div class="kpi teal">
         <div class="kpi-label">Atendimentos</div>
         <div class="kpi-val teal" id="kpi-atend">42</div>
-        <div class="kpi-delta up">↑ +5 vs mês anterior</div>
+        <div class="kpi-delta up pro-only">↑ +5 vs mês anterior</div>
       </div>
       <div class="kpi amber">
         <div class="kpi-label">Ticket médio</div>
         <div class="kpi-val amber" id="kpi-ticket">R$89</div>
-        <div class="kpi-delta down">↓ -R$3 vs mês anterior</div>
+        <div class="kpi-delta down pro-only">↓ -R$3 vs mês anterior</div>
       </div>
       <div class="kpi blue">
         <div class="kpi-label">Taxa de ocupação</div>
         <div class="kpi-val blue" id="kpi-ocup">78%</div>
-        <div class="kpi-delta up">↑ +6% vs mês anterior</div>
+        <div class="kpi-delta up pro-only">↑ +6% vs mês anterior</div>
       </div>
     </div>
 
-    <!-- CHARTS -->
-    <div class="charts-grid">
+    <!-- TOP SERVIÇOS (Free) -->
+    <div class="free-only" id="top-servicos-container" style="display:none;">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--muted);">Top 3 serviços do mês</h3>
+      <div class="top-servicos-list" id="top-servicos-list">
+        <!-- Preenchido via JS -->
+      </div>
+    </div>
+
+    <!-- CHARTS (Pro only) -->
+    <div class="charts-grid pro-only">
 
       <!-- receita por mês -->
       <div class="chart-card">
@@ -387,8 +493,8 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 
     </div>
 
-    <!-- segundo row -->
-    <div class="charts-grid" style="grid-template-columns:1fr 1fr">
+    <!-- segundo row charts (Pro only) -->
+    <div class="charts-grid pro-only" style="grid-template-columns:1fr 1fr">
 
       <!-- por dia da semana -->
       <div class="chart-card">
@@ -503,46 +609,192 @@ async function init() {
   if (badge) { badge.textContent = isPro ? 'Pro' : 'Grátis'; badge.className = `plano-badge ${isPro ? 'pro' : 'free'}`; }
 
   // ── PAYWALL DINÂMICO ─────────────────────────────────────────────────
-  const planoAtual = isPro ? 'pro' : 'free';
   const paineis = ['panel-receita', 'panel-clientes'];
 
+  // Limpa gates existentes
   paineis.forEach(id => {
     const panel = document.getElementById(id);
     const gateExistente = panel.querySelector('.paywall-gate');
     if (gateExistente) gateExistente.remove();
-    panel.querySelectorAll('.kpis,.charts-grid,.table-card').forEach(el => el.style.display = '');
+    const bannerExistente = panel.querySelector('.banner-upgrade');
+    if (bannerExistente) bannerExistente.remove();
+
+    // Reseta visibilidade
+    panel.querySelectorAll('.kpis,.charts-grid,.table-card,.free-only').forEach(el => el.style.display = '');
+    panel.querySelectorAll('.pro-only').forEach(el => el.style.display = 'none');
   });
 
-  if (planoAtual !== 'pro') {
+  if (!isPro) {
+    // USUÁRIO FREE: mostra versão simplificada
     paineis.forEach(id => {
       const panel = document.getElementById(id);
-      panel.querySelectorAll('.kpis,.charts-grid,.table-card').forEach(el => el.style.display = 'none');
-      const gate = document.createElement('div');
-      gate.className = 'paywall-gate';
-      gate.innerHTML = `
-        <div class="gate-icon">📊</div>
-        <div class="gate-title">Relatórios e histórico de clientes</div>
-        <p class="gate-desc">Veja quanto você fatura, quais serviços rendem mais e o histórico completo de todos os seus clientes. Disponível no plano Pro.</p>
+
+      if (id === 'panel-receita') {
+        // Adiciona banner de upgrade no topo
+        const banner = document.createElement('div');
+        banner.className = 'banner-upgrade';
+        banner.innerHTML = `
+          <div class="banner-content">
+            <div class="banner-text">
+              <strong>📈 Veja gráficos completos e exporte seus relatórios!</strong>
+              <p>No plano Pro você tem acesso a gráficos visuais, comparativos mensais e exportação em CSV.</p>
+            </div>
+            <div class="banner-actions">
+              <a href="/planos" class="btn-banner">Ver planos</a>
+            </div>
+          </div>
+        `;
+        panel.insertBefore(banner, panel.firstChild);
+
+        // Oculta elementos Pro-only
+        panel.querySelectorAll('.pro-only').forEach(el => el.style.display = 'none');
+      }
+    });
+
+    // Prepara gate para clientes (será mostrado ao clicar na aba)
+    const clientesPanel = document.getElementById('panel-clientes');
+    clientesPanel.innerHTML = `
+      <div class="paywall-gate">
+        <div class="gate-icon">👥</div>
+        <div class="gate-title">Histórico completo de clientes</div>
+        <p class="gate-desc">Acompanhe o histórico de cada cliente, veja todos os agendamentos anteriores, adicione observações e anotações pessoais. Disponível no plano Pro.</p>
         <div class="gate-feats">
-          <div class="gate-feat">Receita mensal, por serviço e por dia</div>
-          <div class="gate-feat">Ticket médio e taxa de ocupação</div>
-          <div class="gate-feat">Histórico completo de cada cliente</div>
+          <div class="gate-feat">Histórico completo de agendamentos</div>
+          <div class="gate-feat">Valor total gasto por cliente</div>
           <div class="gate-feat">Observações e anotações por cliente</div>
-          <div class="gate-feat">Exportação em PDF</div>
+          <div class="gate-feat">Último atendimento</div>
+          <div class="gate-feat">Exportar lista de clientes</div>
         </div>
         <div class="gate-price">R$39<span style="font-size:16px;color:var(--muted)">/mês</span></div>
         <div class="gate-per">cancele quando quiser · sem fidelidade</div>
         <button class="gate-btn" onclick="window.location.href='/planos'">✦ Assinar Pro agora</button>
-      `;
-      panel.appendChild(gate);
+      </div>
+    `;
+
+    // Oculta botão de exportar
+    const btnExport = document.getElementById('btn-export');
+    if (btnExport) {
+      btnExport.style.opacity = '.3';
+      btnExport.style.cursor = 'not-allowed';
+    }
+
+    // Carrega versão Free dos dados
+    await carregarKPIsFree();
+    await carregarTopServicos();
+  } else {
+    // USUÁRIO PRO: versão completa
+    paineis.forEach(id => {
+      const panel = document.getElementById(id);
+      // Mostra elementos Pro-only e esconde Free-only
+      panel.querySelectorAll('.pro-only').forEach(el => {
+        // charts-grid precisa de grid, outros usam block/flex
+        if (el.classList.contains('charts-grid')) {
+          el.style.display = 'grid';
+        } else if (el.classList.contains('kpi-delta')) {
+          el.style.display = 'flex';
+        } else {
+          el.style.display = 'block';
+        }
+      });
+      panel.querySelectorAll('.free-only').forEach(el => el.style.display = 'none');
     });
-    document.getElementById('btn-export').style.opacity = '.3';
-    document.getElementById('btn-export').style.cursor = 'not-allowed';
+    initCharts();
+    await Promise.all([carregarKPIs(), carregarReceita(), carregarServicos(), carregarDistribuicao()]);
+    await carregarClientes();
+  }
+}
+
+// ── FUNÇÕES FREE (versão simplificada) ─────────────────────────────────────
+async function carregarKPIsFree() {
+  // Carrega apenas KPIs básicos do mês atual (sem comparativo)
+  const agora = new Date();
+  const iniMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59);
+
+  const { data: atual } = await supabase
+    .from('agendamentos')
+    .select('servicos(preco, duracao_min)')
+    .eq('prestador_id', userId)
+    .in('status', ['confirmado', 'concluido'])
+    .gte('data_hora', iniMes.toISOString())
+    .lte('data_hora', fimMes.toISOString());
+
+  const recMes = (atual || []).reduce((s, a) => s + Number(a.servicos?.preco || 0), 0);
+  const atend = (atual || []).length;
+  const ticket = atend > 0 ? recMes / atend : 0;
+
+  // Atualiza KPIs
+  document.getElementById('kpi-mes').textContent = formatMoeda(recMes);
+  document.getElementById('kpi-atend').textContent = String(atend);
+  document.getElementById('kpi-ticket').textContent = formatMoeda(ticket);
+
+  // Taxa de ocupação simplificada
+  const ocupacao = calcOcupacao(atual || []);
+  document.getElementById('kpi-ocup').textContent = ocupacao + '%';
+
+  // Mostra container de top serviços
+  document.getElementById('top-servicos-container').style.display = 'block';
+}
+
+async function carregarTopServicos() {
+  // Carrega top 3 serviços do mês atual
+  const agora = new Date();
+  const iniMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59);
+
+  const { data: agendamentos } = await supabase
+    .from('agendamentos')
+    .select('servicos(nome, preco)')
+    .eq('prestador_id', userId)
+    .in('status', ['confirmado', 'concluido'])
+    .gte('data_hora', iniMes.toISOString())
+    .lte('data_hora', fimMes.toISOString());
+
+  // Agrupa por serviço
+  const mapa = {};
+  (agendamentos || []).forEach(a => {
+    const nome = a.servicos?.nome || 'Serviço';
+    const preco = Number(a.servicos?.preco || 0);
+    mapa[nome] = (mapa[nome] || { count: 0, valor: 0 });
+    mapa[nome].count++;
+    mapa[nome].valor += preco;
+  });
+
+  // Converte para array e ordena
+  const lista = Object.entries(mapa)
+    .map(([nome, data]) => ({ nome, ...data }))
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 3);
+
+  // Renderiza
+  const container = document.getElementById('top-servicos-list');
+  if (lista.length === 0) {
+    container.innerHTML = '<div class="empty">Nenhum agendamento este mês</div>';
+    return;
   }
 
-  initCharts();
-  await Promise.all([carregarKPIs(), carregarReceita(), carregarServicos(), carregarDistribuicao()]);
-  await carregarClientes();
+  container.innerHTML = lista.map(s => `
+    <div class="top-servico-item">
+      <div class="top-servico-nome">${s.nome}</div>
+      <div class="top-servico-stats">
+        <span class="top-servico-agend">${s.count} agend</span>
+        <span class="top-servico-valor">${formatMoeda(s.valor)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function formatMoeda(val) {
+  return 'R$' + val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function calcOcupacao(agendamentos) {
+  if (!agendamentos || agendamentos.length === 0) return '0';
+  // Cálculo simplificado: agendamentos / (dias úteis * 8 slots por dia)
+  const diasUteis = 22; // Média do mês
+  const capacidade = diasUteis * 8; // 8 slots por dia
+  const ocupacao = Math.round((agendamentos.length / capacidade) * 100);
+  return Math.min(ocupacao, 100).toString();
 }
 
 // ── TABS ──────────────────────────────────────────────────────────────────
@@ -671,11 +923,33 @@ async function carregarServicos() {
   const valores  = ordenado.map(([,v]) => v);
   const CORES    = ['#c8f060','#5DCAA5','#60a8f0','#EF9F27','#b060f0','#f06048'];
 
+  // Atualiza gráfico
   if (chartServicos) {
     chartServicos.data.labels   = labels;
     chartServicos.data.datasets[0].data            = valores;
     chartServicos.data.datasets[0].backgroundColor = CORES.slice(0, labels.length);
     chartServicos.update();
+  }
+
+  // Atualiza legenda
+  const total = valores.reduce((s, v) => s + v, 0);
+  const legendContainer = document.getElementById('legend-servicos');
+  if (legendContainer) {
+    legendContainer.innerHTML = ordenado.map(([nome, val], i) => {
+      const pct = total > 0 ? Math.round(val / total * 100) : 0;
+      return `
+        <div class="legend-item">
+          <div class="legend-left">
+            <div class="legend-dot" style="background:${CORES[i]}"></div>
+            ${nome}
+          </div>
+          <div class="legend-val" style="color:${CORES[i]}">
+            R$${val.toLocaleString('pt-BR')}
+            <span style="color:var(--muted);font-size:10px"> ${pct}%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 }
 
@@ -699,12 +973,24 @@ async function carregarDistribuicao() {
     porHora[dt.getHours()]++;
   });
 
+  // Atualiza gráfico de dias (destaca maior valor)
   if (chartDias) {
+    const maxDia = Math.max(...porDia);
     chartDias.data.datasets[0].data = porDia;
+    chartDias.data.datasets[0].backgroundColor = porDia.map(v =>
+      v === maxDia ? '#c8f060' : 'rgba(200,240,96,.2)'
+    );
     chartDias.update();
   }
+
+  // Atualiza gráfico de horas (apenas 8h-20h, destaca maior valor)
   if (chartHoras) {
-    chartHoras.data.datasets[0].data = porHora;
+    const horas8_20 = porHora.slice(8, 20);
+    const maxHora = Math.max(...horas8_20);
+    chartHoras.data.datasets[0].data = horas8_20;
+    chartHoras.data.datasets[0].backgroundColor = horas8_20.map(v =>
+      v === maxHora ? '#5DCAA5' : 'rgba(93,202,165,.2)'
+    );
     chartHoras.update();
   }
 }
@@ -753,62 +1039,82 @@ function initCharts() {
     });
   }
 
-  // Por serviço (bar horizontal)
+  // Por serviço (doughnut)
   const ctxSV = document.getElementById('chart-servicos')?.getContext('2d');
   if (ctxSV) {
     chartServicos = new Chart(ctxSV, {
-      type: 'bar',
-      data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 4 }] },
+      type: 'doughnut',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: [],
+          borderColor: '#1c1a16',
+          borderWidth: 3,
+          hoverOffset: 6,
+        }],
+      },
       options: {
-        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-        plugins: { legend: { display: false }, tooltip: { ...TOOLTIP,
-          callbacks: { label: ctx => `R$ ${ctx.parsed.x.toLocaleString('pt-BR')}` }
-        }},
-        scales: {
-          x: { grid: { color: '#1e1c18' }, ticks: { color: '#8a8778',
-            callback: v => `R$${v}` } },
-          y: { grid: { display: false }, ticks: { color: '#f0ede6' } },
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { ...TOOLTIP,
+            callbacks: { label: ctx => ` R$${ctx.parsed.toLocaleString('pt-BR')}` }
+          },
         },
       },
     });
   }
 
-  // Por dia da semana (bar)
+  // Por dia da semana (bar com destaque)
   const ctxDD = document.getElementById('chart-dias')?.getContext('2d');
   if (ctxDD) {
     chartDias = new Chart(ctxDD, {
       type: 'bar',
       data: {
         labels: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
-        datasets: [{ data: Array(7).fill(0), backgroundColor: '#c8f060', borderRadius: 4 }],
+        datasets: [{
+          data: Array(7).fill(0),
+          backgroundColor: Array(7).fill('rgba(200,240,96,.2)'),
+          borderRadius: 5,
+          borderSkipped: false,
+        }],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { ...TOOLTIP } },
         scales: {
           x: { grid: { display: false }, ticks: { color: '#8a8778' } },
-          y: { grid: { color: '#1e1c18' }, ticks: { color: '#8a8778', stepSize: 1 } },
+          y: { grid: { color: '#1e1c18' }, ticks: { color: '#8a8778', beginAtZero: true } },
         },
       },
     });
   }
 
-  // Por hora (bar)
+  // Horários de pico (8h-20h com destaque)
   const ctxHH = document.getElementById('chart-horas')?.getContext('2d');
   if (ctxHH) {
     chartHoras = new Chart(ctxHH, {
       type: 'bar',
       data: {
-        labels: Array.from({length:24}, (_,i) => `${String(i).padStart(2,'0')}h`),
-        datasets: [{ data: Array(24).fill(0), backgroundColor: '#5DCAA5', borderRadius: 3 }],
+        labels: Array.from({length:12}, (_,i) => `${i+8}h`),
+        datasets: [{
+          data: Array(12).fill(0),
+          backgroundColor: Array(12).fill('rgba(93,202,165,.2)'),
+          borderRadius: 4,
+          borderSkipped: false,
+        }],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { ...TOOLTIP } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#8a8778',
-            callback: (_, i) => i % 3 === 0 ? `${String(i).padStart(2,'0')}h` : '' } },
-          y: { grid: { color: '#1e1c18' }, ticks: { color: '#8a8778', stepSize: 1 } },
+          x: { grid: { display: false }, ticks: { color: '#8a8778' } },
+          y: { grid: { color: '#1e1c18' }, ticks: { color: '#8a8778', beginAtZero: true } },
         },
       },
     });
