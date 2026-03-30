@@ -154,6 +154,19 @@
       border: 1px solid var(--bord);
     }
 
+    .plano-badge.trial {
+      background: var(--amber-t);
+      color: var(--amber);
+      border: 1px solid rgba(239, 159, 39, .3);
+      animation: pulse-trial 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-trial {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+    }
+
     .avatar {
       width: 30px;
       height: 30px;
@@ -886,7 +899,7 @@
     async function init() {
       const { data: prestador } = await supabase
         .from('prestadores')
-        .select('nome, plano')
+        .select('nome, plano, trial_ends_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -896,12 +909,36 @@
       const avEl = document.getElementById('topbar-avatar');
       const planoEl = document.getElementById('topbar-plano');
       if (avEl) avEl.textContent = nome[0].toUpperCase();
-      if (planoEl) { planoEl.textContent = plano === 'pro' ? 'Pro' : 'Grátis'; planoEl.className = `plano-badge ${plano}`; }
+
+      // Verifica se está em trial
+      let isTrial = false;
+      let trialDaysRemaining = 0;
+      if (prestador?.trial_ends_at) {
+        const trialEnd = new Date(prestador.trial_ends_at);
+        const now = new Date();
+        if (trialEnd > now) {
+          isTrial = true;
+          trialDaysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      // Atualiza badge
+      if (planoEl) {
+        if (isTrial) {
+          planoEl.textContent = trialDaysRemaining === 1 ? 'Trial (1 dia)' : `Trial (${trialDaysRemaining} dias)`;
+          planoEl.className = 'plano-badge trial';
+        } else {
+          planoEl.textContent = plano === 'pro' ? 'Pro' : 'Grátis';
+          planoEl.className = `plano-badge ${plano}`;
+        }
+      }
 
       document.getElementById('page-sub').textContent = 'Carregando clientes…';
 
       // Gate pro (aviso sem bloquear — mostra dados vazios se free)
-      if (plano !== 'pro') {
+      // Usa verifica_plano_ativo para considerar trial também
+      const { data: planoAtivo } = await supabase.rpc('verifica_plano_ativo', { p_prestador_id: userId });
+      if (!planoAtivo) {
         document.getElementById('page-sub').textContent = 'Disponível no plano Pro';
         document.getElementById('loading').style.display = 'none';
         document.getElementById('crm-gate')?.classList.remove('hidden');

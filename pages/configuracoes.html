@@ -1070,6 +1070,19 @@
       border: 1px solid var(--bord);
     }
 
+    .plano-badge.trial {
+      background: var(--amber-t);
+      color: var(--amber);
+      border: 1px solid rgba(239, 159, 39, .3);
+      animation: pulse-trial 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-trial {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+    }
+
     .plano-det {
       font-size: 12px;
       color: var(--muted);
@@ -2503,14 +2516,26 @@
     async function carregarPlano() {
       const { data, error } = await supabase
         .from('prestadores')
-        .select('plano, plano_valido_ate')
+        .select('plano, plano_valido_ate, trial_ends_at')
         .eq('id', userId)
         .single();
       if (error || !data) return;
 
-      const isPro = data.plano === 'pro'
+      // Verifica se está em trial
+      let isTrial = false;
+      let trialDaysRemaining = 0;
+      if (data.trial_ends_at) {
+        const trialEnd = new Date(data.trial_ends_at);
+        const now = new Date();
+        if (trialEnd > now) {
+          isTrial = true;
+          trialDaysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      const isPro = isTrial || (data.plano === 'pro'
         && data.plano_valido_ate
-        && new Date(data.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+        && new Date(data.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
       window.PRESTADOR_IS_PRO = isPro; // usado pelo card do Google Calendar
 
       // Desabilita intervalo entre slots para usuários free
@@ -2531,7 +2556,28 @@
       const body = document.getElementById('plano-body');
       if (!body) return;
 
-      if (isPro) {
+      if (isTrial) {
+        // Mostra Trial
+        const trialEndFmt = new Date(data.trial_ends_at).toLocaleDateString('pt-BR');
+        const diasTxt = trialDaysRemaining === 1 ? '1 dia' : `${trialDaysRemaining} dias`;
+        body.innerHTML = `
+      <div class="plano-atual">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <div class="plano-nome" style="font-family:'Fraunces',serif;font-size:20px;font-weight:300">Trial Pro</div>
+            <div class="plano-badge trial" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:var(--amber-t);color:var(--amber);border:1px solid rgba(239,159,39,.3);animation:pulse-trial 2s ease-in-out infinite">${diasTxt} restantes</div>
+          </div>
+          <div class="plano-det" style="font-size:12px;color:var(--muted);margin-top:3px">Experimente grátis até ${trialEndFmt}</div>
+        </div>
+        <button class="btn-upgrade" onclick="window.location.href='/planos'">Assinar →</button>
+      </div>
+      <div style="margin-top:16px;padding:12px 14px;background:var(--amber-t);border:1px solid rgba(239,159,39,.2);border-radius:8px;font-size:13px;color:var(--amber);line-height:1.6">
+        🎉 Trial ativo! Aproveite todos os recursos Pro gratuitamente por ${trialDaysRemaining} ${trialDaysRemaining === 1 ? 'dia' : 'dias'}.
+      </div>
+      <div style="margin-top:12px;padding:12px 14px;background:var(--bg2);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.6">
+        ✅ Agendamentos ilimitados &nbsp;·&nbsp; ✅ WhatsApp automático &nbsp;·&nbsp; ✅ Relatórios &nbsp;·&nbsp; ✅ Histórico de clientes
+      </div>`;
+      } else if (isPro) {
         const valido = data.plano_valido_ate
           ? new Date(data.plano_valido_ate).toLocaleDateString('pt-BR')
           : '—';

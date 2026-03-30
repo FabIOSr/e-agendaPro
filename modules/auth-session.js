@@ -37,7 +37,7 @@ export async function getPrestador(userId) {
     .from('prestadores')
     .select(`
       id, nome, slug, bio, foto_url, whatsapp, email,
-      plano, plano_valido_ate, trial_usado,
+      plano, plano_valido_ate, trial_usado, trial_ends_at,
       asaas_customer_id, asaas_sub_id,
       created_at
     `)
@@ -68,6 +68,12 @@ export async function requireAuth(redirectTo) {
 export function checkPlano(prestador, planoNecessario) {
   if (planoNecessario === 'free') return true;
 
+  // Verifica se está em trial válido
+  if (prestador.trial_ends_at) {
+    const trialEnd = new Date(prestador.trial_ends_at);
+    if (trialEnd > new Date()) return true; // Trial ativo
+  }
+
   if (prestador.plano !== 'pro') return false;
 
   if (prestador.plano_valido_ate) {
@@ -77,6 +83,48 @@ export function checkPlano(prestador, planoNecessario) {
   }
 
   return true;
+}
+
+// Retorna objeto com status do trial (ativo/inativo, dias restantes)
+export function getTrialStatus(prestador) {
+  if (!prestador.trial_ends_at) return null;
+
+  const trialEnd = new Date(prestador.trial_ends_at);
+  const now = new Date();
+
+  if (trialEnd <= now) return null; // Trial expirou
+
+  const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return {
+    active: true,
+    ends_at: trialEnd,
+    days_remaining: daysRemaining,
+  };
+}
+
+// Retorna o badge de plano formatado (Free, Pro, ou Trial)
+export function getPlanoBadge(prestador) {
+  const trial = getTrialStatus(prestador);
+
+  if (trial && trial.active) {
+    return {
+      texto: trial.days_remaining === 1 ? 'Trial (1 dia)' : `Trial (${trial.days_remaining} dias)`,
+      classe: 'trial',
+      is_pro: true,
+      is_trial: true,
+      days_remaining: trial.days_remaining,
+      ends_at: trial.ends_at,
+    };
+  }
+
+  const isPro = checkPlano(prestador, 'pro');
+
+  return {
+    texto: isPro ? 'Pro' : 'Grátis',
+    classe: isPro ? 'pro' : 'free',
+    is_pro: isPro,
+    is_trial: false,
+  };
 }
 
 export async function getAgendamentosMes(prestadorId) {

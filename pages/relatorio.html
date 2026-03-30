@@ -43,6 +43,12 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text
 .plano-badge { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; }
 .plano-badge.pro  { background: var(--lime-t); color: var(--lime); border: 1px solid rgba(200,240,96,.2); }
 .plano-badge.free { background: var(--bg3);    color: var(--muted); border: 1px solid var(--border); }
+.plano-badge.trial { background: var(--amber-t); color: var(--amber); border: 1px solid rgba(239,159,39,.3); animation: pulse-trial 2s ease-in-out infinite; }
+
+@keyframes pulse-trial {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
 
 /* ── TABS ── */
 .tabs-row {
@@ -794,7 +800,7 @@ window.limparFiltros = function() {
 async function init() {
   // Busca prestador + verifica plano via função SQL (inclui grace period de 3 dias)
   const [{ data: prestador }, { data: planoAtivo }] = await Promise.all([
-    supabase.from('prestadores').select('nome, plano').eq('id', userId).maybeSingle(),
+    supabase.from('prestadores').select('nome, plano, trial_ends_at').eq('id', userId).maybeSingle(),
     supabase.rpc('verifica_plano_ativo', { p_prestador_id: userId }),
   ]);
 
@@ -803,8 +809,27 @@ async function init() {
 
   const av    = document.getElementById('topbar-avatar');
   if (av) av.textContent = nome[0].toUpperCase();
+
+  // Verifica se está em trial
   const badge = document.getElementById('badge-plano');
-  if (badge) { badge.textContent = isPro ? 'Pro' : 'Grátis'; badge.className = `plano-badge ${isPro ? 'pro' : 'free'}`; }
+  if (badge) {
+    if (prestador?.trial_ends_at) {
+      const trialEnd = new Date(prestador.trial_ends_at);
+      const now = new Date();
+      if (trialEnd > now) {
+        const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        badge.textContent = daysRemaining === 1 ? 'Trial (1 dia)' : `Trial (${daysRemaining} dias)`;
+        badge.className = 'plano-badge trial';
+      } else {
+        // Trial expirou
+        badge.textContent = isPro ? 'Pro' : 'Grátis';
+        badge.className = `plano-badge ${isPro ? 'pro' : 'free'}`;
+      }
+    } else {
+      badge.textContent = isPro ? 'Pro' : 'Grátis';
+      badge.className = `plano-badge ${isPro ? 'pro' : 'free'}`;
+    }
+  }
 
   // ── PAYWALL DINÂMICO ─────────────────────────────────────────────────
   const paineis = ['panel-receita', 'panel-clientes'];
