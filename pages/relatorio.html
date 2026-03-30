@@ -509,9 +509,14 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
       👥 Clientes
     </button>
   </div>
-  <button class="btn-export" onclick="exportar()" id="btn-export">
-    ⬇ Exportar PDF
-  </button>
+  <div style="display:flex;gap:8px;">
+    <button class="btn-export" onclick="exportar('csv')" id="btn-export-csv">
+      ⬇ CSV
+    </button>
+    <button class="btn-export" onclick="exportar('pdf')" id="btn-export">
+      ⬇ PDF
+    </button>
+  </div>
 </div>
 
 <!-- CONTEÚDO (oculto para free) -->
@@ -522,6 +527,33 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 
   <!-- ══════════ PAINEL RECEITA ══════════ -->
   <div class="panel active" id="panel-receita">
+
+    <!-- FILTROS PRO (Pro only) -->
+    <div class="pro-only" style="margin-bottom:20px;display:none;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Filtros:</div>
+
+        <!-- Filtro de Status -->
+        <select id="filtro-status" onchange="aplicarFiltros()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'Syne',sans-serif;cursor:pointer;">
+          <option value="">Todos os status</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="concluido">Concluído</option>
+          <option value="cancelado">Cancelado</option>
+          <option value="nao_compareceu">Não compareceu</option>
+        </select>
+
+        <!-- Filtro de Serviço -->
+        <select id="filtro-servico" onchange="aplicarFiltros()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'Syne',sans-serif;cursor:pointer;">
+          <option value="">Todos os serviços</option>
+          <!-- Preenchido via JS -->
+        </select>
+
+        <!-- Limpar filtros -->
+        <button onclick="limparFiltros()" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;">
+          ✕ Limpar
+        </button>
+      </div>
+    </div>
 
     <!-- KPIs -->
     <div class="kpis">
@@ -667,12 +699,96 @@ window.fazerLogout = async () => {
 };
 
 // ── ESTADO ────────────────────────────────────────────────────────────────
-let tabAtual     = 'receita';
-let todosClients = [];
+let tabAtual       = 'receita';
+let todosClients   = [];
 let chartReceitaMensal = null;
 let chartServicos = null;
-let chartDias = null;
-let chartHoras = null;
+let chartDias     = null;
+let chartHoras    = null;
+let periodoMeses  = 6; // 6 ou 12 meses
+let filtroServico = null; // ID do serviço selecionado
+let filtroStatus  = null; // status selecionado: 'confirmado', 'concluido', etc
+
+// ── FUNÇÕES DE PERÍODO ─────────────────────────────────────────────────────
+window.setPeriod = function(meses, btn) {
+  periodoMeses = meses;
+
+  // Atualiza botões
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  // Atualiza subtitle
+  const subEl = document.querySelector('.chart-sub');
+  if (subEl) subEl.textContent = `Últimos ${meses} meses`;
+
+  // Recarrega dados
+  carregarReceita();
+};
+
+// ── FILTROS ─────────────────────────────────────────────────────────────────
+async function carregarServicosParaFiltro() {
+  const { data } = await supabase
+    .from('servicos')
+    .select('id, nome')
+    .eq('prestador_id', userId)
+    .order('nome');
+
+  const select = document.getElementById('filtro-servico');
+  if (!select) return;
+
+  // Limpa opções exceto a primeira
+  select.innerHTML = '<option value="">Todos os serviços</option>';
+
+  // Adiciona serviços
+  (data || []).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.nome;
+    select.appendChild(opt);
+  });
+}
+
+// Helper para aplicar filtros na query
+function aplicarFiltrosQuery(query) {
+  if (filtroStatus) {
+    query = query.eq('status', filtroStatus);
+  }
+  if (filtroServico) {
+    query = query.eq('servico_id', filtroServico);
+  }
+  return query;
+}
+
+window.aplicarFiltros = function() {
+  const statusSelect = document.getElementById('filtro-status');
+  const servicoSelect = document.getElementById('filtro-servico');
+
+  filtroStatus = statusSelect?.value || null;
+  filtroServico = servicoSelect?.value || null;
+
+  // Recarrega todos os dados com os filtros aplicados
+  carregarKPIs();
+  carregarReceita();
+  carregarServicos();
+  carregarDistribuicao();
+};
+
+window.limparFiltros = function() {
+  const statusSelect = document.getElementById('filtro-status');
+  const servicoSelect = document.getElementById('filtro-servico');
+
+  if (statusSelect) statusSelect.value = '';
+  if (servicoSelect) servicoSelect.value = '';
+
+  filtroStatus = null;
+  filtroServico = null;
+
+  // Recarrega dados sem filtros
+  carregarKPIs();
+  carregarReceita();
+  carregarServicos();
+  carregarDistribuicao();
+};
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 async function init() {
@@ -751,11 +867,16 @@ async function init() {
       </div>
     `;
 
-    // Oculta botão de exportar
-    const btnExport = document.getElementById('btn-export');
-    if (btnExport) {
-      btnExport.style.opacity = '.3';
-      btnExport.style.cursor = 'not-allowed';
+    // Oculta botões de exportar
+    const btnExportPdf = document.getElementById('btn-export');
+    const btnExportCsv = document.getElementById('btn-export-csv');
+    if (btnExportPdf) {
+      btnExportPdf.style.opacity = '.3';
+      btnExportPdf.style.cursor = 'not-allowed';
+    }
+    if (btnExportCsv) {
+      btnExportCsv.style.opacity = '.3';
+      btnExportCsv.style.cursor = 'not-allowed';
     }
 
     // Carrega versão Free dos dados
@@ -779,6 +900,7 @@ async function init() {
       panel.querySelectorAll('.free-only').forEach(el => el.style.display = 'none');
     });
     initCharts();
+    await carregarServicosParaFiltro();
     await Promise.all([carregarKPIs(), carregarReceita(), carregarServicos(), carregarDistribuicao()]);
     await carregarClientes();
   }
@@ -884,7 +1006,13 @@ window.abrirTab = function(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + tab)?.classList.add('active');
   document.getElementById('tab-' + tab)?.classList.add('active');
-  document.getElementById('btn-export').style.display = tab === 'receita' ? '' : 'none';
+
+  // Só mostra botões de exportação na aba Receita
+  const display = tab === 'receita' ? '' : 'none';
+  const btnExportPdf = document.getElementById('btn-export');
+  const btnExportCsv = document.getElementById('btn-export-csv');
+  if (btnExportPdf) btnExportPdf.style.display = display;
+  if (btnExportCsv) btnExportCsv.style.display = display;
 };
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -897,19 +1025,38 @@ async function carregarKPIs() {
   const iniAnt   = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
   const fimAnt   = new Date(agora.getFullYear(), agora.getMonth(), 0, 23, 59, 59);
 
+  // Build queries com filtros
+  let qAtual = supabase.from('agendamentos')
+    .select('servicos(preco, duracao_min)')
+    .eq('prestador_id', userId)
+    .gte('data_hora', iniMes.toISOString())
+    .lte('data_hora', fimMes.toISOString());
+
+  let qAnterior = supabase.from('agendamentos')
+    .select('servicos(preco)')
+    .eq('prestador_id', userId)
+    .gte('data_hora', iniAnt.toISOString())
+    .lte('data_hora', fimAnt.toISOString());
+
+  // Aplica filtros de status (se não houver filtro, usa padrão)
+  const statusFiltro = filtroStatus || ['confirmado', 'concluido'];
+  if (Array.isArray(statusFiltro)) {
+    qAtual = qAtual.in('status', statusFiltro);
+    qAnterior = qAnterior.in('status', statusFiltro);
+  } else {
+    qAtual = qAtual.eq('status', statusFiltro);
+    qAnterior = qAnterior.eq('status', statusFiltro);
+  }
+
+  // Aplica filtro de serviço
+  if (filtroServico) {
+    qAtual = qAtual.eq('servico_id', filtroServico);
+    qAnterior = qAnterior.eq('servico_id', filtroServico);
+  }
+
   const [{ data: atual }, { data: anterior }] = await Promise.all([
-    supabase.from('agendamentos')
-      .select('servicos(preco, duracao_min)')
-      .eq('prestador_id', userId)
-      .in('status', ['confirmado', 'concluido'])
-      .gte('data_hora', iniMes.toISOString())
-      .lte('data_hora', fimMes.toISOString()),
-    supabase.from('agendamentos')
-      .select('servicos(preco)')
-      .eq('prestador_id', userId)
-      .in('status', ['confirmado', 'concluido'])
-      .gte('data_hora', iniAnt.toISOString())
-      .lte('data_hora', fimAnt.toISOString()),
+    qAtual,
+    qAnterior
   ]);
 
   const recMes  = (atual  || []).reduce((s, a) => s + Number(a.servicos?.preco || 0), 0);
@@ -953,7 +1100,7 @@ async function carregarReceita() {
   const labels = [];
   const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-  for (let i = 5; i >= 0; i--) {
+  for (let i = periodoMeses - 1; i >= 0; i--) {
     const d   = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
     const fim = new Date(agora.getFullYear(), agora.getMonth() - i + 1, 0, 23, 59, 59);
     meses.push({ ini: d, fim });
@@ -961,13 +1108,25 @@ async function carregarReceita() {
   }
 
   const valores = await Promise.all(meses.map(async ({ ini, fim }) => {
-    const { data } = await supabase
+    let query = supabase
       .from('agendamentos')
       .select('servicos(preco)')
       .eq('prestador_id', userId)
-      .in('status', ['confirmado', 'concluido'])
       .gte('data_hora', ini.toISOString())
       .lte('data_hora', fim.toISOString());
+
+    // Aplica filtros
+    const statusFiltro = filtroStatus || ['confirmado', 'concluido'];
+    if (Array.isArray(statusFiltro)) {
+      query = query.in('status', statusFiltro);
+    } else {
+      query = query.eq('status', statusFiltro);
+    }
+    if (filtroServico) {
+      query = query.eq('servico_id', filtroServico);
+    }
+
+    const { data } = await query;
     return (data || []).reduce((s, a) => s + Number(a.servicos?.preco || 0), 0);
   }));
 
@@ -983,12 +1142,24 @@ async function carregarServicos() {
   const agora  = new Date();
   const iniMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
 
-  const { data } = await supabase
+  let query = supabase
     .from('agendamentos')
     .select('servicos(nome, preco)')
     .eq('prestador_id', userId)
-    .in('status', ['confirmado', 'concluido'])
     .gte('data_hora', iniMes.toISOString());
+
+  // Aplica filtros
+  const statusFiltro = filtroStatus || ['confirmado', 'concluido'];
+  if (Array.isArray(statusFiltro)) {
+    query = query.in('status', statusFiltro);
+  } else {
+    query = query.eq('status', statusFiltro);
+  }
+  if (filtroServico) {
+    query = query.eq('servico_id', filtroServico);
+  }
+
+  const { data } = await query;
 
   // Agrupa por serviço
   const mapa = {};
@@ -1038,12 +1209,24 @@ async function carregarDistribuicao() {
   const agora  = new Date();
   const iniMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
 
-  const { data } = await supabase
+  let query = supabase
     .from('agendamentos')
     .select('data_hora')
     .eq('prestador_id', userId)
-    .in('status', ['confirmado', 'concluido'])
     .gte('data_hora', iniMes.toISOString());
+
+  // Aplica filtros
+  const statusFiltro = filtroStatus || ['confirmado', 'concluido'];
+  if (Array.isArray(statusFiltro)) {
+    query = query.in('status', statusFiltro);
+  } else {
+    query = query.eq('status', statusFiltro);
+  }
+  if (filtroServico) {
+    query = query.eq('servico_id', filtroServico);
+  }
+
+  const { data } = await query;
 
   const porDia  = Array(7).fill(0);
   const porHora = Array(24).fill(0);
@@ -1374,10 +1557,67 @@ window.salvarObs = async function(tel, nome) {
   }
 };
 
-// ── EXPORTAR PDF ──────────────────────────────────────────────────────────
-window.exportar = function() {
-  window.print();
+// ── EXPORTAR PDF/CSV ──────────────────────────────────────────────────────────
+window.exportar = function(formato = 'pdf') {
+  if (formato === 'csv') {
+    exportarCSV();
+  } else {
+    window.print();
+  }
 };
+
+async function exportarCSV() {
+  // Busca dados de agendamentos do período atual
+  const agora = new Date();
+  const meses = [];
+
+  for (let i = periodoMeses - 1; i >= 0; i--) {
+    const d   = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+    const fim = new Date(agora.getFullYear(), agora.getMonth() - i + 1, 0, 23, 59, 59);
+    meses.push({ ini: d, fim });
+  }
+
+  // Busca todos os agendamentos do período
+  const allData = await Promise.all(meses.map(async ({ ini, fim }) => {
+    const { data } = await supabase
+      .from('agendamentos')
+      .select('data_hora, cliente_nome, cliente_tel, status, servicos(nome, preco), observacoes')
+      .eq('prestador_id', userId)
+      .in('status', ['confirmado', 'concluido'])
+      .gte('data_hora', ini.toISOString())
+      .lte('data_hora', fim.toISOString());
+    return data || [];
+  }));
+
+  const agendamentos = allData.flat();
+
+  // Cria CSV
+  const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const cabecalho = ['Data', 'Cliente', 'Telefone', 'Serviço', 'Valor', 'Status', 'Observações'];
+  const linhas = agendamentos.map(a => {
+    const dt = new Date(a.data_hora);
+    const dataFmt = `${String(dt.getDate()).padStart(2,'0')}/${MESES_PT[dt.getMonth()]}/${dt.getFullYear()}`;
+    const valor = Number(a.servicos?.preco || 0).toFixed(2);
+    return [
+      dataFmt,
+      a.cliente_nome || '',
+      a.cliente_tel || '',
+      a.servicos?.nome || '',
+      `R$${valor}`,
+      a.status || '',
+      (a.observacoes || '').replace(/,/g, ' ') // Remove vírgulas para não quebrar CSV
+    ].join(',');
+  });
+
+  const csv = [cabecalho.join(','), ...linhas].join('\n');
+
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `agendapro-relatorio-${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+}
 
 // ── INICIALIZA ────────────────────────────────────────────────────────────
 await init();
