@@ -324,6 +324,8 @@ const PRESTADOR = {
   plano: 'free',
   plano_valido_ate: null,
   asaas_sub_id: null,
+  trial_ends_at: null,
+  trial_usado: false,
   agendamentos_mes: 0,
   limite_free: 10,
   nome: '',
@@ -342,7 +344,7 @@ async function carregarTudo() {
 async function carregarPlanoReal() {
   const { data, error } = await supabase
     .from('prestadores')
-    .select('nome, plano, plano_valido_ate, asaas_sub_id')
+    .select('nome, plano, plano_valido_ate, asaas_sub_id, trial_ends_at, trial_usado')
     .eq('id', userId)
     .single();
   if (error || !data) return;
@@ -351,6 +353,8 @@ async function carregarPlanoReal() {
   PRESTADOR.plano_valido_ate = data.plano_valido_ate ?? null;
   PRESTADOR.asaas_sub_id    = data.asaas_sub_id    ?? null;
   PRESTADOR.nome            = data.nome             ?? '';
+  PRESTADOR.trial_ends_at   = data.trial_ends_at   ?? null;
+  PRESTADOR.trial_usado     = data.trial_usado     ?? false;
 
   // Atualizar topbar
   const topEl = document.getElementById('topbar-nome');
@@ -419,13 +423,51 @@ async function carregarHistoricoReal() {
 // ── RENDER STATUS CARD ─────────────────────────────────────────────────────
 function renderStatus() {
   const card = document.getElementById('status-card');
-  const isPro = PRESTADOR.plano === 'pro'
+
+  // Verifica se está em trial
+  let isTrial = false;
+  let trialDaysRemaining = 0;
+  if (PRESTADOR.trial_ends_at) {
+    const trialEnd = new Date(PRESTADOR.trial_ends_at);
+    const now = new Date();
+    if (trialEnd > now) {
+      isTrial = true;
+      trialDaysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  const isPro = isTrial || (PRESTADOR.plano === 'pro'
     && PRESTADOR.plano_valido_ate
-    && new Date(PRESTADOR.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    && new Date(PRESTADOR.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
 
   const uso    = Math.min(PRESTADOR.agendamentos_mes, PRESTADOR.limite_free);
   const pct    = Math.min((uso / PRESTADOR.limite_free) * 100, 100);
   const corBarra = pct >= 100 ? 'danger' : pct >= 70 ? 'warning' : 'ok';
+
+  if (isTrial) {
+    // Mostra card de Trial
+    const trialEndFmt = new Date(PRESTADOR.trial_ends_at).toLocaleDateString('pt-BR');
+    card.innerHTML = `
+      <div class="status-card pro" style="background:var(--gold-l);border:1.5px solid var(--gold)">
+        <div class="status-badge" style="background:var(--gold);color:var(--lime-ink)"><div class="dot"></div> Trial Pro Ativo</div>
+        <div class="status-name">🎉 Teste grátis por 7 dias</div>
+        <div class="status-desc">Todos os recursos Pro disponíveis! Seu trial termina em ${trialDaysRemaining} ${trialDaysRemaining === 1 ? 'dia' : 'dias'}.</div>
+        <div class="status-meta" style="border-color:rgba(212,168,32,.3)">
+          <div class="meta-item">
+            <div class="meta-label">Trial expira em</div>
+            <div class="meta-val" style="color:var(--gold)">${trialEndFmt}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Após trial</div>
+            <div class="meta-val">R$39/mês</div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('upgrade-form').style.display = 'none';
+    document.getElementById('gerenciar-pro').style.display = 'none';
+    document.getElementById('paywall').style.display = 'none';
+    return;
+  }
 
   if (!isPro) {
     card.innerHTML = `
@@ -519,21 +561,57 @@ window.mascararCpfCnpj = function(el) {
 };
 
 window.assinar = async function() {
-  const cpfCnpj = document.getElementById('input-cpf-cnpj')?.value.replace(/\D/g, '');
-  if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {
-    showToast('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
-    return;
-  }
-
   const btn = document.getElementById('btn-assinar-final');
-  btn.disabled = true; btn.textContent = 'Processando…';
+  btn.disabled = true; btn.textContent = 'Verificando…';
 
   try {
-    // Salva CPF/CNPJ no perfil antes de assinar
-    await supabase.from('prestadores').update({ cpf_cnpj: cpfCnpj }).eq('id', (await supabase.auth.getSession()).data.session.user.id);
+    // ── VERIFICAR TRIAL PRIMEIRO ─────────────────────────────────────────────
+    const { data: prestador } = await supabase
+      .from('prestadores')
+      .select('trial_usado, trial_ends_at')
+      .eq('id', userId)
+      .single();
 
     const { data: { session: s } } = await supabase.auth.getSession();
     const token = s?.access_token;
+
+    // Se NÃO usou trial ainda, ativar trial em vez de ir para ASAAS
+    if (!prestador?.trial_usado || (prestador.trial_ends_at && new Date(prestador.trial_ends_at) > new Date())) {
+      // Trial ainda disponível - ativar localmente
+      const trialRes = await fetch(`${window.SUPABASE_URL}/functions/v1/ativar-trial`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+
+      const trialData = await trialRes.json();
+      if (!trialRes.ok || !trialData.success) {
+        throw new Error(trialData.error || 'Erro ao ativar trial');
+      }
+
+      // Trial ativado com sucesso!
+      const diasRestantes = trialData.days_remaining || 7;
+      showToast(`🎉 Trial de ${diasRestantes} dias ativado! Você já pode usar todos os recursos Pro.`);
+
+      // Redireciona para painel após 2 segundos
+      setTimeout(() => {
+        window.location.href = '/painel';
+      }, 2000);
+      return;
+    }
+
+    // ── TRIAL JÁ USADO - IR PARA ASAAS NORMALMENTE ────────────────────────────
+    btn.textContent = 'Processando…';
+
+    const cpfCnpj = document.getElementById('input-cpf-cnpj')?.value.replace(/\D/g, '');
+    if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {
+      showToast('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
+      btn.disabled = false;
+      btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">' + (planoSelecionado === 'anual' ? '29' : '39') + '</span>/mês';
+      return;
+    }
+
+    // Salva CPF/CNPJ no perfil antes de assinar
+    await supabase.from('prestadores').update({ cpf_cnpj: cpfCnpj }).eq('id', userId);
 
     const res = await fetch(`${window.SUPABASE_URL}/functions/v1/criar-assinatura`, {
       method: 'POST',
