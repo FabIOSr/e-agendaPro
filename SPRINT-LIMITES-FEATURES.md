@@ -1,8 +1,19 @@
 # Sprint: Limites e Features - Planejamento Estratégico
 
 **Data de criação:** 2026-03-29
+**Última atualização:** 2026-03-29 (Evolution API + SendGrid)
 **Objetivo:** Ajustar limites Free/Pro para otimizar conversão e reduzir churn
 **Duração estimada:** 2-3 semanas
+
+---
+
+## 📌 Tecnologias Definidas
+
+| Serviço | Tecnologia | Custo |
+|---------|-----------|-------|
+| **WhatsApp** | Evolution API (self-hosted) | VPS já existe = ~R$0 por msg |
+| **Email** | SendGrid | ~R$0,006 por email |
+| **Preço Pro** | R$39/mês (R$29/mês anual) | Definido ✅ |
 
 ---
 
@@ -17,29 +28,48 @@
 
 ---
 
-## 🔴 Decisões Estratégicas Pendentes
+## 🔴 Decisões Estratégicas
 
-**ANTES de iniciar o sprint, estas decisões de negócio devem ser tomadas:**
+**EVOLUÇÃO API SELF-HOSTED = CUSTO ZERO POR MENSAGEM!**
+
+Isso MUDA completamente a análise de WhatsApp Free. Como o custo marginal é ~R$0, podemos ser mais generosos.
+
+---
 
 ### Decisão 1: WhatsApp para cliente Free
 
-**Opção A - Freemium com limite**
-- Free recebe 5 mensagens WhatsApp/mês
-- Risco: custo sem conversão
-- Implementação: complexidade média
+**Análise de custos atualizada:**
+- Evolution API self-hosted: ~R$0 por mensagem
+- Custo = apenas VPS (que você já teria)
+- **Custo marginal por usuário Free: R$0**
 
-**Opção B - Trial de 7 dias**
-- Free teste WhatsApp por 7 dias, depois bloqueia
-- Conversão mais alta
-- Implementação: complexidade alta (rastrear período trial)
+**Opção A - WhatsApp para todos (RECOMENDADA AGORA!)**
+- Free: WhatsApp ilimitado
+- Pro: WhatsApp + features exclusivas
+- **Vantagem:** Maior conversão, usuários felizes, nenhuma restrição artificial
+- **Desvantagem:** Perde diferencial Pro
+- **Implementação:** Complexidade baixa (já existe)
 
-**Opção C - Híbrido (RECOMENDADA)**
-- Free: confirmação por **email**
-- Pro: confirmação por **WhatsApp**
-- Mensagem educativa no painel
-- Implementação: complexidade baixa
+**Opção B - Freemium com limite**
+- Free: 10-20 mensagens WhatsApp/mês
+- Pro: ilimitadas
+- **Vantagem:** Ainda tem diferencial Pro
+- **Desvantagem:** Usuário Free pode bater limite rápido
+- **Implementação:** Complexidade média (contador)
 
-**DECISÃO NECESSÁRIA:** [C] Escolher opção A, B ou C
+**Opção C - Híbrido Email/WhatsApp**
+- Free: apenas email
+- Pro: WhatsApp
+- **Vantagem:** Diferencial Pro claro
+- **Desvantagem:** Usuário Free não体验 o principal diferencial
+- **Implementação:** Complexidade baixa
+
+**NOVA RECOMENDAÇÃO:** [ ] Opção A (WhatsApp para todos)
+- Como custo é zero, não há razão para limitar
+- Pro se diferencia por outras features (GCal, relatórios, bloqueios ilimitados)
+- Maior satisfação = menos churn = mais conversão
+
+**DECISÃO NECESSÁRIA:** [ ] Escolher opção A, B ou C
 
 ---
 
@@ -65,10 +95,11 @@
 
 ### Decisão 3: Preço Pro
 
-**Pergunta:** Qual será o preço mensal do plano Pro?
+**Status:** ✅ **DEFINIDO**
 
-- [ ] Definir valor (sugestão: R$29-R$49/mês)
-- [ ] Definir preço anual (desconto? ex: 2 meses grátis)
+- **Mensal:** R$39/mês
+- **Anual:** R$29/mês (R$348/ano) = 26% de desconto
+- **Análise:** Preço competitivo, margem saudável, ROI claro para cliente
 
 ---
 
@@ -76,20 +107,21 @@
 
 ### 🔥 P0 - Crítico (bloqueia lançamento)
 
-| ID | Tarefa | Dependências |
-|----|--------|--------------|
-| P0-1 | Decisão estratégica WhatsApp Free | - |
-| P0-2 | Decisão estratégica Relatórios Free | - |
-| P0-3 | Definir preço Pro | - |
+| ID | Tarefa | Dependências | Status |
+|----|--------|--------------|--------|
+| P0-1 | Decisão estratégica WhatsApp Free | - | [ ] Pendente |
+| P0-2 | Decisão estratégica Relatórios Free | - | [B] Recomendado |
+| P0-3 | Preço Pro | - | [✅] Definido (R$39) |
 
 ### ⚡ P1 - Alta Prioridade
 
 | ID | Tarefa | Dependências | Estimativa |
 |----|--------|--------------|------------|
-| P1-1 | Implementar relatórios básicos para Free | P0-2 | 4h |
-| P1-2 | Ajustar landing page (alinhar promessa) | P0-3 | 3h |
-| P1-3 | Implementar notificações por email (cliente) | P0-1 | 6h |
-| P1-4 | Mensagem educativa no painel Free | P0-1 | 2h |
+| P1-1 | Atualizar lembretes para Evolution API | P0-1 | 3h |
+| P1-2 | Atualizar lembretes para SendGrid | - | 2h |
+| P1-3 | Implementar relatórios básicos para Free | P0-2 | 4h |
+| P1-4 | Ajustar landing page (alinhar promessa) | - | 3h |
+| P1-5 | Configurar/ajustar Evolution API | - | 4h |
 
 ### 🎯 P2 - Média Prioridade
 
@@ -107,6 +139,80 @@
 | P3-1 | API de integração | - | 16h |
 | P3-2 | Múltiplos calendários | - | 10h |
 | P3-3 | Remoção de marca d'água | - | 2h |
+
+---
+
+## ⚙️ Configuração de Tecnologias
+
+### Evolution API (WhatsApp)
+
+**Status:** Self-hosted em VPS
+
+**Variáveis de ambiente necessárias:**
+```bash
+EVOLUTION_API_URL="https://SEU_DOMINIO.com"  # URL da VPS
+EVOLUTION_API_KEY="SEU_TOKEN_AQUI"           # Token de autenticação
+EVOLUTION_INSTANCE="agenda-pro"              # Nome da instância
+```
+
+**Endpoints principais:**
+```typescript
+// Enviar mensagem
+POST https://SEU_DOMINIO/message/sendText
+{
+  "number": "5511999999999",
+  "text": "Olá! Seu agendamento foi confirmado."
+}
+
+// Status da instância
+GET https://SEU_DOMINIO/instance/connectionState/INSTANCE_NAME
+```
+
+**Mudanças no código:**
+- Substituir chamadas Z-API por Evolution API
+- Atualizar formato de número (Evolution usa formato internacional)
+- Adicionar tratamento de erros específico
+
+---
+
+### SendGrid (Email)
+
+**Status:** Em testes
+
+**Variáveis de ambiente necessárias:**
+```bash
+SENDGRID_API_KEY="SG.SUA_CHVE_AQUI"
+SENDGRID_FROM_EMAIL="noreply@agendapro.com.br"
+SENDGRID_FROM_NAME="AgendaPro"
+```
+
+**Endpoint:**
+```typescript
+POST https://api.sendgrid.com/v3/mail/send
+Headers:
+  Authorization: Bearer SENDGRID_API_KEY
+  Content-Type: application/json
+
+Body:
+{
+  "personalizations": [{
+    "to": [{"email": "cliente@email.com"}],
+    "subject": "Agendamento confirmado"
+  }],
+  "from": {
+    "email": "noreply@agendapro.com.br",
+    "name": "AgendaPro"
+  },
+  "content": [{
+    "type": "text/html",
+    "value": "<h1>Olá, cliente!</h1>..."
+  }]
+}
+```
+
+**Mudanças no código:**
+- Substituir Resend por SendGrid em `lembretes-whatsapp/index.ts`
+- Atualizar templates para formato SendGrid
 
 ---
 
