@@ -1,7 +1,7 @@
 # Sprint: Limites e Features - Planejamento Estratégico
 
 **Data de criação:** 2026-03-29
-**Última atualização:** 2026-03-30 (Banner Free implementado)
+**Última atualização:** 2026-03-30 (P2-1 Relatórios Avançados Pro implementado)
 **Objetivo:** Ajustar limites Free/Pro para otimizar conversão e reduzir churn
 **Duração estimada:** 2-3 semanas
 
@@ -112,12 +112,19 @@ Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
 
 ### 🎯 P2 - Média Prioridade
 
-| ID | Tarefa | Dependências | Estimativa |
-|----|--------|--------------|------------|
-| P2-1 | Implementar relatórios avançados Pro | P1-1 | 6h |
-| P2-2 | Exportar relatórios (CSV/PDF) | P2-1 | 4h |
-| P2-3 | Trial de 7 dias para Pro (opcional) | P0-1 | 8h |
-| P2-4 | Domínio customizado (feature nova) | - | 12h |
+| ID | Tarefa | Dependências | Estimativa | Status |
+|----|--------|--------------|------------|--------|
+| P2-1 | Implementar relatórios avançados Pro | P1-1 | 6h | [✅] FEITO |
+| P2-2 | Exportar relatórios (CSV/PDF) | P2-1 | 4h | [✅] FEITO |
+| P2-3 | Trial de 7 dias para Pro (opcional) | P0-1 | 8h | [ ] |
+| P2-4 | Domínio customizado (feature nova) | - | 12h | [ ] |
+
+### ✅ P2 - Concluído Recentemente
+
+| ID | Tarefa | Data | Notas |
+|----|--------|------|-------|
+| P2-1 | Relatórios avançados Pro | 2026-03-30 | setPeriod(6m/12m), filtros de serviço e status |
+| P2-2 | Exportar relatórios CSV/PDF | 2026-03-30 | CSV implementado, PDF via window.print() |
 
 ### 💎 P3 - Baixa Prioridade (futuro)
 
