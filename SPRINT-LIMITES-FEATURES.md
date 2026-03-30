@@ -38,58 +38,35 @@ Isso MUDA completamente a análise de WhatsApp Free. Como o custo marginal é ~R
 
 ### Decisão 1: WhatsApp para cliente Free
 
-**Análise de custos atualizada:**
-- Evolution API self-hosted: ~R$0 por mensagem
-- Custo = apenas VPS (que você já teria)
-- **Custo marginal por usuário Free: R$0**
+**Status:** ✅ **DEFINIDO - Opção C**
 
-**Opção A - WhatsApp para todos (RECOMENDADA AGORA!)**
-- Free: WhatsApp ilimitado
-- Pro: WhatsApp + features exclusivas
-- **Vantagem:** Maior conversão, usuários felizes, nenhuma restrição artificial
-- **Desvantagem:** Perde diferencial Pro
-- **Implementação:** Complexidade baixa (já existe)
+```
+Free: Confirmação por EMAIL
+Pro:  Confirmação por WHATSAPP
+```
 
-**Opção B - Freemium com limite**
-- Free: 10-20 mensagens WhatsApp/mês
-- Pro: ilimitadas
-- **Vantagem:** Ainda tem diferencial Pro
-- **Desvantagem:** Usuário Free pode bater limite rápido
-- **Implementação:** Complexidade média (contador)
+**Justificativa:** Mesmo com Evolution API self-hosted, VPS boa para muitos disparos custa dinheiro.
 
-**Opção C - Híbrido Email/WhatsApp**
-- Free: apenas email
-- Pro: WhatsApp
-- **Vantagem:** Diferencial Pro claro
-- **Desvantagem:** Usuário Free não体验 o principal diferencial
-- **Implementação:** Complexidade baixa
-
-**NOVA RECOMENDAÇÃO:** [ ] Opção A (WhatsApp para todos)
-- Como custo é zero, não há razão para limitar
-- Pro se diferencia por outras features (GCal, relatórios, bloqueios ilimitados)
-- Maior satisfação = menos churn = mais conversão
-
-**DECISÃO NECESSÁRIA:** [ ] Escolher opção A, B ou C
+**Implementação:**
+- Email já funcional (SendGrid)
+- Evolution API será configurada para Pro
+- Mensagem educativa no painel Free sobre upgrade
 
 ---
 
 ### Decisão 2: Relatórios para Free
 
-**Opção A - Versão completa**
-- Free tem acesso total aos relatórios
-- Vantagem: reduz churn
-- Desvantagem: removes incentivo Pro
+**Status:** ✅ **DEFINIDO - Opção B (simplificada)**
 
-**Opção B - Versão simplificada (RECOMENDADA)**
-- Free: faturamento do mês, total agendamentos, taxa no-show
-- Pro: gráficos, exportar CSV, comparativo mensal, por serviço
-- Equilíbrio ideal
+```
+Free: Faturamento do mês, total agendamentos, taxa no-show
+Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
+```
 
-**Opção C - Apenas preview**
-- Free vê dados mas sem detalhes
-- Pode frustrar usuário
-
-**DECISÃO NECESSÁRIA:** [B] Escolher opção A, B ou C
+**Implementação:**
+- Free vê cards simples + top 3 serviços
+- Pro vê gráficos completos + exportação
+- CTA visível para upgrade no topo
 
 ---
 
@@ -107,21 +84,21 @@ Isso MUDA completamente a análise de WhatsApp Free. Como o custo marginal é ~R
 
 ### 🔥 P0 - Crítico (bloqueia lançamento)
 
-| ID | Tarefa | Dependências | Status |
-|----|--------|--------------|--------|
-| P0-1 | Decisão estratégica WhatsApp Free | - | [ ] Pendente |
-| P0-2 | Decisão estratégica Relatórios Free | - | [B] Recomendado |
-| P0-3 | Preço Pro | - | [✅] Definido (R$39) |
+| ID | Tarefa | Status |
+|----|--------|--------|
+| P0-1 | Decisão WhatsApp Free | [✅] Opção C definida |
+| P0-2 | Decisão Relatórios Free | [✅] Opção B definida |
+| P0-3 | Preço Pro | [✅] R$39 definido |
+| P0-4 | Atualizar lembretes para Evolution API | [✅] Código atualizado |
 
-### ⚡ P1 - Alta Prioridade
+### ⚡ P1 - Alta Prioridade (PRÓXIMA TAREFA)
 
-| ID | Tarefa | Dependências | Estimativa |
-|----|--------|--------------|------------|
-| P1-1 | Atualizar lembretes para Evolution API | P0-1 | 3h |
-| P1-2 | Atualizar lembretes para SendGrid | - | 2h |
-| P1-3 | Implementar relatórios básicos para Free | P0-2 | 4h |
-| P1-4 | Ajustar landing page (alinhar promessa) | - | 3h |
-| P1-5 | Configurar/ajustar Evolution API | - | 4h |
+| ID | Tarefa | Dependências | Estimativa | Status |
+|----|--------|--------------|------------|--------|
+| P1-1 | Implementar relatórios básicos Free | P0-2 | 4h | [ ] EM BREVE |
+| P1-2 | Ajustar landing page (promessa real) | - | 3h | [ ] |
+| P1-3 | Mensagem educativa no painel Free | - | 2h | [ ] |
+| P1-4 | Configurar Evolution API na VPS | - | 4h | [ ] |
 
 ### 🎯 P2 - Média Prioridade
 
