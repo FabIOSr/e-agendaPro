@@ -1,7 +1,7 @@
 # Sprint: Limites e Features - Planejamento Estratégico
 
 **Data de criação:** 2026-03-29
-**Última atualização:** 2026-03-29 (Evolution API + SendGrid)
+**Última atualização:** 2026-03-30 (Top Clients + Drawer atualizado)
 **Objetivo:** Ajustar limites Free/Pro para otimizar conversão e reduzir churn
 **Duração estimada:** 2-3 semanas
 
@@ -95,10 +95,18 @@ Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
 
 | ID | Tarefa | Dependências | Estimativa | Status |
 |----|--------|--------------|------------|--------|
-| P1-1 | Implementar relatórios básicos Free | P0-2 | 4h | [ ] EM BREVE |
+| P1-1 | Implementar relatórios básicos Free | P0-2 | 4h | [✅] FEITO |
 | P1-2 | Ajustar landing page (promessa real) | - | 3h | [ ] |
 | P1-3 | Mensagem educativa no painel Free | - | 2h | [ ] |
 | P1-4 | Configurar Evolution API na VPS | - | 4h | [ ] |
+
+### ✅ P1 - Concluído Recentemente
+
+| ID | Tarefa | Data | Notas |
+|----|--------|------|-------|
+| P1-5 | Atualizar drawer clientes.html | 2026-03-30 | Avatar, badge, stats cards, toast |
+| P1-6 | Transformar aba Clientes em Top 10 | 2026-03-30 | Ranking por receita, sem duplicação |
+| P1-7 | Corrigir filtros e stats clientes.html | 2026-03-30 | Bugs corrigidos |
 
 ### 🎯 P2 - Média Prioridade
 
@@ -190,6 +198,41 @@ Body:
 **Mudanças no código:**
 - Substituir Resend por SendGrid em `lembretes-whatsapp/index.ts`
 - Atualizar templates para formato SendGrid
+
+---
+
+## 🎯 Decisões Estratégicas Adicionais
+
+### Decisão 4: CRM / Clientes
+
+**Status:** ✅ **DEFINIDO - Opção 3 (Top Clients em relatórios)**
+
+```
+Free: Estrutura vazia (sem dados)
+Pro:  Top 10 Clientes por receita + drawer completo
+```
+
+**Arquitetura definida:**
+
+| Tela | Propósito | Plano |
+|------|-----------|-------|
+| **clientes.html** | CRM completo para gestão | Pro-only |
+| **relatorio.html (aba Clientes)** | Top 10 por receita (ranking) | Pro-only (estrutura vazia para Free) |
+
+**Justificativa:**
+- Evita duplicidade de funcionalidades
+- Cada tela tem propósito claro e diferente
+- Top Clients complementa os relatórios (visão analítica)
+- Link "Ver todos no CRM →" direciona para página certa
+
+**Implementação (P1-5, P1-6):**
+- ✅ Drawer atualizado com avatar colorido, badge de frequência, 3 cards de estatísticas
+- ✅ Async history loading com "Carregando…"
+- ✅ Botões de ação (WhatsApp, Ver na agenda)
+- ✅ Toast notifications
+- ✅ Filtros corrigidos (VIP, Regular, Novo, Sem visita)
+- ✅ Stats cards corrigidos
+- ✅ Aba Clientes transformada em Top 10 com ranking, medalhas (🥇🥈🥉)
 
 ---
 

@@ -181,6 +181,104 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 .mono { font-family: 'DM Mono', monospace; }
 .text-muted { color: var(--muted); }
 
+/* ── TOP CLIENTS ── */
+.top-clients-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0; margin-bottom: 16px;
+}
+.top-clients-title {
+  font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300;
+  letter-spacing: -.02em;
+}
+.top-clients-subtitle {
+  font-size: 12px; color: var(--muted); margin-top: 4px;
+}
+.btn-ver-crm {
+  background: var(--bg3); border: 1px solid var(--bord2);
+  color: var(--lime); border-radius: 8px; padding: 8px 16px;
+  font-size: 12px; font-weight: 600; font-family: 'Syne', sans-serif;
+  text-decoration: none; transition: all .2s;
+}
+.btn-ver-crm:hover {
+  background: var(--lime-t); border-color: rgba(200,240,96,.3);
+}
+
+.top-clients-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .top-clients-grid { grid-template-columns: 1fr; }
+  .top-clients-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+.top-client-card {
+  background: var(--bg3); border: 1px solid var(--bord);
+  border-radius: 12px; padding: 16px;
+  display: flex; gap: 12px;
+  cursor: pointer; transition: all .2s;
+  position: relative; overflow: hidden;
+}
+.top-client-card:hover {
+  background: var(--bg4); border-color: var(--bord2);
+  transform: translateY(-1px);
+}
+
+.top-client-rank {
+  font-size: 24px; font-weight: 700; min-width: 32px;
+  display: flex; align-items: center; justify-content: center;
+}
+.rank-1 { color: #FFD700; } /* ouro */
+.rank-2 { color: #C0C0C0; } /* prata */
+.rank-3 { color: #CD7F32; } /* bronze */
+.rank-other { color: var(--muted); font-size: 18px; }
+
+.top-client-info { flex: 1; min-width: 0; }
+.top-client-name {
+  font-weight: 600; font-size: 14px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.top-client-tel {
+  font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace;
+  margin-top: 2px;
+}
+.top-client-stats {
+  display: flex; gap: 12px; margin-top: 8px; font-size: 11px;
+}
+.top-client-stat {
+  color: var(--muted);
+}
+.top-client-stat strong { color: var(--text); }
+
+.top-client-revenue {
+  text-align: right;
+}
+.top-client-revenue-val {
+  font-family: 'Fraunces', serif; font-size: 20px; font-weight: 400;
+  color: var(--lime);
+}
+.top-client-revenue-label {
+  font-size: 10px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .07em; margin-top: 2px;
+}
+
+/* ── TOP CLIENTS EMPTY STATE (FREE) ── */
+.top-clients-empty {
+  text-align: center; padding: 60px 24px; color: var(--muted);
+}
+.top-clients-empty-icon {
+  font-size: 40px; margin-bottom: 12px; opacity: 0.5;
+}
+.top-clients-empty-title {
+  font-family: 'Fraunces', serif; font-size: 18px; font-weight: 300;
+  margin-bottom: 8px;
+}
+.top-clients-empty-desc {
+  font-size: 13px; max-width: 300px; margin: 0 auto;
+}
+
+
 /* nota de obs */
 .obs-text { font-size: 11px; color: var(--muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -251,12 +349,12 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 .gate-desc  { font-size: 14px; color: var(--muted); max-width: 380px; line-height: 1.7; margin-bottom: 24px; }
 .gate-price { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 300; color: var(--lime); line-height: 1; margin-bottom: 4px; }
 .gate-per   { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-.gate-btn {
+.gate-btn, .btn-upgrade {
   background: var(--lime); color: var(--lime-ink); border: none;
   border-radius: 10px; padding: 14px 32px; font-size: 15px; font-weight: 700;
   font-family: 'Syne', sans-serif; cursor: pointer; transition: background .15s;
 }
-.gate-btn:hover { background: #b8e050; }
+.gate-btn:hover, .btn-upgrade:hover { background: #b8e050; }
 .gate-feats { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; max-width: 280px; }
 .gate-feat  { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; text-align: left; }
 .gate-feat::before { content: '✓'; color: var(--lime-d); font-weight: 700; flex-shrink: 0; }
@@ -526,35 +624,19 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 
   </div>
 
-  <!-- ══════════ PAINEL CLIENTES ══════════ -->
+  <!-- ══════════ PAINEL TOP CLIENTES ══════════ -->
   <div class="panel" id="panel-clientes">
 
-    <!-- busca + total -->
-    <div class="table-card">
-      <div class="table-header">
-        <div>
-          <div style="font-size:14px;font-weight:600">Todos os clientes</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="total-clientes">— clientes cadastrados</div>
-        </div>
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input class="search-input" id="search-input" placeholder="Buscar cliente…" oninput="filtrarClientes(this.value)">
-        </div>
+    <div class="top-clients-header">
+      <div>
+        <div class="top-clients-title">🏆 Top 10 Clientes</div>
+        <div class="top-clients-subtitle">Classificação por receita total gerada</div>
       </div>
+      <a href="/clientes" class="btn-ver-crm">Ver todos no CRM →</a>
+    </div>
 
-      <table id="tabela-clientes">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Frequência</th>
-            <th>Último serviço</th>
-            <th>Última visita</th>
-            <th>Total gasto</th>
-            <th>Obs.</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-clientes"></tbody>
-      </table>
+    <div class="top-clients-grid" id="top-clients-grid">
+      <!-- Cards serão inseridos via JS -->
     </div>
 
   </div>
@@ -651,23 +733,21 @@ async function init() {
       }
     });
 
-    // Prepara gate para clientes (será mostrado ao clicar na aba)
+    // Prepara gate para clientes (estrutura vazia para Free)
     const clientesPanel = document.getElementById('panel-clientes');
     clientesPanel.innerHTML = `
-      <div class="paywall-gate">
-        <div class="gate-icon">👥</div>
-        <div class="gate-title">Histórico completo de clientes</div>
-        <p class="gate-desc">Acompanhe o histórico de cada cliente, veja todos os agendamentos anteriores, adicione observações e anotações pessoais. Disponível no plano Pro.</p>
-        <div class="gate-feats">
-          <div class="gate-feat">Histórico completo de agendamentos</div>
-          <div class="gate-feat">Valor total gasto por cliente</div>
-          <div class="gate-feat">Observações e anotações por cliente</div>
-          <div class="gate-feat">Último atendimento</div>
-          <div class="gate-feat">Exportar lista de clientes</div>
+      <div class="top-clients-header">
+        <div>
+          <div class="top-clients-title">🏆 Top 10 Clientes</div>
+          <div class="top-clients-subtitle">Classificação por receita total gerada</div>
         </div>
-        <div class="gate-price">R$39<span style="font-size:16px;color:var(--muted)">/mês</span></div>
-        <div class="gate-per">cancele quando quiser · sem fidelidade</div>
-        <button class="gate-btn" onclick="window.location.href='/planos'">✦ Assinar Pro agora</button>
+        <a href="/clientes" class="btn-ver-crm">Ver todos no CRM →</a>
+      </div>
+      <div class="top-clients-empty">
+        <div class="top-clients-empty-icon">🏆</div>
+        <div class="top-clients-empty-title">Top 10 Clientes por Receita</div>
+        <div class="top-clients-empty-desc">Veja seus melhores clientes classificados por quanto já gastaram com você. Disponível no plano Pro.</div>
+        <button class="btn-upgrade" onclick="window.location.href='/planos'" style="margin-top:20px">✦ Assinar Pro</button>
       </div>
     `;
 
@@ -1127,49 +1207,62 @@ async function carregarClientes() {
     .from('crm_clientes')
     .select('*')
     .eq('prestador_id', userId)
-    .order('ultimo_agendamento', { ascending: false });
+    .order('total_gasto', { ascending: false })
+    .limit(10);
 
   todosClients = data || [];
-  const totalEl = document.getElementById('total-clientes');
-  if (totalEl) totalEl.textContent = `${todosClients.length} cliente${todosClients.length !== 1 ? 's' : ''} cadastrado${todosClients.length !== 1 ? 's' : ''}`;
-
-  renderTabelaClientes(todosClients);
+  renderTopClients(todosClients);
 }
 
-function renderTabelaClientes(lista) {
-  const tbody = document.getElementById('tbody-clientes');
-  if (!tbody) return;
+function renderTopClients(lista) {
+  const grid = document.getElementById('top-clients-grid');
+  if (!grid) return;
 
   if (lista.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">Nenhum cliente encontrado.</td></tr>`;
+    grid.innerHTML = `
+      <div class="top-clients-empty" style="grid-column: 1/-1">
+        <div class="top-clients-empty-icon">👥</div>
+        <div class="top-clients-empty-title">Nenhum cliente ainda</div>
+        <div class="top-clients-empty-desc">Quando você começar a atender, seus top clientes aparecerão aqui.</div>
+      </div>
+    `;
     return;
   }
 
+  const CORES = ['#c8f060','#5DCAA5','#60a8f0','#EF9F27','#b060f0','#f06048'];
   const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  tbody.innerHTML = lista.map(c => {
-    const dt  = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
-    const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}` : '—';
-    const total = Number(c.total_gasto || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+
+  grid.innerHTML = lista.map((c, i) => {
+    const rank = i + 1;
+    const total = Number(c.total_gasto || 0);
+    const totalFmt = total.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
     const visitas = c.total_visitas || 0;
-    const freq = visitas >= 10 ? '🌟 Fiel' : visitas >= 5 ? '✅ Regular' : visitas >= 2 ? '🔁 Recorrente' : '🆕 Novo';
-    return `<tr onclick="abrirDrawer('${(c.telefone||'').replace(/'/g,"\\'")}', '${(c.nome||'').replace(/'/g,"\\'")}')">
-      <td><div style="font-weight:500">${c.nome || '—'}</div><div style="font-size:11px;color:var(--muted)">${c.telefone || ''}</div></td>
-      <td><span style="font-size:12px">${freq}</span> <span style="color:var(--muted);font-size:11px">${visitas}x</span></td>
-      <td style="font-size:12px;color:var(--muted)">${c.ultimo_servico || '—'}</td>
-      <td style="font-size:12px;color:var(--muted)">${dtFmt}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${total}</td>
-      <td><button class="btn-obs" onclick="event.stopPropagation();abrirDrawer('${(c.telefone||'').replace(/'/g,"\\'")}','${(c.nome||'').replace(/'/g,"\\'")}')">✏️</button></td>
-    </tr>`;
+
+    const dt = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
+    const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]}` : '—';
+
+    const medalha = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+
+    return `
+      <div class="top-client-card" onclick="abrirDrawer('${(c.telefone||'').replace(/'/g,"\\'")}', '${(c.nome||'').replace(/'/g,"\\'")}')">
+        <div class="top-client-rank ${rankClass}">${medalha}</div>
+        <div class="top-client-info">
+          <div class="top-client-name">${c.nome || '—'}</div>
+          <div class="top-client-tel">${c.telefone || ''}</div>
+          <div class="top-client-stats">
+            <span class="top-client-stat"><strong>${visitas}</strong> visita${visitas !== 1 ? 's' : ''}</span>
+            <span class="top-client-stat">Último: <strong>${dtFmt}</strong></span>
+          </div>
+        </div>
+        <div class="top-client-revenue">
+          <div class="top-client-revenue-val">${totalFmt}</div>
+          <div class="top-client-revenue-label">Total gasto</div>
+        </div>
+      </div>
+    `;
   }).join('');
 }
-
-window.filtrarClientes = function(q) {
-  const t = q.toLowerCase();
-  renderTabelaClientes(t ? todosClients.filter(c =>
-    (c.nome || '').toLowerCase().includes(t) ||
-    (c.telefone || '').includes(t)
-  ) : todosClients);
-};
 
 // ── DRAWER CLIENTE ────────────────────────────────────────────────────────
 window.abrirDrawer = async function(tel, nome) {
