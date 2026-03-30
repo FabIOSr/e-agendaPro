@@ -172,22 +172,18 @@ Deno.serve(async (req: Request) => {
   }
 
   if (EVENTOS_DESATIVAR.has(evento)) {
-    const { error } = await supabase
-      .from("prestadores")
-      .update({
-        plano:            "free",
-        plano_valido_ate:  null,
-        asaas_sub_id:     null,
-      })
-      .eq("id", prestador.id);
+    // Usa função RPC para aplicar downgrade + limites Free
+    const { error, data } = await supabase.rpc("downgrade_pro", {
+      p_prestador_id: prestador.id,
+    });
 
     if (error) {
       console.error("Erro ao rebaixar plano:", error);
       return Response.json({ erro: "Erro ao rebaixar plano" }, { status: 500, headers: CORS });
     }
 
-    console.log(`🔴 Rebaixado para free: ${prestador.id} (${evento})`);
-    return Response.json({ ok: true, acao: "plano_rebaixado" }, { headers: CORS });
+    console.log(`🔴 Rebaixado para free + limites aplicados: ${prestador.id} (${evento})`);
+    return Response.json({ ok: true, acao: "plano_rebaixado_limites_aplicados" }, { headers: CORS });
   }
 
   return Response.json({ ok: true }, { headers: CORS });
