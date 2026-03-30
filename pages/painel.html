@@ -491,6 +491,98 @@ body {
   .agenda-row { min-height: 36px; }
   .event-card { font-size: 10px; padding: 2px 4px; }
 }
+
+/* ── BANNER FREE (Pro-only feature promo) ── */
+.banner-free {
+  background: var(--lime-t);
+  border: 1.5px solid rgba(200, 240, 96, .3);
+  color: var(--text);
+  margin: 16px auto 0;
+  max-width: 1400px;
+  border-radius: 12px;
+  animation: slide-down 0.4s ease-out;
+}
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.banner-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.banner-text p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-banner {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Syne', sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.btn-banner:hover {
+  background: #b8e050;
+}
+
+.btn-banner-close {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: all .2s;
+}
+
+.btn-banner-close:hover {
+  background: rgba(200, 240, 96, .1);
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .banner-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  .banner-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
 </style>
 </head>
 <body>
@@ -522,6 +614,20 @@ body {
     <button class="btn-new" onclick="abrirNovoAgendamento()">+ Novo</button>
     <button class="btn-logout" onclick="fazerLogout()">Sair</button>
     <div class="avatar" id="avatar-initials" title="Meu perfil">AC</div>
+  </div>
+</div>
+
+<!-- BANNER FREE (Pro-only feature promo) -->
+<div class="banner-free" id="banner-free" style="display: none;">
+  <div class="banner-content">
+    <div class="banner-text">
+      <strong>📱 WhatsApp automático disponível no plano Pro!</strong>
+      <p>Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
+    </div>
+    <div class="banner-actions">
+      <a href="/planos" class="btn-banner">Ver planos</a>
+      <button class="btn-banner-close" onclick="fecharBannerFree()">×</button>
+    </div>
   </div>
 </div>
 
@@ -620,7 +726,7 @@ window.fazerLogout = async () => {
 // ── AVATAR / NOME DO PRESTADOR ───────────────────────────────────────────
 const { data: prestador } = await supabase
   .from('prestadores')
-  .select('nome, slug')
+  .select('nome, slug, plano')
   .eq('id', userId)
   .maybeSingle();
 
@@ -633,6 +739,38 @@ const iniciais = nomePrestador.split(' ').slice(0,2).map(p => p[0].toUpperCase()
 const avatarEl = document.getElementById('avatar-initials');
 if (avatarEl) avatarEl.textContent = iniciais;
 document.title = `Agenda — ${nomePrestador}`;
+
+// ── BANNER FREE (Verifica plano e mostra banner se necessário) ─────────────
+async function initBannerFree() {
+  const plano = prestador?.plano || 'free';
+
+  // Se for Pro, não mostra nada
+  if (plano === 'pro') {
+    return;
+  }
+
+  // Verifica se o usuário já fechou o banner antes
+  if (localStorage.getItem('banner-free-fechado')) {
+    return;
+  }
+
+  // Mostra o banner
+  const banner = document.getElementById('banner-free');
+  if (banner) {
+    banner.style.display = 'block';
+  }
+}
+
+window.fecharBannerFree = function() {
+  const banner = document.getElementById('banner-free');
+  if (banner) {
+    banner.style.display = 'none';
+    localStorage.setItem('banner-free-fechado', 'true');
+  }
+};
+
+// Inicializa o banner
+initBannerFree();
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────
 const HORA_INICIO = 8;

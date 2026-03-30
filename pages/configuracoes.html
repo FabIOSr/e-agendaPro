@@ -46,6 +46,13 @@
       min-height: 100vh;
     }
 
+    /* ── CONTAINER MAIN ── */
+    .container-main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
     /* ── TOPBAR ── */
     .topbar {
       height: 54px;
@@ -334,6 +341,7 @@
       .prefix {
         font-size: 11px;
       }
+
       .input.has-prefix {
         padding-left: 135px;
       }
@@ -679,17 +687,86 @@
     }
 
     /* bloqueios recorrentes */
-    .dias-semana-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
-    .dia-bl { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--bord); color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; user-select:none; }
-    .dia-bl:hover { border-color:var(--bord2); color:var(--text); }
-    .dia-bl.on { border-color:var(--lime-d); background:var(--lime-t); color:var(--lime); }
-    .recorrente-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--bord); }
-    .recorrente-item:last-child { border-bottom:none; }
-    .rec-dias { display:flex; gap:3px; flex-wrap:wrap; }
-    .rec-dia-badge { width:22px; height:22px; border-radius:50%; background:var(--lime-t); color:var(--lime); font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-    .rec-info { flex:1; }
-    .rec-nome { font-size:13px; font-weight:500; }
-    .rec-hora { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
+    .dias-semana-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .dia-bl {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--bord);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+      user-select: none;
+    }
+
+    .dia-bl:hover {
+      border-color: var(--bord2);
+      color: var(--text);
+    }
+
+    .dia-bl.on {
+      border-color: var(--lime-d);
+      background: var(--lime-t);
+      color: var(--lime);
+    }
+
+    .recorrente-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--bord);
+    }
+
+    .recorrente-item:last-child {
+      border-bottom: none;
+    }
+
+    .rec-dias {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .rec-dia-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--lime-t);
+      color: var(--lime);
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rec-info {
+      flex: 1;
+    }
+
+    .rec-nome {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .rec-hora {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
 
     /* google calendar */
     .gcal-card {
@@ -1122,6 +1199,107 @@
     .modal-danger:hover {
       background: rgba(240, 96, 72, .18);
     }
+
+    /* ── BANNER FREE (Pro-only feature promo) ── */
+    .banner-free {
+      background: var(--lime-t);
+      border: 1.5px solid rgba(200, 240, 96, .3);
+      color: var(--text);
+      margin: 16px auto 0;
+      max-width: 1400px;
+      border-radius: 12px;
+      animation: slide-down 0.4s ease-out;
+    }
+
+    @keyframes slide-down {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .banner-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+    }
+
+    .banner-text strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .banner-text p {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .banner-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-banner {
+      background: var(--lime);
+      color: var(--lime-ink);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-banner:hover {
+      background: #b8e050;
+    }
+
+    .btn-banner-close {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      transition: all .2s;
+    }
+
+    .btn-banner-close:hover {
+      background: rgba(200, 240, 96, .1);
+      color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+      .banner-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+      }
+
+      .banner-actions {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 
@@ -1133,6 +1311,22 @@
       <div class="logo-dot"></div>AgendaPro
     </div>
     <button class="back-btn" onclick="history.back()">← Voltar ao painel</button>
+  </div>
+
+  <!-- BANNER FREE (Pro-only feature promo) -->
+  <div class="container-main">
+    <div class="banner-free" id="banner-free" style="display: none;">
+      <div class="banner-content">
+        <div class="banner-text">
+          <strong>📱 WhatsApp automático disponível no plano Pro!</strong>
+          <p>Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
+        </div>
+        <div class="banner-actions">
+          <a href="/planos" class="btn-banner">Ver planos</a>
+          <button class="btn-banner-close" onclick="fecharBannerFree()">×</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="layout">
@@ -1191,7 +1385,9 @@
 
             <div class="field">
               <label class="label">Email (contato)</label>
-              <div id="p-email" style="padding: 10px 12px; background: var(--bg-card); border-radius: 8px; color: var(--muted); font-size: 14px;">—</div>
+              <div id="p-email"
+                style="padding: 10px 12px; background: var(--bg-card); border-radius: 8px; color: var(--muted); font-size: 14px;">
+                —</div>
             </div>
 
             <div class="field">
@@ -1202,14 +1398,16 @@
                   <input class="input has-prefix mono" id="p-slug" value="ana-cabelos">
                 </div>
                 <div class="slug-actions">
-                  <button class="btn-icon" id="btn-abrir-pagina" title="Abrir página pública" onclick="abrirPaginaPublica()">
+                  <button class="btn-icon" id="btn-abrir-pagina" title="Abrir página pública"
+                    onclick="abrirPaginaPublica()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                       <polyline points="15 3 21 3 21 9"></polyline>
                       <line x1="10" y1="14" x2="21" y2="3"></line>
                     </svg>
                   </button>
-                  <button class="btn-icon" id="btn-compartilhar" title="Compartilhar link" onclick="compartilharLinkPublico()">
+                  <button class="btn-icon" id="btn-compartilhar" title="Compartilhar link"
+                    onclick="compartilharLinkPublico()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="18" cy="5" r="3"></circle>
                       <circle cx="6" cy="12" r="3"></circle>
@@ -1296,22 +1494,26 @@
             <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--bord)">
               <label class="label">Intervalo entre agendamentos (Buffer)</label>
               <div style="display:flex; align-items:center; gap:12px">
-                <input type="number" class="input mono" id="p-intervalo" value="0" min="0" max="120" style="width:100px">
+                <input type="number" class="input mono" id="p-intervalo" value="0" min="0" max="120"
+                  style="width:100px">
                 <span style="font-size:13px; color:var(--muted)">minutos de respiro após cada serviço</span>
               </div>
               <p style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5">
-                Ex: Se você tem um serviço de 30min e define 10min de intervalo, o sistema bloqueará 40min na sua agenda, garantindo tempo para limpeza ou descanso.
+                Ex: Se você tem um serviço de 30min e define 10min de intervalo, o sistema bloqueará 40min na sua
+                agenda, garantindo tempo para limpeza ou descanso.
               </p>
             </div>
 
             <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--bord)">
               <label class="label">Intervalo entre slots (Plano Pago)</label>
               <div style="display:flex; align-items:center; gap:12px">
-                <input type="number" class="input mono" id="p-intervalo-slot" value="" min="0" max="120" style="width:100px" placeholder="0">
+                <input type="number" class="input mono" id="p-intervalo-slot" value="" min="0" max="120"
+                  style="width:100px" placeholder="0">
                 <span style="font-size:13px; color:var(--muted)">minutos entre cada horário exibido</span>
               </div>
               <p style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5">
-                Deixe vazio ou 0 para usar a duração do serviço. Ex: Serviço 30min = slots a cada 30min. Defina 15min para atender mais clientes.
+                Deixe vazio ou 0 para usar a duração do serviço. Ex: Serviço 30min = slots a cada 30min. Defina 15min
+                para atender mais clientes.
               </p>
             </div>
           </div>
@@ -2024,7 +2226,7 @@
         const intervaloSlot = Number(document.getElementById('p-intervalo-slot').value) || null;
 
         // 1. Atualiza intervalo no perfil do prestador
-        const { error: pErr } = await supabase.from('prestadores').update({ 
+        const { error: pErr } = await supabase.from('prestadores').update({
           intervalo_min: intervalo,
           intervalo_slot: intervaloSlot
         }).eq('id', userId);
@@ -2098,10 +2300,10 @@
     window.deletarBloqueio = async function (id) {
       console.log('Deletando bloqueio:', id, 'para prestador:', userId);
       const { error } = await supabase.from('bloqueios').delete().eq('id', id).eq('prestador_id', userId);
-      if (error) { 
+      if (error) {
         console.error('Erro ao deletar:', error);
-        toast('Erro ao remover bloqueio: ' + error.message, false); 
-        return; 
+        toast('Erro ao remover bloqueio: ' + error.message, false);
+        return;
       }
       bloqueios = bloqueios.filter(b => b.id !== id);
       renderBloqueios();
@@ -2150,7 +2352,7 @@
 
     // ── BLOQUEIOS RECORRENTES ──────────────────────────────────────────────────
     let bloqueiosRec = [];
-    const DIAS_NOMES_CURTOS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const DIAS_NOMES_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     async function carregarBloqueiosRecorrentes() {
       const { data, error } = await supabase
@@ -2165,7 +2367,7 @@
       renderBloqueiosRecorrentes();
     }
 
-    window.renderBloqueiosRecorrentes = function() {
+    window.renderBloqueiosRecorrentes = function () {
       const body = document.getElementById('bloqueios-rec-body');
       const footer = document.getElementById('bloqueios-rec-footer');
       if (!body) return;
@@ -2182,12 +2384,12 @@
         });
 
         body.innerHTML = Object.values(grupos).map(g => {
-          const diasBadges = g.dias.sort((a,b) => a-b).map(d =>
+          const diasBadges = g.dias.sort((a, b) => a - b).map(d =>
             `<div class="rec-dia-badge" title="${DIAS_NOMES_CURTOS[d]}">${DIAS_NOMES_CURTOS[d]}</div>`
           ).join('');
-          const horaIni = g.hora_inicio.slice(0,5);
-          const horaFim = g.hora_fim.slice(0,5);
-          const idsEsc  = JSON.stringify(g.ids).replace(/"/g, '&quot;');
+          const horaIni = g.hora_inicio.slice(0, 5);
+          const horaFim = g.hora_fim.slice(0, 5);
+          const idsEsc = JSON.stringify(g.ids).replace(/"/g, '&quot;');
           return `
             <div class="recorrente-item">
               <div class="rec-dias">${diasBadges}</div>
@@ -2213,7 +2415,7 @@
       }
     };
 
-    window.deletarRecorrente = async function(ids) {
+    window.deletarRecorrente = async function (ids) {
       if (!Array.isArray(ids)) ids = [ids];
       const { error } = await supabase
         .from('bloqueios_recorrentes')
@@ -2226,7 +2428,7 @@
       toast('Bloqueio recorrente removido');
     };
 
-    window.toggleNovoRecorrente = function() {
+    window.toggleNovoRecorrente = function () {
       // Verifica se usuário Free já tem 1 bloqueio
       if (!window.PRESTADOR_IS_PRO && bloqueiosRec.length >= 1) {
         irSecao('plano');
@@ -2241,11 +2443,11 @@
       }
     };
 
-    window.toggleDiaBl = function(el) {
+    window.toggleDiaBl = function (el) {
       el.classList.toggle('on');
     };
 
-    window.adicionarRecorrente = async function() {
+    window.adicionarRecorrente = async function () {
       // Verifica limite Free (1 bloqueio recorrente)
       if (!window.PRESTADOR_IS_PRO && bloqueiosRec.length >= 1) {
         toast('Disponível apenas no plano Pro', false);
@@ -2253,16 +2455,16 @@
         return;
       }
 
-      const motivo  = document.getElementById('rec-motivo').value.trim();
-      const inicio  = document.getElementById('rec-inicio').value;
-      const fim     = document.getElementById('rec-fim').value;
+      const motivo = document.getElementById('rec-motivo').value.trim();
+      const inicio = document.getElementById('rec-inicio').value;
+      const fim = document.getElementById('rec-fim').value;
       const diasSel = [...document.querySelectorAll('#rec-dias-row .dia-bl.on')]
         .map(el => parseInt(el.dataset.dia));
 
-      if (!motivo)          { toast('Informe o motivo', false); return; }
+      if (!motivo) { toast('Informe o motivo', false); return; }
       if (diasSel.length === 0) { toast('Selecione pelo menos um dia', false); return; }
-      if (!inicio || !fim)  { toast('Informe início e fim', false); return; }
-      if (inicio >= fim)    { toast('Horário de fim deve ser após o início', false); return; }
+      if (!inicio || !fim) { toast('Informe início e fim', false); return; }
+      if (inicio >= fim) { toast('Horário de fim deve ser após o início', false); return; }
 
       const btn = document.getElementById('btn-salvar-rec');
       btn.textContent = 'Salvando…'; btn.disabled = true;
@@ -2271,9 +2473,9 @@
         // Insere um registro por dia selecionado
         const rows = diasSel.map(dia => ({
           prestador_id: userId,
-          dia_semana:   dia,
-          hora_inicio:  inicio,
-          hora_fim:     fim,
+          dia_semana: dia,
+          hora_inicio: inicio,
+          hora_fim: fim,
           motivo,
           ativo: true,
         }));
@@ -2287,9 +2489,9 @@
         toggleNovoRecorrente();
         document.getElementById('rec-motivo').value = '';
         document.getElementById('rec-inicio').value = '12:00';
-        document.getElementById('rec-fim').value    = '13:00';
+        document.getElementById('rec-fim').value = '13:00';
         toast('✓ Bloqueio recorrente adicionado!');
-      } catch(e) {
+      } catch (e) {
         console.error(e);
         toast('Erro ao adicionar: ' + e.message, false);
       } finally {
@@ -2384,6 +2586,20 @@
         </div>
       </div>`;
       }
+
+      // ── BANNER FREE (Verifica plano e mostra banner se necessário) ─────────────
+      if (!isPro && !localStorage.getItem('banner-free-fechado')) {
+        const banner = document.getElementById('banner-free');
+        if (banner) banner.style.display = 'block';
+      }
+
+      window.fecharBannerFree = function () {
+        const banner = document.getElementById('banner-free');
+        if (banner) {
+          banner.style.display = 'none';
+          localStorage.setItem('banner-free-fechado', 'true');
+        }
+      };
 
       // Carregar histórico de pagamentos
       await carregarHistoricoPlano();
