@@ -13,11 +13,11 @@
 //   SUPABASE_SERVICE_ROLE_KEY
 //   APP_URL
 //
-//   Z-API (opcional):
-//   ZAPI_INSTANCE_ID, ZAPI_TOKEN, ZAPI_CLIENT_TOKEN
+//   Evolution API (WhatsApp):
+//   EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE
 //
-//   RESEND (opcional):
-//   RESEND_API_KEY, EMAIL_FROM
+//   SendGrid (Email):
+//   SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -118,86 +118,66 @@ function mensagemLembretePrestador(ag: Agendamento): string {
 }
 
 async function enviarWhatsApp(telefone: string, mensagem: string): Promise<void> {
-  const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
-  const token = Deno.env.get("ZAPI_TOKEN");
-  const clientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
+  const apiUrl = Deno.env.get("EVOLUTION_API_URL");
+  const apiKey = Deno.env.get("EVOLUTION_API_KEY");
+  const instance = Deno.env.get("EVOLUTION_INSTANCE");
 
-  if (!instanceId || !token || !clientToken) {
-    throw new Error("Z-API não configurado");
+  if (!apiUrl || !apiKey || !instance) {
+    throw new Error("Evolution API não configurado (EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE)");
   }
 
-  const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`;
+  // Evolution API usa formato internacional (55 + DDD + número)
+  const numero = normalizarTelefone(telefone);
+  const numeroInternacional = numero.startsWith("55") ? numero : `55${numero}`;
+
+  const url = `${apiUrl}/message/sendText/${instance}`;
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Client-Token": clientToken },
-    body: JSON.stringify({ phone: normalizarTelefone(telefone), message: mensagem }),
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": apiKey,
+    },
+    body: JSON.stringify({
+      number: numeroInternacional,
+      text: mensagem,
+    }),
   });
 
   if (!res.ok) {
     const erro = await res.text();
-    throw new Error(`Z-API erro ${res.status}: ${erro}`);
+    throw new Error(`Evolution API erro ${res.status}: ${erro}`);
   }
 }
 
 async function enviarEmail(to: string, subject: string, html: string): Promise<void> {
   const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
-  
-  // SendGrid API
-  if (sendgridKey) {
-    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${sendgridKey}`,
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
-        subject: subject,
-        content: [{ type: "text/html", value: html }],
-      }),
-    });
-    
-    // SendGrid retorna 202Accepted ou 400 para erro
-    if (!res.ok && res.status !== 202) {
-      const erro = await res.text();
-      throw new Error(`SendGrid erro ${res.status}: ${erro}`);
-    }
-    return;
+  if (!sendgridKey) {
+    throw new Error("SENDGRID_API_KEY não configurada");
   }
-  
-  // Mailjet API (alternativa)
-  const mailjetKey = Deno.env.get("MAILJET_API_KEY");
-  const mailjetSecret = Deno.env.get("MAILJET_SECRET_KEY");
-  
-  if (mailjetKey && mailjetSecret) {
-    const credentials = btoa(`${mailjetKey}:${mailjetSecret}`);
-    
-    const res = await fetch("https://api.mailjet.com/v3.1/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Basic ${credentials}`,
-      },
-      body: JSON.stringify({
-        Messages: [{
-          From: { Email: "noreply@agendapro.dev", Name: "AgendaPro" },
-          To: [{ Email: to, Name: to }],
-          Subject: subject,
-          HTMLPart: html,
-        }]
-      }),
-    });
-    
-    if (!res.ok) {
-      const erro = await res.text();
-      throw new Error(`Mailjet erro ${res.status}: ${erro}`);
-    }
-    return;
+
+  const fromEmail = Deno.env.get("SENDGRID_FROM_EMAIL") || "noreply@agendapro.com.br";
+  const fromName = Deno.env.get("SENDGRID_FROM_NAME") || "AgendaPro";
+
+  const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${sendgridKey}`,
+    },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: fromEmail, name: fromName },
+      subject: subject,
+      content: [{ type: "text/html", value: html }],
+    }),
+  });
+
+  // SendGrid retorna 202Accepted
+  if (!res.ok && res.status !== 202) {
+    const erro = await res.text();
+    throw new Error(`SendGrid erro ${res.status}: ${erro}`);
   }
-  
-  throw new Error("Nenhum provedor de email configurado");
 }
 
 // Busca preferências de notificação do prestador (retorna defaults se não existir)
@@ -245,8 +225,8 @@ async function notificarCliente(ag: Agendamento, tipo: "confirmacao" | "lembrete
 
   // WhatsApp se configurado (cliente sempre recebe)
   try {
-    const zapi = Deno.env.get("ZAPI_INSTANCE_ID");
-    if (zapi) {
+    const evolutionApi = Deno.env.get("EVOLUTION_API_URL");
+    if (evolutionApi) {
       await enviarWhatsApp(ag.cliente_tel, mensagem);
       enviados.push(`whatsapp:${ag.cliente_tel}`);
     }
@@ -284,8 +264,8 @@ async function notificarPrestador(ag: Agendamento, tipo: "confirmacao" | "lembre
   const deveEnviarWhatsApp = tipo === "confirmacao" ? prefs.whatsapp_novo_agendamento : prefs.whatsapp_lembrete_d1;
   if (deveEnviarWhatsApp) {
     try {
-      const zapi = Deno.env.get("ZAPI_INSTANCE_ID");
-      if (zapi && ag.prestadores.whatsapp) {
+      const evolutionApi = Deno.env.get("EVOLUTION_API_URL");
+      if (evolutionApi && ag.prestadores.whatsapp) {
         await enviarWhatsApp(ag.prestadores.whatsapp, mensagem);
         enviados.push(`whatsapp:${ag.prestadores.whatsapp}`);
       }
