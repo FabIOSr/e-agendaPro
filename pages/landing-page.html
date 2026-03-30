@@ -25,7 +25,9 @@
   --border:  #d8d4c8;
 }
 
-html { scroll-behavior: smooth; }
+html {
+
+}
 
 body {
   font-family: 'Syne', sans-serif;
@@ -77,6 +79,13 @@ nav {
   transition: background .2s;
 }
 .nav-cta:hover { background: #2a2820; }
+.nav-login {
+  color: var(--muted);
+  font-size: 13px; font-weight: 500;
+  text-decoration: none;
+  transition: color .2s;
+}
+.nav-login:hover { color: var(--ink); }
 
 /* ── HERO ── */
 .hero {
@@ -535,6 +544,7 @@ footer {
   .nums-grid { border: none; gap: 2px; }
   .num-item { border-right: none; border-bottom: 1px solid #2a2820; border-radius: 12px; }
   .nav-links { display: none; }
+  .nav-login { display: none; }
 }
 @media (max-width: 500px) {
   nav { padding: 0 16px; }
@@ -557,7 +567,10 @@ footer {
     <a href="#precos">Preços</a>
     <a href="#faq">FAQ</a>
   </div>
-  <a href="#precos" class="nav-cta">Começar grátis →</a>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="/auth" class="nav-login">Entrar</a>
+    <a href="#precos" class="nav-cta">Começar grátis →</a>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -789,13 +802,19 @@ footer {
         <div class="preco-periodo">para sempre</div>
         <div class="preco-divider"></div>
         <ul class="preco-lista">
-          <li>Link de agendamento público</li>
+          <li>Link de agendamento personalizado</li>
           <li>Até 10 agendamentos por mês</li>
-          <li>Painel da agenda</li>
-          <li>Bloqueios e folgas</li>
+          <li>Página personalizada com sua foto</li>
+          <li>Painel da agenda visual</li>
+          <li>Confirmação por <strong>email</strong></li>
+          <li>Relatório básico (faturamento do mês)</li>
+          <li>Bloqueios simples (limitado a 1)</li>
           <li class="off">WhatsApp automático</li>
-          <li class="off">Histórico de clientes</li>
-          <li class="off">Relatório de receita</li>
+          <li class="off">Lembrete D-1 automático</li>
+          <li class="off">CRM de clientes</li>
+          <li class="off">Relatórios avançados</li>
+          <li class="off">Bloqueios recorrentes</li>
+          <li class="off">Google Calendar sync</li>
         </ul>
         <button class="btn-preco outline" onclick="window.location.href='/auth?tela=cadastro'">Começar grátis</button>
       </div>
@@ -807,12 +826,17 @@ footer {
         <div class="preco-periodo">/mês · cancela quando quiser</div>
         <div class="preco-divider"></div>
         <ul class="preco-lista">
-          <li>Tudo do grátis</li>
-          <li>Agendamentos ilimitados</li>
-          <li>WhatsApp automático</li>
-          <li>Lembrete D-1 automático</li>
-          <li>Histórico completo de clientes</li>
-          <li>Relatório de receita mensal</li>
+          <li>Tudo do grátis + agendamentos ilimitados</li>
+          <li><strong>WhatsApp automático</strong> (confirmação + lembrete)</li>
+          <li>Lembrete D-1 automático por WhatsApp</li>
+          <li>CRM completo de clientes</li>
+          <li>Histórico de agendamentos por cliente</li>
+          <li>Top 10 clientes por receita</li>
+          <li>Relatórios avançados com gráficos</li>
+          <li>Exportar relatórios (CSV)</li>
+          <li>Bloqueios recorrentes ilimitados</li>
+          <li>Sincronização com Google Calendar</li>
+          <li>Intervalo customizado entre agendamentos</li>
           <li>Suporte prioritário</li>
         </ul>
         <button class="btn-preco solid" onclick="window.location.href='/auth?tela=cadastro&plano=pro'">Assinar Pro →</button>
@@ -826,7 +850,7 @@ footer {
         <ul class="preco-lista">
           <li>Tudo do Pro</li>
           <li>Economia de R$120/ano</li>
-          <li>2 meses grátis</li>
+          <li>2 meses grátis (26% de desconto)</li>
           <li>Acesso antecipado a novas funcionalidades</li>
         </ul>
         <button class="btn-preco outline" onclick="window.location.href='/auth?tela=cadastro&plano=pro_anual'">Assinar anual</button>
@@ -860,6 +884,10 @@ footer {
       <div class="faq-item" onclick="toggleFaq(this)">
         <div class="faq-q">Posso testar antes de assinar?<div class="faq-icon">+</div></div>
         <div class="faq-a">Sim. O plano Grátis não tem prazo — você pode usar com até 10 agendamentos por mês sem pagar nada. Assina o Pro só quando sentir que precisa de mais.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">O plano gratuito tem WhatsApp?<div class="faq-icon">+</div></div>
+        <div class="faq-a">O plano gratuito envia confirmações por <strong>email</strong>. Para enviar mensagens por WhatsApp (que reduzem o no-show em até 70%), você precisa do plano Pro.</div>
       </div>
       <div class="faq-item" onclick="toggleFaq(this)">
         <div class="faq-q">E se eu quiser cancelar?<div class="faq-icon">+</div></div>
@@ -898,6 +926,45 @@ function toggleFaq(el) {
   document.querySelectorAll('.faq-item').forEach(f => f.classList.remove('open'));
   if (!isOpen) el.classList.add('open');
 }
+
+// Scroll suave customizado com JavaScript puro
+function smoothScrollTo(target, duration) {
+  const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - 50;
+  const startPosition = window.pageYOffset;
+  const distance = targetPosition - startPosition;
+  let startTime = null;
+
+  function animation(currentTime) {
+    if (startTime === null) startTime = currentTime;
+    const timeElapsed = currentTime - startTime;
+    const progress = Math.min(timeElapsed / duration, 1);
+    const easeInOutQuad = progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+    window.scrollTo(0, startPosition + distance * easeInOutQuad);
+
+    if (timeElapsed < duration) {
+      requestAnimationFrame(animation);
+    }
+  }
+
+  requestAnimationFrame(animation);
+}
+
+// Adicionar event listeners aos links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    const href = this.getAttribute('href');
+    if (href !== '#' && href.length > 1) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        smoothScrollTo(target, 800);
+      }
+    }
+  });
+});
 
 // Animação de entrada ao rolar
 const observer = new IntersectionObserver((entries) => {
