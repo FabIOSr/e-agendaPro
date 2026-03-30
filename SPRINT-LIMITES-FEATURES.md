@@ -1,7 +1,7 @@
 # Sprint: Limites e Features - Planejamento Estratégico
 
 **Data de criação:** 2026-03-29
-**Última atualização:** 2026-03-30 (Top Clients + Drawer atualizado)
+**Última atualização:** 2026-03-30 (Banner Free implementado)
 **Objetivo:** Ajustar limites Free/Pro para otimizar conversão e reduzir churn
 **Duração estimada:** 2-3 semanas
 
@@ -97,7 +97,7 @@ Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
 |----|--------|--------------|------------|--------|
 | P1-1 | Implementar relatórios básicos Free | P0-2 | 4h | [✅] FEITO |
 | P1-2 | Ajustar landing page (promessa real) | - | 3h | [✅] FEITO |
-| P1-3 | Mensagem educativa no painel Free | - | 2h | [ ] |
+| P1-3 | Mensagem educativa no painel Free | - | 2h | [✅] FEITO |
 | P1-4 | Configurar Evolution API na VPS | - | 4h | [ ] |
 
 ### ✅ P1 - Concluído Recentemente
@@ -105,6 +105,7 @@ Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
 | ID | Tarefa | Data | Notas |
 |----|--------|------|-------|
 | P1-2 | Ajustar landing page (promessa real) | 2026-03-30 | Botão Entrar, scroll smooth, features atualizadas |
+| P1-3 | Mensagem educativa no painel Free | 2026-03-30 | Banner em painel e configurações, centralizado com container-main |
 | P1-5 | Atualizar drawer clientes.html | 2026-03-30 | Avatar, badge, stats cards, toast |
 | P1-6 | Transformar aba Clientes em Top 10 | 2026-03-30 | Ranking por receita, sem duplicação |
 | P1-7 | Corrigir filtros e stats clientes.html | 2026-03-30 | Bugs corrigidos |
