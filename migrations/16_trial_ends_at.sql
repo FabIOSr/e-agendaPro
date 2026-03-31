@@ -48,8 +48,10 @@ END;
 $$;
 
 -- ── 3. FUNÇÃO PARA ATIVAR TRIAL DE 7 DIAS ─────────────────────────────────
-CREATE OR REPLACE FUNCTION public.ativar_trial(p_prestador_id UUID)
-RETURNS TABLE(success BOOLEAN, trial_ends_at TIMESTAMPTZ, message TEXT)
+DROP FUNCTION IF EXISTS public.ativar_trial(UUID);
+
+CREATE FUNCTION public.ativar_trial(p_prestador_id UUID)
+RETURNS TABLE(success BOOLEAN, trial_end TIMESTAMPTZ, message TEXT)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public AS $$
@@ -91,7 +93,10 @@ BEGIN
 
   -- Retornar sucesso
   RETURN QUERY
-    SELECT TRUE, NOW() + INTERVAL '7 days', 'Trial ativado com sucesso'::TEXT;
+    SELECT
+      TRUE as success,
+      (NOW() + INTERVAL '7 days')::TIMESTAMPTZ as trial_end,
+      'Trial ativado com sucesso'::TEXT as message;
 END;
 $$;
 
@@ -107,6 +112,7 @@ BEGIN
   SET
     plano = 'free',
     plano_valido_ate = NULL,
+    trial_usado = true,  -- Marca que já usou trial
     updated_at = NOW()
   WHERE
     trial_ends_at IS NOT NULL

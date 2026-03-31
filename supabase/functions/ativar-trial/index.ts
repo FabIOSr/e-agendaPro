@@ -81,10 +81,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        trial_ends_at: result.trial_ends_at,
+        trial_ends_at: result.trial_end,
         message: result.message,
         days_remaining: Math.ceil(
-          (new Date(result.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          (new Date(result.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
         ),
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

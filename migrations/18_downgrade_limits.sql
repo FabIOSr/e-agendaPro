@@ -44,11 +44,12 @@ BEGIN
       AND trial_ends_at <= NOW()
       AND plano = 'pro'
   LOOP
-    -- Aplica downgrade
+    -- Aplica downgrade + marca trial como usado
     UPDATE public.prestadores
     SET
       plano = 'free',
       plano_valido_ate = NULL,
+      trial_usado = true,  -- Marca que já usou trial
       updated_at = NOW()
     WHERE id = v_prestadores.id;
 
@@ -64,12 +65,21 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public AS $$
+DECLARE
+  v_veio_de_trial BOOLEAN;
 BEGIN
+  -- Verifica se o prestador estava em trial
+  SELECT trial_ends_at IS NOT NULL
+    INTO v_veio_de_trial
+    FROM public.prestadores
+    WHERE id = p_prestador_id;
+
   -- Downgrade para Free
   UPDATE public.prestadores
   SET
     plano = 'free',
     plano_valido_ate = NULL,
+    trial_usado = COALESCE(v_veio_de_trial, trial_usado),  -- Marca trial_usado=true se veio de trial
     updated_at = NOW()
   WHERE id = p_prestador_id;
 
@@ -80,8 +90,8 @@ $$;
 
 -- ── 4. COMENTÁRIOS PARA DOCUMENTAÇÃO ───────────────────────────────────────
 COMMENT ON FUNCTION public.aplicar_limites_free(UUID) IS 'Aplica limites do plano Free: reset intervalo_slot para 0, mantém apenas 1 bloqueio recorrente';
-COMMENT ON FUNCTION public.downgrade_pro(UUID) IS 'Executa downgrade de Pro para Free e aplica limites. Usado pelo webhook ASAAS quando assinatura é cancelada';
-COMMENT ON FUNCTION public.expirar_trials() IS 'Expira trials de 7 dias e aplica limites Free. Executar via cron diário';
+COMMENT ON FUNCTION public.downgrade_pro(UUID) IS 'Executa downgrade de Pro para Free, marca trial_usado=true se veio de trial, e aplica limites. Usado pelo webhook ASAAS quando assinatura é cancelada';
+COMMENT ON FUNCTION public.expirar_trials() IS 'Expira trials de 7 dias, marca trial_usado=true e aplica limites Free. Executar via cron diário';
 
 -- ── 5. PERMITIR ACESSO ÀS NOVAS FUNÇÕES ───────────────────────────────────
 GRANT EXECUTE ON FUNCTION public.aplicar_limites_free(UUID) TO authenticated;

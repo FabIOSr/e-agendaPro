@@ -57,7 +57,7 @@
 │                                                             │
 │  Cron Jobs                                                  │
 │  • 21:00 UTC → lembrete-d1                                  │
-│  • 03:00 UTC → downgrade-planos-vencidos                    │
+│  • 03:00 UTC → downgrade-planos-vencidos + expirar_trials   │
 │  • */60 min  → solicitar-avaliacoes                         │
 └──────────┬───────────────┬──────────────────────────────────┘
            │               │
@@ -90,7 +90,9 @@ prestadores (
   whatsapp text,
   plano text,             -- 'free' | 'pro'
   plano_valido_ate timestamptz,
-  trial_usado boolean,
+  trial_usado boolean,    -- true se já usou trial de 7 dias
+  trial_ends_at timestamptz,
+  intervalo_slot int,     -- 0=Free (colado), >0=Pro (min entre slots)
   asaas_customer_id text,
   asaas_sub_id text,
   google_event_id text
@@ -122,6 +124,17 @@ bloqueios (
   inicio timestamptz,
   fim timestamptz,
   motivo text
+)
+
+-- Bloqueios recorrentes (Pro: ilimitado, Free: máximo 1)
+bloqueios_recorrentes (
+  id uuid PK,
+  prestador_id uuid FK,
+  dia_semana int,         -- 0=Dom .. 6=Sáb
+  hora_inicio time,
+  hora_fim time,
+  motivo text,
+  created_at timestamptz
 )
 
 -- Agendamentos
@@ -178,6 +191,10 @@ google_calendar_tokens (
 3. cron-downgrade.sql           → cron + função verifica_plano_ativo
 4. cancel-token-migration.sql   → cancel_token em agendamentos
 5. nice-migration.sql           → avaliacoes + google_calendar_tokens
+13. bloqueios_recorrentes.sql   → tabela bloqueios_recorrentes
+16. trial_ends_at.sql           → trial de 7 dias, expirar_trials(), ativar_trial()
+17. ativar_trial_auto.sql       → auto-ativa trial no cadastro
+18. downgrade_limits.sql        → aplicar_limites_free(), downgrade_pro()
 ```
 
 ---
@@ -188,6 +205,7 @@ google_calendar_tokens (
 |---|---|---|---|
 | `horarios-disponiveis` | POST | público | Calcula slots livres por data/serviço, descontando bloqueios e agendamentos |
 | `lembretes-whatsapp` | POST | service_role | Confirmação imediata e lembrete D-1 via Z-API |
+| `ativar-trial` | POST | JWT prestador | Ativa trial de 7 dias (uma vez por usuário) |
 | `criar-assinatura` | POST | JWT prestador | Cria cliente e assinatura no Asaas |
 | `webhook-asaas` | POST | token header | Ativa/desativa plano Pro ao receber eventos do Asaas |
 | `cancelar-assinatura` | POST | JWT prestador | Cancela assinatura no Asaas mantendo acesso até fim do período |
@@ -199,9 +217,10 @@ google_calendar_tokens (
 ### Deploy de todas as funções
 
 ```bash
-for fn in horarios-disponiveis lembretes-whatsapp criar-assinatura \
-          webhook-asaas cancelar-assinatura cancelar-agendamento-cliente \
-          reagendar-cliente avaliacoes google-calendar-sync; do
+for fn in horarios-disponiveis lembretes-whatsapp ativar-trial \
+          criar-assinatura webhook-asaas cancelar-assinatura \
+          cancelar-agendamento-cliente reagendar-cliente \
+          avaliacoes google-calendar-sync; do
   supabase functions deploy $fn
 done
 ```
@@ -278,35 +297,46 @@ Cliente remarcar via link no WhatsApp:
 
 ### Limites por plano
 
-| Funcionalidade | Free | Pro |
-|---|---|---|
-| Agendamentos/mês | 10 | Ilimitado |
-| WhatsApp automático | ✗ | ✓ |
-| Lembrete D-1 | ✗ | ✓ |
-| Histórico de clientes | ✗ | ✓ |
-| Relatório de receita | ✗ | ✓ |
-| Avaliações | ✓ | ✓ |
-| Google Calendar | ✗ | ✓ |
-| Cancelamento/reagendamento cliente | ✓ | ✓ |
+| Funcionalidade | Free | Pro | Trial (7 dias) |
+|---|---|---|---|
+| Agendamentos/mês | 10 | Ilimitado | Ilimitado |
+| WhatsApp automático | ✗ | ✓ | ✓ |
+| Lembrete D-1 | ✗ | ✓ | ✓ |
+| Histórico de clientes | ✗ | ✓ | ✓ |
+| Relatório de receita | ✗ | ✓ | ✓ |
+| Avaliações | ✓ | ✓ | ✓ |
+| Google Calendar | ✗ | ✓ | ✓ |
+| Cancelamento/reagendamento cliente | ✓ | ✓ | ✓ |
+| Bloqueios recorrentes | 1 | Ilimitado | Ilimitado |
+| Intervalo entre slots | Colado (0) | Configurável | Configurável |
 
 ### Ciclo de vida do plano
 
 ```
-Cadastro → plano='free'
+Cadastro → plano='pro', trial_ends_at=NOW()+7d, trial_usado=false
     │
-    └─ Assina → POST /criar-assinatura
-                    └─ Asaas cria assinatura
-                         │
-                         └─ Webhook PAYMENT_RECEIVED
-                              └─ UPDATE plano='pro', plano_valido_ate=+30d
+    ├─ Usa 7 dias de trial → todos os recursos Pro
+    │
+    ├─ Trial expira → expirar_trials() (cron diário)
+    │    └─ UPDATE plano='free', trial_usado=true
+    │         └─ aplicar_limites_free() → intervalo_slot=0, bloqueios_recorrentes=1
+    │
+    └─ Assina durante trial → POST /criar-assinatura
+            └─ Asaas cria assinatura
+                 │
+                 └─ Webhook PAYMENT_RECEIVED
+                      └─ UPDATE plano='pro', plano_valido_ate=+30d, trial_usado=true
 
 Pagamento vence:
     PAYMENT_OVERDUE → grace period 3 dias (plano continua ativo)
-    Cron 03h → se plano_valido_ate < NOW()-3d → UPDATE plano='free'
+    Cron 03h → se plano_valido_ate < NOW()-3d → downgrade_pro()
+         └─ UPDATE plano='free', trial_usado=true (se veio de trial)
+              └─ aplicar_limites_free() → intervalo_slot=0, bloqueios_recorrentes=1
 
 Cancela → DELETE /assinatura no Asaas
-    └─ plano mantém 'pro' até plano_valido_ate
-         └─ Cron faz downgrade automaticamente
+    └─ Webhook SUBSCRIPTION_DELETED → downgrade_pro()
+         └─ plano mantém 'pro' até plano_valido_ate (grace period)
+              └─ Cron faz downgrade automático + aplica limites Free
 ```
 
 ---
@@ -346,6 +376,10 @@ Cancela → DELETE /assinatura no Asaas
 #    cron-downgrade.sql
 #    cancel-token-migration.sql
 #    nice-migration.sql
+#    bloqueios_recorrentes.sql
+#    trial_ends_at.sql
+#    ativar_trial_auto.sql
+#    downgrade_limits.sql
 
 # 3. AUTH — configurar no painel Supabase
 #    Auth → Providers → Google: adicionar Client ID e Secret
@@ -416,15 +450,17 @@ firebase deploy --only hosting
 ## 10. Checklist de lançamento {#checklist}
 
 ### Banco e auth
-- [ ] Todas as 5 migrations rodadas em ordem
+- [ ] Todas as 9 migrations rodadas em ordem
 - [ ] Trigger `on_auth_user_created` funcionando (teste: criar usuário e ver linha em `prestadores`)
+- [ ] Trial auto-ativado no cadastro (plano='pro', trial_ends_at=+7d)
 - [ ] RLS testada: usuário A não acessa dados do usuário B
 - [ ] Google OAuth configurado e testado
-- [ ] Cron jobs ativos: `downgrade-planos-vencidos`, `lembrete-d1`, `solicitar-avaliacoes`
+- [ ] Cron jobs ativos: `downgrade-planos-vencidos`, `expirar_trials`, `lembrete-d1`, `solicitar-avaliacoes`
 
 ### Edge Functions
 - [ ] `horarios-disponiveis` → testa conflito com bloqueio e agendamento
 - [ ] `lembretes-whatsapp` → testa confirmação e lembrete D-1 em sandbox
+- [ ] `ativar-trial` → testa ativação e bloqueio de reativação
 - [ ] `webhook-asaas` → testa com sandbox do Asaas (PAYMENT_RECEIVED ativa pro)
 - [ ] `cancelar-agendamento-cliente` → GET renderiza página, POST cancela
 - [ ] `reagendar-cliente` → seleciona novo horário e atualiza
@@ -434,11 +470,16 @@ firebase deploy --only hosting
 ### Pagamentos
 - [ ] Fluxo completo testado no sandbox Asaas (Pix + Cartão)
 - [ ] Webhook recebendo eventos corretamente
+- [ ] Trial auto-ativado no cadastro (7 dias)
+- [ ] Expiração de trial aplica limites Free corretamente
+- [ ] Reactivação de trial bloqueada após uso
 - [ ] Downgrade automático funcionando após vencimento
 
 ### Front-end
 - [ ] Login, cadastro, recuperação de senha funcionando
 - [ ] Onboarding cria perfil em `prestadores` corretamente
+- [ ] Badge de Trial exibido corretamente (X dias restantes)
+- [ ] Página /planos exibe CTA de trial para usuários que não usaram
 - [ ] Gate de plano bloqueia Relatórios e Histórico no free
 - [ ] Paywall exibe e redireciona para `/planos`
 - [ ] Página pública carrega corretamente sem auth
@@ -467,6 +508,7 @@ agendapro/
 ├── supabase/functions/
 │   ├── horarios-disponiveis/index.ts
 │   ├── lembretes-whatsapp/index.ts
+│   ├── ativar-trial/index.ts
 │   ├── criar-assinatura/index.ts
 │   ├── webhook-asaas/index.ts
 │   ├── cancelar-assinatura/index.ts
@@ -480,7 +522,11 @@ agendapro/
 │   ├── migration.sql
 │   ├── cron-downgrade.sql
 │   ├── cancel-token-migration.sql
-│   └── nice-migration.sql
+│   ├── nice-migration.sql
+│   ├── bloqueios_recorrentes.sql
+│   ├── trial_ends_at.sql
+│   ├── ativar_trial_auto.sql
+│   └── downgrade_limits.sql
 │
 ├── pages/
 │   ├── landing-page/index.html
