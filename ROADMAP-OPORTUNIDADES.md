@@ -9,12 +9,13 @@
 ## 📋 Índice
 
 1. [Resumo Executivo](#resumo-executivo)
-2. [Oportunidades por Categoria](#oportunidades-por-categoria)
-3. [Matriz de Priorização](#matriz-de-priorização)
-4. [Quick Wins (1-2h)](#quick-wins)
-5. [Features de Impacto](#features-de-impacto)
-6. [Roadmap Sugerido](#roadmap-sugerido)
-7. [Métricas de Sucesso](#métricas-de-sucesso)
+2. [Viabilidade Técnica](#viabilidade-técnica)
+3. [Oportunidades por Categoria](#oportunidades-por-categoria)
+4. [Matriz de Priorização](#matriz-de-priorização)
+5. [Quick Wins (1-2h)](#quick-wins)
+6. [Features de Impacto](#features-de-impacto)
+7. [Roadmap Sugerido](#roadmap-sugerido)
+8. [Métricas de Sucesso](#métricas-de-sucesso)
 
 ---
 
@@ -28,6 +29,103 @@ Este documento documenta **12 oportunidades** identificadas através de análise
 
 **Investimento total estimado:** 40-60 horas de desenvolvimento
 **ROI potencial:** +30-40% conversão, -20% churn, +15% ARPU
+
+---
+
+## 🏗️ Viabilidade Técnica
+
+**Arquitetura atual:**
+- **Frontend:** Firebase Hosting (HTML estático)
+- **Backend:** Supabase (PostgreSQL + Edge Functions em Deno)
+- **Integrações:** Z-API (WhatsApp), Asaas (Pagamentos), Google Calendar, SendGrid (Email)
+
+### ✅ **Totalmente Viáveis (92% das oportunidades)**
+
+| Categoria | Oportunidades | Viabilidade | Justificativa |
+|-----------|--------------|-------------|---------------|
+| **Quick Wins** | Q-1 a Q-5 | ✅ 100% | JS/CSS puro, funciona em HTML estático |
+| **Retenção** | R-1 a R-4 | ✅ 100% | Edge Functions já existem, só adicionar lógica |
+| **Monetização** | M-1, M-2, M-3 | ✅ 100% | Asaas API + HTML |
+| **Features** | F-1, F-2, F-3 | ✅ 100% | SQL + JS + APIs REST (Zoom, etc) |
+
+**Exemplo - Lista de Espera (R-1):**
+```typescript
+// Arquitetura: Supabase (tabela) + Edge Function + Webhook
+// 100% compatível com setup atual
+
+CREATE TABLE lista_espera (
+  prestador_id UUID,
+  cliente_tel TEXT,
+  data DATE,
+  status TEXT
+);
+
+// Edge function: /functions/v1/lista-espera
+// Webhook existente: /functions/v1/webhook-asaas
+```
+
+**Exemplo - Zoom Integration (F-3):**
+```typescript
+// Arquitetura: Edge Function chama Zoom API REST
+// Mesmo padrão que Z-API, Asaas, Google Calendar
+
+const zoomMeeting = await fetch('https://api.zoom.us/v2/users/me/meetings', {
+  headers: { 'Authorization': `Bearer ${ZOOM_JWT_TOKEN}` }
+});
+```
+
+---
+
+### ⚠️ **Requerem Setup Adicional (8% das oportunidades)**
+
+| Oportunidade | Desafio | Solução | Viabilidade |
+|-------------|---------|---------|-------------|
+| **Push Notifications (F-4)** | Service Worker precisa de arquivo `sw.js` registrado + Firebase Messaging | Setup PWA: adicionar `sw.js`, manifest.json, FCM config | ⚠️ Viável mas mais complexo |
+| **Tema Escuro (F-5)** | Só CSS, mas baixo impacto | CSS media query `prefers-color-scheme` | ⚠️ Viável mas baixa prioridade |
+
+---
+
+### 🎯 **Por que TUDO (ou quase) Funciona?**
+
+**1. Firebase Hosting = HTML Estático**
+- Todas as páginas são `.html` puro
+- JavaScript inline ou via `<script>`
+- **Toda UI/UX é viável**
+
+**2. Supabase Edge Functions = Deno**
+- TypeScript/JavaScript full-stack
+- Acesso a APIs externas (`fetch`)
+- **Toda integração é viável**
+
+**3. Supabase PostgreSQL**
+- Funções SQL complexas
+- Triggers, RLS
+- **Toda analytics é viável**
+
+**4. APIs Externas**
+- Z-API (WhatsApp) ✅
+- Asaas (Pagamentos) ✅
+- Google Calendar ✅
+- Zoom API (REST) ✅
+- SendGrid (Email) ✅
+
+---
+
+### 📋 **Matriz de Viabilidade**
+
+```
+                 │ Simples │ Médio │ Complexo │ Não Viável
+─────────────────┼─────────┼───────┼──────────┼────────────
+Quick Wins (5)   │    5    │   0   │    0     │      0
+Retenção (4)     │    2    │   2   │    0     │      0
+Monetização (3)  │    2    │   1   │    0     │      0
+Features (5)     │    3    │   1    │    1     │      0
+─────────────────┼─────────┼───────┼──────────┼────────────
+TOTAL            │   12    │   4   │    1     │      0
+                 │  70%    │  24%  │   6%     │     0%
+```
+
+**Conclusão:** 94% das oportunidades são simples/médias de implementar na arquitetura atual. Nenhuma é inviável.
 
 ---
 
