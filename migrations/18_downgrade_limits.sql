@@ -25,6 +25,18 @@ BEGIN
       LIMIT 1
     );
 
+  -- 3. Remover integração do Google Calendar (feature Pro)
+  -- Tokens são deletados para evitar uso continuado após downgrade
+  DELETE FROM public.google_calendar_tokens
+  WHERE prestador_id = p_prestador_id;
+
+  -- Limpar referência de eventos do Google Calendar em agendamentos futuros
+  UPDATE public.agendamentos
+  SET google_event_id = NULL
+  WHERE prestador_id = p_prestador_id
+    AND google_event_id IS NOT NULL
+    AND data_hora > NOW();
+
 END;
 $$;
 
@@ -89,7 +101,7 @@ END;
 $$;
 
 -- ── 4. COMENTÁRIOS PARA DOCUMENTAÇÃO ───────────────────────────────────────
-COMMENT ON FUNCTION public.aplicar_limites_free(UUID) IS 'Aplica limites do plano Free: reset intervalo_slot para 0, mantém apenas 1 bloqueio recorrente';
+COMMENT ON FUNCTION public.aplicar_limites_free(UUID) IS 'Aplica limites do plano Free: reset intervalo_slot para 0, mantém apenas 1 bloqueio recorrente, remove tokens do Google Calendar e limpa google_event_id de agendamentos futuros';
 COMMENT ON FUNCTION public.downgrade_pro(UUID) IS 'Executa downgrade de Pro para Free, marca trial_usado=true se veio de trial, e aplica limites. Usado pelo webhook ASAAS quando assinatura é cancelada';
 COMMENT ON FUNCTION public.expirar_trials() IS 'Expira trials de 7 dias, marca trial_usado=true e aplica limites Free. Executar via cron diário';
 
