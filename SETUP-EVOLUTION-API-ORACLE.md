@@ -421,6 +421,206 @@ Verificar:
 
 ---
 
+## 🔧 Adicionar n8n (Automação de Workflows)
+
+**O que é n8n:**
+- Plataforma de automação de workflows (alternativa open-source ao Zapier/Make)
+- Visual workflow builder
+- 400+ integrações disponíveis
+- Self-hosted: seus dados ficam na sua VPS
+
+**Casos de uso no AgendaPro:**
+
+| Automação | Descrição |
+|-----------|-----------|
+| **Lembretes personalizados** | WhatsApp D-3, D-1, D-hour com mensagens customizadas |
+| **Follow-up pós-agendamento** | Solicitação de avaliação 24h após atendimento |
+| **Reagendamento automático** | Detectar cancelamento e oferecer reagendamento |
+| **Campanhas marketing** Mensagens para clientes inativos (30+ dias) |
+| **Relatórios diários** | Enviar resumo do dia para o profissional |
+| **Integração Google Sheets** | Backup de agendamentos em planilha |
+| **Webhook para CRM** | Sincronizar clientes com CRM externo |
+
+### Instalação via Docker Compose
+
+```bash
+# 1. Criar rede para os containers
+docker network create agenda-network
+
+# 2. Atualizar docker-compose.yml
+cd ~/evolution-api
+cat > docker-compose.yml << 'EOF'
+version: '3.8'
+
+services:
+  evolution-api:
+    image: evolutionapi/evolution-api:latest
+    container_name: evolution-api
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=sua_chave_super_segura_mude_isso_32chars
+      - AUTHENTICATION_EXPOSE_IN_FETCHERS=true
+    volumes:
+      - evolution-data:/home/evolution/instance
+    restart: unless-stopped
+    networks:
+      - agenda-network
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://SEU_IP_PUBLICO:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      - N8N_ENCRYPTION_KEY=gerar_uma_chave_aleatoria_32_chars
+      - N8N_USER_EMAIL=seu@email.com
+      - N8N_USER_PASSWORD=sua_senha_forte_aqui
+    volumes:
+      - n8n-data:/home/node/.n8n
+    restart: unless-stopped
+    networks:
+      - agenda-network
+    depends_on:
+      - evolution-api
+
+volumes:
+  evolution-data:
+  n8n-data:
+
+networks:
+  agenda-network:
+    driver: bridge
+EOF
+
+# 3. Gerar chave de criptografia
+echo "Chave de criptografia N8N:"
+openssl rand -base64 32
+
+# 4. Copiar a chave gerada para N8N_ENCRYPTION_KEY no docker-compose.yml
+
+# 5. Recrear containers
+docker compose down
+docker compose up -d
+
+# 6. Verificar status
+docker ps
+
+# 7. Abrir n8n no navegador
+# URL: http://SEU_IP_PUBLICO:5678
+```
+
+### Acessar n8n
+
+```
+URL: http://SEU_IP_PUBLICO:5678
+Login: seu@email.com
+Senha: [senha configurada]
+```
+
+### Exemplo de Workflow: Lembrete WhatsApp D-1
+
+**No n8n:**
+
+1. **Node 1: Cron**
+   - Horário: Todos os dias às 18:00
+   - Expression: `0 18 * * *`
+
+2. **Node 2: HTTP Request (Supabase)**
+   ```json
+   {
+     "method": "POST",
+     "url": "https://SEU_PROJETO.supabase.co/rest/v1/rpc/agendamentos_amanha",
+     "headers": {
+       "apikey": "SUA_SERVICE_ROLE_KEY",
+       "Authorization": "Bearer SUA_SERVICE_ROLE_KEY"
+     }
+   }
+   ```
+
+3. **Node 3: Loop sobre agendamentos**
+
+4. **Node 4: HTTP Request (Evolution API)**
+   ```json
+   {
+     "method": "POST",
+     "url": "http://evolution-api:8080/message/sendText/agendapro-prod",
+     "headers": {
+       "Content-Type": "application/json",
+       "apikey": "sua_chave_super_segura"
+     },
+     "body": {
+       "number": "={{$json.telefone}}",
+       "text": "Olá {{$json.nome}}! 👋 Lembrete do seu agendamento amanhã às {{$json.horario}}. Até lá! 💈"
+     }
+   }
+   ```
+
+### Variáveis de Ambiente Adicionais
+
+```bash
+# Adicionar no Supabase Secrets
+N8N_WEBHOOK_URL=http://SEU_IP_PUBLICO:5678/webhook
+N8N_API_KEY=chave_para_webhooks_do_n8n
+```
+
+### Firewall
+
+```bash
+# Permitir porta n8n
+sudo ufw allow 5678/tcp
+
+# Verificar status
+sudo ufw status
+```
+
+### Performance n8n
+
+| Métrica | Uso típico |
+|---------|------------|
+| Memória (idle) | ~150-200 MB |
+| Memória (workflow ativo) | ~300-500 MB |
+| CPU (idle) | <1% |
+| CPU (workflow ativo) | 5-15% |
+| Workflows simultâneos | 10-20 |
+
+**Com Evolution API + n8n:**
+- Total RAM: ~700 MB - 1.5 GB
+- Ainda sobra 22+ GB para Redis, Mailpit, etc.
+
+### Gerenciamento
+
+```bash
+# Ver logs n8n
+docker compose logs -f n8n
+
+# Reiniciar n8n
+docker compose restart n8n
+
+# Backup workflows n8n
+docker run --rm \
+  -v n8n-data:/data \
+  -v ~/backups:/backup \
+  ubuntu \
+  tar cvf /backup/n8n-workflows-$(date +%Y%m%d).tar /data
+
+# Atualizar n8n
+cd ~/evolution-api
+docker compose pull n8n
+docker compose up -d n8n
+```
+
+---
+
 ## 📊 Monitoramento
 
 ### Recursos da VM:
@@ -454,8 +654,9 @@ Após Evolution API funcionando:
 
 1. **✅ Testar agendamento completo** (painel → WhatsApp)
 2. **✅ Testar lembrete D-1** (cron + WhatsApp)
-3. **⏭️ Adicionar Redis** (filas + cache)
-4. **⏭️ Adicionar Mailpit** (testes email)
+3. **⏭️ Adicionar n8n** (automação de workflows)
+4. **⏭️ Adicionar Redis** (filas + cache)
+5. **⏭️ Adicionar Mailpit** (testes email)
 
 ---
 
@@ -489,18 +690,40 @@ Após Evolution API funcionando:
 
 Com **4 vCPU + 24GB RAM**:
 
+### Apenas Evolution API
+
 | Métrica | Capacidade |
 |---------|-----------|
 | Instâncias simultâneas | 50-100 |
 | Mensagens/hora | ~5.000 |
 | Profissionais suportados | 200-500 |
+| Memória usada | ~300-500 MB |
+
+### Evolution API + n8n
+
+| Métrica | Capacidade |
+|---------|-----------|
+| Instâncias simultâneas | 50-100 |
+| Mensagens/hora | ~5.000 |
+| Workflows ativos | 10-20 |
+| Profissionais suportados | 200-500 |
+| Memória total usada | ~700 MB - 1.5 GB |
+| **RAM disponível** | **~22 GB** (para Redis, Mailpit, etc.) |
 
 **Para benchmark:**
 - 1 mensagem = ~2 segundos
 - 1.000 mensagens/hora = ~20% de 1 vCPU
+- 1 workflow n8n = ~50-100 MB RAM
+- Evolution API idle = ~100-150 MB RAM
+
+**Capacidade total estimada (com n8n):**
+- 200-500 profissionais
+- ~5.000 mensagens/hora
+- 10-20 workflows simultâneos
+- Ainda sobra资源 para Redis + Mailpit
 
 ---
 
 **Setup completo em 30-45 minutos!**
 
-Próximo: **Redis para filas e cache** (quando precisar).
+Próximo: **n8n para automação de workflows** (quando precisar).
