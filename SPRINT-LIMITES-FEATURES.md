@@ -110,6 +110,7 @@ Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
 
 | ID | Tarefa | Data | Notas |
 |----|--------|------|-------|
+| Q-5 | Busca de clientes (nome, telefone, email) | 2026-04-01 | Busca unificada, mensagem contextual |
 | P1-2 | Ajustar landing page (promessa real) | 2026-03-30 | Botão Entrar, scroll smooth, features atualizadas |
 | P1-3 | Mensagem educativa no painel Free | 2026-03-30 | Banner em painel e configurações, centralizado com container-main |
 | P1-5 | Atualizar drawer clientes.html | 2026-03-30 | Avatar, badge, stats cards, toast |

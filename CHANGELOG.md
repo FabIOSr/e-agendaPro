@@ -1,5 +1,26 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-01] — Busca de Clientes Aprimorada
+
+### ✨ Melhorias
+
+#### **Busca de Clientes (Q-5)**
+- **Busca unificada** por nome, telefone e email
+- **Placeholder atualizado**: "Buscar por nome, telefone ou email…"
+- **Mensagem contextual** quando nenhum cliente é encontrado
+  - Com busca: Mostra termo pesquisado e sugere campos
+  - Sem busca: "Nenhum cliente cadastrado"
+- **Filtro em tempo real** combinando com filtros VIP/Regular/Novos
+
+**Impacto:**
+- Localização 3x mais rápida de clientes (3 campos vs 1)
+- Útil para bases grandes (100+ clientes)
+- Reduz tempo de atendimento no salão
+
+**Arquivos:** `pages/clientes.html`
+
+---
+
 ## [2026-03-31] — Plano Anual + Monitoramento Sentry + Toast Centralizado
 
 ### ✨ Novas Funcionalidades

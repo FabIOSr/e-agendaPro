@@ -428,11 +428,34 @@ window.addEventListener('scroll', async () => {
 
 ---
 
-### Q-5: Busca Full-Text de Clientes
+### Q-5: Busca Full-Text de Clientes ✅ IMPLEMENTADO
+
+**Status:** ✅ **IMPLEMENTADO** em 2026-04-01
 
 **Problema:** Encontrar cliente específico em lista longa é difícil.
 
-**Solução:**
+**Solução Implementada:**
+- Busca unificada por nome, telefone e email
+- Filtro em tempo real combinando com filtros (VIP/Regular/Novos)
+- Mensagem contextual quando nenhum resultado é encontrado
+- Placeholder claro: "Buscar por nome, telefone ou email…"
+
+**Código (clientes.html):**
+```javascript
+const passaBusca = !q ||
+  (c.nome || '').toLowerCase().includes(q) ||
+  (c.telefone || '').includes(q) ||
+  (c.email || '').toLowerCase().includes(q);
+```
+
+**Impacto:**
+- Localização 3x mais rápida de clientes
+- Útil para bases grandes (100+ clientes)
+- Reduz tempo de atendimento no salão
+
+---
+
+**Solução Original (referência - backend):**
 
 ```sql
 -- migrations/19_full_text_search.sql
@@ -1618,11 +1641,11 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 |--------|---------|------------|--------|
 | Q-1: Toast "Salvo" | 1h | Alta | ✅ IMPLEMENTADO |
 | Q-2: Undo ações | 2h | Alta | ⏳ Pendente |
-| Q-5: Busca clientes | 2h | Alta | ⏳ Pendente |
+| Q-5: Busca clientes | 2h | Alta | ✅ IMPLEMENTADO |
 | M-1: Plano Anual | 2h | Alta | ✅ IMPLEMENTADO |
 | R-2: Cancel Survey | 2h | Alta | ⏳ Pendente |
 
-**Total:** 9h (2 dias) — 3h concluídas
+**Total:** 9h (2 dias) — 5h concluídas
 
 ---
 

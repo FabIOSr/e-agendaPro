@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(supabase *)",
+      "Bash(curl *)",
+      "Bash(npm run *)",
+      "Bash(firebase *)"
+    ]
+  },
+  "$version": 3
+}
