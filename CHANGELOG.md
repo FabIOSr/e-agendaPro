@@ -1,10 +1,43 @@
 # 🚀 Changelog — AgendaPro
 
-## [2026-04-01] — Busca de Clientes Aprimorada
+## [2026-04-01] — Lista Espera Inteligente + Busca de Clientes
 
-### ✨ Melhorias
+### ✨ Nova Funcionalidade: Lista Espera Inteligente (R-1)
 
-#### **Busca de Clientes (Q-5)**
+**Permite que clientes entrem na lista de espera quando não há horários disponíveis**
+
+- **Modal de lista de espera** em `pagina-cliente.html`
+  - Acionado quando não há horários no dia selecionado
+  - Formulário com nome, telefone e email (opcional)
+  - Resumo da preferência (data/hora/serviço)
+- **Edge Function `entrada-lista-espera`**
+  - Valida e salva entrada na lista
+  - Envia confirmação por WhatsApp e email
+  - Previne duplicidade (mesmo cliente/horário)
+- **Edge Function `notificar-lista-espera`**
+  - Disparada automaticamente quando vaga surge (cancelamento)
+  - Notifica primeiro cliente da fila (FIFO)
+  - Envia WhatsApp + email com link para agendar
+- **Migration 23**
+  - Tabela `lista_espera` com RLS
+  - Trigger `trg_notificar_lista_espera` no cancelamento
+  - Índice para busca rápida
+
+**Validade:** 7 dias (configurável)  
+**Notificação:** WhatsApp (Evolution API self-hosted) + Email (SendGrid)  
+**Privacidade:** RLS — apenas prestador vê sua lista
+
+**Arquivos criados:**
+- `migrations/23_lista_espera.sql`
+- `supabase/functions/entrada-lista-espera/index.ts`
+- `supabase/functions/notificar-lista-espera/index.ts`
+
+**Arquivos modificados:**
+- `pages/pagina-cliente.html` — Modal + botão + funções
+
+---
+
+### 🔧 Melhorias: Busca de Clientes (Q-5)
 - **Busca unificada** por nome, telefone e email
 - **Placeholder atualizado**: "Buscar por nome, telefone ou email…"
 - **Mensagem contextual** quando nenhum cliente é encontrado

@@ -18,19 +18,19 @@ const CORS_HEADERS = {
 };
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
-  const token = Deno.env.get("ZAPI_TOKEN");
-  const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
-  const clientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
-  
-  if (!token || !instanceId || !clientToken) return;
-  
-  await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`, {
+  const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
+  const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
+  const instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME") || "agendapro-prod";
+
+  if (!evolutionUrl || !evolutionKey) return;
+
+  await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Client-Token": clientToken,
+      "apikey": evolutionKey,
     },
-    body: JSON.stringify({ phone: telefone.replace(/\D/g, ""), message: mensagem }),
+    body: JSON.stringify({ number: telefone.replace(/\D/g, ""), textMessage: { text: mensagem } }),
   }).catch(e => console.error("WhatsApp error:", e));
 }
 

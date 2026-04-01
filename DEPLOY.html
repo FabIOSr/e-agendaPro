@@ -520,9 +520,9 @@ done</pre>
         <div class="step-body">
           <div class="code-wrap">
             <pre>supabase secrets set \
-  ZAPI_INSTANCE_ID="SUA_INSTANCIA_ZAPI" \
-  ZAPI_TOKEN="SEU_TOKEN_ZAPI" \
-  ZAPI_CLIENT_TOKEN="SEU_CLIENT_TOKEN_ZAPI" \
+  EVOLUTION_API_URL="https://SEU_IP_OU_DOMINIO:8080" \
+  EVOLUTION_API_KEY="sua_chave_super_segura" \
+  EVOLUTION_INSTANCE_NAME="agendapro-prod" \
   ASAAS_API_KEY="$aas_XXXXXXXXXXXX" \
   ASAAS_WEBHOOK_TOKEN="token-secreto-que-voce-escolhe" \
   GOOGLE_CLIENT_ID="XXXXXXXXX.apps.googleusercontent.com" \
@@ -534,8 +534,8 @@ done</pre>
           <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:4px">Onde obter cada secret:</div>
             <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
-              <span class="inline-code" style="flex-shrink:0">ZAPI_*</span>
-              <span>z-api.io → Sua instância → Aba "Token"</span>
+              <span class="inline-code" style="flex-shrink:0">EVOLUTION_*</span>
+              <span>Oracle Cloud VPS → Ver SETUP-EVOLUTION-API-ORACLE.md</span>
             </div>
             <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
               <span class="inline-code" style="flex-shrink:0">ASAAS_API_KEY</span>

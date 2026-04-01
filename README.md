@@ -1,7 +1,7 @@
 # AgendaPro — Documentação completa do projeto
 
 > App de agendamento para profissionais autônomos brasileiros.
-> Stack: Firebase Hosting (front) · Supabase (banco, auth, Edge Functions) · Asaas (pagamentos) · Z-API (WhatsApp)
+> Stack: Firebase Hosting (front) · Supabase (banco, auth, Edge Functions) · Asaas (pagamentos) · Evolution API (WhatsApp self-hosted)
 
 ---
 
@@ -62,8 +62,8 @@
 └──────────┬───────────────┬──────────────────────────────────┘
            │               │
            ▼               ▼
-       Z-API           ASAAS
-    (WhatsApp)      (Pagamentos)
+    Evolution API      ASAAS
+ (WhatsApp self-hosted) (Pagamentos)
            │               │
            │    webhook     │
            └───────────────┘
@@ -204,7 +204,7 @@ google_calendar_tokens (
 | Função | Método | Auth | Descrição |
 |---|---|---|---|
 | `horarios-disponiveis` | POST | público | Calcula slots livres por data/serviço, descontando bloqueios e agendamentos |
-| `lembretes-whatsapp` | POST | service_role | Confirmação imediata e lembrete D-1 via Z-API |
+| `lembretes-whatsapp` | POST | service_role | Confirmação imediata e lembrete D-1 via Evolution API |
 | `ativar-trial` | POST | JWT prestador | Ativa trial de 7 dias (uma vez por usuário) |
 | `criar-assinatura` | POST | JWT prestador | Cria cliente e assinatura no Asaas |
 | `webhook-asaas` | POST | token header | Ativa/desativa plano Pro ao receber eventos do Asaas |
@@ -213,6 +213,8 @@ google_calendar_tokens (
 | `reagendar-cliente` | GET/POST | token URL | Página HTML + execução de reagendamento pelo cliente |
 | `avaliacoes` | GET/POST | token URL / público | Página de avaliação + API pública de reviews |
 | `google-calendar-sync` | GET/POST | OAuth / JWT | Conecta Calendar e sincroniza criação/edição/cancelamento |
+| `entrada-lista-espera` | POST | JWT | Adiciona cliente na lista de espera e envia confirmação |
+| `notificar-lista-espera` | POST | webhook | Notifica clientes quando vaga surge (cancelamento) |
 
 ### Deploy de todas as funções
 
@@ -343,11 +345,13 @@ Cancela → DELETE /assinatura no Asaas
 
 ## 7. Integrações externas {#integracoes}
 
-### Z-API (WhatsApp)
-- Criar conta em z-api.io
-- Criar instância e conectar número dedicado (chip separado)
-- Configurar em Secrets: `ZAPI_INSTANCE_ID`, `ZAPI_TOKEN`, `ZAPI_CLIENT_TOKEN`
-- Rate limit: respeitar 1.5s entre envios no lembrete D-1
+### Evolution API (WhatsApp self-hosted)
+- Instalar em VPS (Oracle Cloud Free Tier recomendado)
+- Ver arquivo `SETUP-EVOLUTION-API-ORACLE.md` para guia completo
+- Criar instância no painel web da Evolution API
+- Conectar WhatsApp via QR Code
+- Configurar em Secrets: `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`
+- Rate limit: Evolution API self-hosted não tem limite rígido, mas respeitar 1s entre envios
 
 ### Asaas (Pagamentos)
 - Criar conta em asaas.com (pessoa jurídica)
@@ -394,15 +398,16 @@ supabase link --project-ref SEU_PROJECT_REF
 
 for fn in horarios-disponiveis lembretes-whatsapp criar-assinatura \
           webhook-asaas cancelar-assinatura cancelar-agendamento-cliente \
-          reagendar-cliente avaliacoes google-calendar-sync; do
+          reagendar-cliente avaliacoes google-calendar-sync \
+          entrada-lista-espera notificar-lista-espera; do
   supabase functions deploy $fn
 done
 
 # 5. SECRETS
 supabase secrets set \
-  ZAPI_INSTANCE_ID="xxx" \
-  ZAPI_TOKEN="xxx" \
-  ZAPI_CLIENT_TOKEN="xxx" \
+  EVOLUTION_API_URL="https://SEU_IP_OU_DOMINIO:8080" \
+  EVOLUTION_API_KEY="sua_chave_super_segura" \
+  EVOLUTION_INSTANCE_NAME="agendapro-prod" \
   ASAAS_API_KEY="$aas_xxx" \
   ASAAS_WEBHOOK_TOKEN="token-secreto" \
   GOOGLE_CLIENT_ID="xxx.apps.googleusercontent.com" \
@@ -436,9 +441,9 @@ firebase deploy --only hosting
 | `SUPABASE_URL` | Edge Functions (auto) | URL do projeto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Edge Functions (auto) | Chave de serviço (nunca expor no front) |
 | `SUPABASE_ANON_KEY` | Front-end (público) | Chave anônima para o JS client |
-| `ZAPI_INSTANCE_ID` | Edge Functions | ID da instância Z-API |
-| `ZAPI_TOKEN` | Edge Functions | Token de autenticação Z-API |
-| `ZAPI_CLIENT_TOKEN` | Edge Functions | Client-Token do header Z-API |
+| `EVOLUTION_API_URL` | Edge Functions | URL da Evolution API (VPS self-hosted) |
+| `EVOLUTION_API_KEY` | Edge Functions | API Key de autenticação da Evolution API |
+| `EVOLUTION_INSTANCE_NAME` | Edge Functions | Nome da instância na Evolution API |
 | `ASAAS_API_KEY` | Edge Functions | API Key do Asaas |
 | `ASAAS_WEBHOOK_TOKEN` | Edge Functions | Token de validação dos webhooks |
 | `GOOGLE_CLIENT_ID` | Edge Functions | OAuth Client ID do Google |
@@ -542,4 +547,4 @@ agendapro/
 
 ---
 
-*Projeto completo desenvolvido com Stitch / Firebase Studio (front) + Supabase (back) + Asaas (pagamentos) + Z-API (WhatsApp).*
+*Projeto completo desenvolvido com Stitch / Firebase Studio (front) + Supabase (back) + Asaas (pagamentos) + Evolution API (WhatsApp self-hosted).*

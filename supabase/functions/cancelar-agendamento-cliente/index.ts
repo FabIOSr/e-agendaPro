@@ -18,30 +18,28 @@ function corsHeaders() {
   };
 }
 
-const ZAPI_URL = `https://api.z-api.io/instances/${Deno.env.get("ZAPI_INSTANCE_ID")}/token/${Deno.env.get("ZAPI_TOKEN")}/send-text`;
-
 async function enviarWhatsApp(telefone: string, mensagem: string) {
-  const token = Deno.env.get("ZAPI_TOKEN");
-  const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
-  const clientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
-  
-  if (!token || !instanceId || !clientToken) return;
-  
+  const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
+  const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
+  const instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME") || "agendapro-prod";
+
+  if (!evolutionUrl || !evolutionKey) return;
+
   try {
-    const res = await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`, {
+    const res = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Client-Token": clientToken,
+        "apikey": evolutionKey,
       },
       body: JSON.stringify({
-        phone: telefone.replace(/\D/g, ""),
-        message: mensagem,
+        number: telefone.replace(/\D/g, ""),
+        textMessage: { text: mensagem },
       }),
     });
-    
+
     if (!res.ok) {
-      console.error("Z-API erro:", res.status);
+      console.error("Evolution API erro:", res.status);
     }
   } catch (e) {
     console.error("Erro ao enviar WhatsApp:", e);

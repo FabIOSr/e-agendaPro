@@ -1292,7 +1292,15 @@
 
       grid.innerHTML = '';
       if (slots.length === 0) {
-        grid.innerHTML = '<div class="slots-empty" style="grid-column:1/-1">😔 Sem horários disponíveis neste dia.</div>';
+        grid.innerHTML = `
+          <div class="slots-empty" style="grid-column:1/-1;text-align:center;padding:32px 16px">
+            <div style="font-size:32px;margin-bottom:8px">😔</div>
+            <div style="font-weight:600;margin-bottom:4px">Sem horários disponíveis</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Que tal entrar na lista de espera?</div>
+            <button class="btn-lista-espera" onclick="abrirListaEspera()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+              🔔 Entrar na lista de espera
+            </button>
+          </div>`;
         return;
       }
 
@@ -1606,11 +1614,137 @@
       window.irPara(1);
     };
 
+    // ── LISTA DE ESPERA ───────────────────────────────────────────────────────
+    window.abrirListaEspera = function() {
+      if (!state.data || !state.servico) {
+        alert('Por favor, selecione um serviço e uma data primeiro.');
+        return;
+      }
+      
+      // Atualizar resumo no modal
+      const dataFmt = state.data.toLocaleDateString('pt-BR');
+      const horaFmt = state.hora || '--:--';
+      document.getElementById('resumo-lista-espera').textContent = `${dataFmt} às ${horaFmt}`;
+      document.getElementById('resumo-servico').textContent = state.servico?.nome || '';
+      
+      const modal = document.getElementById('modal-lista-espera');
+      if (modal) modal.style.display = 'flex';
+    };
+
+    window.fecharListaEspera = function() {
+      const modal = document.getElementById('modal-lista-espera');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.entrarNaListaEspera = async function() {
+      const nome = document.getElementById('lista-espera-nome')?.value.trim();
+      const telefone = document.getElementById('lista-espera-tel')?.value.trim();
+      const email = document.getElementById('lista-espera-email')?.value.trim();
+
+      if (!nome || !telefone) {
+        alert('Por favor, preencha nome e telefone.');
+        return;
+      }
+
+      const btn = document.querySelector('.btn-entrar-lista-espera');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Entrando...';
+      }
+
+      try {
+        const dataFmt = state.data.toISOString().split('T')[0];
+        const horaFmt = state.hora || '10:00';
+
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/entrada-lista-espera`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            prestador_id: PRESTADOR.id,
+            cliente_nome: nome,
+            cliente_telefone: telefone,
+            cliente_email: email || null,
+            data_preferida: dataFmt,
+            hora_preferida: horaFmt,
+            servico_nome: state.servico?.nome || null,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('✅ Você entrou na lista de espera! Te avisaremos se uma vaga surgir.');
+          window.fecharListaEspera();
+        } else if (res.status === 409) {
+          alert('⚠️ Você já está na lista de espera para este horário.');
+        } else {
+          alert('❌ Erro ao entrar na lista de espera: ' + (data.erro || 'Tente novamente.'));
+        }
+      } catch (err) {
+        console.error('Erro lista de espera:', err);
+        alert('❌ Erro ao entrar na lista de espera. Tente novamente.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🔔 Entrar na lista de espera';
+        }
+      }
+    };
+
     // ── INIT ──────────────────────────────────────────────────────────────────
     atualizarStepsNav();
     const ok = await carregarPrestador();
     if (ok) await carregarDisponibilidade();
   </script>
+
+  <!-- MODAL LISTA DE ESPERA -->
+  <div id="modal-lista-espera" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)fecharListaEspera()">
+    <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:32px 24px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <button onclick="fecharListaEspera()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">&times;</button>
+      
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:40px;margin-bottom:8px">🔔</div>
+        <h3 style="font-family:'Instrument Serif',serif;font-size:24px;margin-bottom:8px">Lista de Espera</h3>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">
+          Entre na lista de espera para este horário. Te avisaremos imediatamente se uma vaga surgir!
+        </p>
+      </div>
+
+      <div style="background:var(--accent-l);border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Preferência</div>
+        <div style="font-weight:600;font-size:14px" id="resumo-lista-espera">--/--/-- às --:--</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="resumo-servico">--</div>
+      </div>
+
+      <form onsubmit="event.preventDefault();entrarNaListaEspera()" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">Nome completo *</label>
+          <input id="lista-espera-nome" type="text" placeholder="Seu nome" required style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent-m)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">Telefone/WhatsApp *</label>
+          <input id="lista-espera-tel" type="tel" placeholder="(00) 00000-0000" required maxlength="15" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none" oninput="mascaraTel(this)" onfocus="this.style.borderColor='var(--accent-m)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">Email (opcional)</label>
+          <input id="lista-espera-email" type="email" placeholder="seu@email.com" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent-m)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <button type="submit" class="btn-entrar-lista-espera" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+          🔔 Entrar na lista de espera
+        </button>
+      </form>
+
+      <p style="text-align:center;font-size:11px;color:var(--faint);margin-top:16px">
+        Válido por 7 dias. Não enviamos spam.
+      </p>
+    </div>
+  </div>
 </body>
 
 </html>

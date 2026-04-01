@@ -11,23 +11,27 @@
 //
 // Variáveis de ambiente:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-//   ZAPI_INSTANCE_ID, ZAPI_TOKEN, ZAPI_CLIENT_TOKEN
+//   EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE_NAME
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ZAPI_URL = `https://api.z-api.io/instances/${Deno.env.get("ZAPI_INSTANCE_ID")}/token/${Deno.env.get("ZAPI_TOKEN")}/send-text`;
-
 async function enviarWhatsApp(telefone: string, mensagem: string): Promise<boolean> {
+  const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
+  const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
+  const instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME") || "agendapro-prod";
+
+  if (!evolutionUrl || !evolutionKey) return false;
+
   try {
-    const res = await fetch(ZAPI_URL, {
+    const res = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Client-Token": Deno.env.get("ZAPI_CLIENT_TOKEN")!,
+        "apikey": evolutionKey,
       },
       body: JSON.stringify({
-        phone:   telefone.replace(/\D/g, ""),
-        message: mensagem,
+        number: telefone.replace(/\D/g, ""),
+        textMessage: { text: mensagem },
       }),
     });
     return res.ok;

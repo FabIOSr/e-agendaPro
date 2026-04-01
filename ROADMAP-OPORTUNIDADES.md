@@ -37,7 +37,7 @@ Este documento documenta **12 oportunidades** identificadas através de análise
 **Arquitetura atual:**
 - **Frontend:** Firebase Hosting (HTML estático)
 - **Backend:** Supabase (PostgreSQL + Edge Functions em Deno)
-- **Integrações:** Z-API (WhatsApp), Asaas (Pagamentos), Google Calendar, SendGrid (Email)
+- **Integrações:** Evolution API (WhatsApp self-hosted), Asaas (Pagamentos), Google Calendar, SendGrid (Email)
 
 ### ✅ **Totalmente Viáveis (92% das oportunidades)**
 
@@ -67,7 +67,7 @@ CREATE TABLE lista_espera (
 **Exemplo - Zoom Integration (F-3):**
 ```typescript
 // Arquitetura: Edge Function chama Zoom API REST
-// Mesmo padrão que Z-API, Asaas, Google Calendar
+// Mesmo padrão que Evolution API, Asaas, Google Calendar
 
 const zoomMeeting = await fetch('https://api.zoom.us/v2/users/me/meetings', {
   headers: { 'Authorization': `Bearer ${ZOOM_JWT_TOKEN}` }
@@ -103,7 +103,7 @@ const zoomMeeting = await fetch('https://api.zoom.us/v2/users/me/meetings', {
 - **Toda analytics é viável**
 
 **4. APIs Externas**
-- Z-API (WhatsApp) ✅
+- Evolution API (WhatsApp self-hosted) ✅
 - Asaas (Pagamentos) ✅
 - Google Calendar ✅
 - Zoom API (REST) ✅
@@ -777,8 +777,9 @@ serve(async (req) => {
 });
 
 async function enviarWhatsAppListaEspera(item: any) {
-  const zapiUrl = Deno.env.get('ZAPI_URL');
-  const token = Deno.env.get('ZAPI_TOKEN');
+  const evolutionUrl = Deno.env.get('EVOLUTION_API_URL');
+  const evolutionKey = Deno.env.get('EVOLUTION_API_KEY');
+  const instanceName = Deno.env.get('EVOLUTION_INSTANCE_NAME') || 'agendapro-prod';
 
   const message = `✨ *Vaga aberta!*
 
@@ -789,15 +790,15 @@ Tem interesse em agendar?
 
 Responda "SIM" nos próximos 15 minutos para garantir seu horário.`;
 
-  await fetch(`${zapiUrl}/sendText`, {
+  await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'apikey': evolutionKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       number: `55${item.cliente_tel.replace(/\D/g, '')}`,
-      text: message
+      textMessage: { text: message }
     })
   });
 }
@@ -1561,8 +1562,9 @@ serve(async (req) => {
 });
 
 async function enviarWhatsAppDunning(prestador: any) {
-  const zapiUrl = Deno.env.get('ZAPI_URL');
-  const token = Deno.env.get('ZAPI_TOKEN');
+  const evolutionUrl = Deno.env.get('EVOLUTION_API_URL');
+  const evolutionKey = Deno.env.get('EVOLUTION_API_KEY');
+  const instanceName = Deno.env.get('EVOLUTION_INSTANCE_NAME') || 'agendapro-prod';
 
   const message = `⚠️ *Pagamento falhou*
 
@@ -1574,15 +1576,15 @@ ${window.location.origin}/configuracoes?tab=assinatura
 
 Se já atualizou, desconsidere esta mensagem.`;
 
-  await fetch(`${zapiUrl}/sendText`, {
+  await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'apikey': evolutionKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       number: `55${prestador.whatsapp.replace(/\D/g, '')}`,
-      text: message
+      textMessage: { text: message }
     })
   });
 }
@@ -1652,13 +1654,13 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 ### Fase 2: Retenção (Semana 2)
 **Objetivo:** Reduzir churn e aumentar conversão
 
-| Tarefa | Esforço | Prioridade |
-|--------|---------|------------|
-| R-1: Lista Espera | 6h | Muito Alta |
-| R-3: Nurturing Trial | 4h | Alta |
-| F-2: Avaliações Públicas | 4h | Alta |
+| Tarefa | Esforço | Prioridade | Status |
+|--------|---------|------------|--------|
+| R-1: Lista Espera | 6h | Muito Alta | ✅ IMPLEMENTADO |
+| R-3: Nurturing Trial | 4h | Alta | ⏳ Pendente |
+| F-2: Avaliações Públicas | 4h | Alta | ⏳ Pendente |
 
-**Total:** 14h (3-4 dias)
+**Total:** 14h (3-4 dias) — 6h concluídas
 
 ---
 
