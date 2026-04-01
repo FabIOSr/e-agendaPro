@@ -162,9 +162,10 @@ Deno.serve(async (req: Request) => {
     const { error } = await supabase
       .from("prestadores")
       .update({
-        plano:            "pro",
-        plano_valido_ate:  validoAte.toISOString(),
-        trial_usado:      true,
+        plano:                   "pro",
+        plano_valido_ate:        validoAte.toISOString(),
+        trial_usado:             true,
+        assinatura_periodicidade: ciclo,  // Salva a periodicidade (MONTHLY ou YEARLY)
       })
       .eq("id", prestador.id);
 
@@ -173,7 +174,7 @@ Deno.serve(async (req: Request) => {
       return Response.json({ erro: "Erro ao ativar plano" }, { status: 500, headers: CORS });
     }
 
-    console.log(`✅ Pro ativado para ${prestador.id} até ${validoAte.toISOString()}`);
+    console.log(`✅ Pro ativado para ${prestador.id} até ${validoAte.toISOString()} (${ciclo})`);
     return Response.json({ ok: true, acao: "plano_ativado", valido_ate: validoAte }, { headers: CORS });
   }
 

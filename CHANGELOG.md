@@ -1,10 +1,23 @@
 # 🚀 Changelog — AgendaPro
 
-## [2026-03-31] — Monitoramento Sentry + Toast Centralizado
+## [2026-03-31] — Plano Anual + Monitoramento Sentry + Toast Centralizado
 
 ### ✨ Novas Funcionalidades
 
-#### 1. **Monitoramento de Erros com Sentry**
+#### 1. **Plano Anual com Desconto (26% OFF)**
+- **Toggle Mensal/Anual** em `planos.html` com badge "-26%"
+- **Edge Function `criar-assinatura`** atualizada para suportar ciclo YEARLY
+- **Webhook Asaas** salva periodicidade quando assinatura é ativada
+- **Badge no painel** mostra "(plano anual)" ou "(plano mensal)" para usuários Pro
+- **Migration** adiciona campo `assinatura_periodicidade` na tabela `prestadores`
+
+**Preços:**
+| Plano | Valor | Cobrança | Economia |
+|-------|-------|----------|----------|
+| Mensal | R$ 39/mês | Todo mês | — |
+| Anual | R$ 29/mês | R$ 348/ano | 26% (R$ 120) |
+
+#### 2. **Monitoramento de Erros com Sentry**
 - **Frontend**: Módulo `modules/sentry.js` inicializado em todas as páginas principais
 - **Backend**: Sentry implementado em 4 Edge Functions críticas
   - `criar-agendamento`
@@ -18,7 +31,7 @@
   - Contexto de usuário (após login)
   - Environment: production
 
-#### 2. **Toast Notification Centralizado**
+#### 3. **Toast Notification Centralizado**
 - **Módulo**: `modules/ui-helpers.js`
 - **Funções**:
   - `toast(message, type, duration)` - Notificação temporária
@@ -137,24 +150,26 @@ Sentry.setUser({
 | **Sentry Frontend** | modules/sentry.js | ✅ Ativo |
 | **UI Helpers** | modules/ui-helpers.js | ✅ Ativo |
 | **Edge Functions** | Supabase | ✅ Deployadas |
+| **Plano Anual** | /planos | ✅ Implementado |
 
 ### 🔗 Links Úteis
 
 - **Sentry Dashboard**: https://sentry.io
 - **Firebase Console**: https://console.firebase.google.com/project/e-agendapro/overview
 - **Supabase Project**: kevqgxmcoxmzbypdjhru
+- **Supabase Dashboard**: https://supabase.com/dashboard/project/kevqgxmcoxmzbypdjhru
 
 ---
 
 ## Próximas Melhorias Sugeridas
 
 1. **Backup Automático do Banco** - Segurança contra perda de dados
-2. **Plano Anual com Desconto** - Aumentar LTV e reduzir churn
-3. **Undo em Ações Destrutivas** - Usar `toastWithUndo()` para excluir
-4. **Busca Full-Text de Clientes** - Melhor UX para prestadores com muitos clientes
+2. **Undo em Ações Destrutivas** - Usar `toastWithUndo()` para excluir
+3. **Busca Full-Text de Clientes** - Melhor UX para prestadores com muitos clientes
+4. **Lista de Espera Inteligente** - Preencher vagas canceladas
 
 ---
 
 **Deploy realizado em**: 2026-03-31  
-**Versão**: 1.0.0  
+**Versão**: 1.1.0  
 **Ambiente**: Production

@@ -94,11 +94,17 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { billing_type = "PIX", plano = "pro" } = await req.json();
+    const { billing_type = "PIX", plano = "pro", ciclo = "MONTHLY" } = await req.json();
 
     // Valida plano
     if (!PLANOS[plano as keyof typeof PLANOS]) {
       return Response.json({ erro: "Plano inválido" }, { status: 400, headers: CORS_HEADERS });
+    }
+
+    // Valida ciclo
+    const cicloValido = ["MONTHLY", "YEARLY"].includes(ciclo);
+    if (!cicloValido) {
+      return Response.json({ erro: "Ciclo inválido. Use MONTHLY ou YEARLY" }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Autentica o prestador pelo JWT do Supabase
@@ -159,13 +165,13 @@ Deno.serve(async (req: Request) => {
       billingType: billing_type,           // 'CREDIT_CARD' | 'PIX' | 'BOLETO'
       value:       planoConfig.valor,
       nextDueDate,
-      cycle:       "MONTHLY",
+      cycle:       ciclo,                  // 'MONTHLY' ou 'YEARLY'
       description: planoConfig.descricao,
       // Para cartão: enviar tokenInfo separadamente após redirecionar
       // Para Pix/Boleto: Asaas gera link automático
       fine:        { value: 2 },           // 2% de multa por atraso
       interest:    { value: 1 },           // 1% ao mês de juros
-      maxPayments: plano === "anual" ? 12 : null,
+      maxPayments: ciclo === "YEARLY" ? 12 : null,  // 12 pagamentos para anual
     });
 
     // Guarda o ID da assinatura (plano ainda 'free' — webhook atualiza)

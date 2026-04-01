@@ -244,6 +244,16 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 
   <!-- FORMULÁRIO DE UPGRADE (visível só para free que JÁ usou trial) -->
   <div id="upgrade-form" style="display:none">
+    <!-- TOGGLE DE PERIODICIDADE -->
+    <div class="periodo-toggle" style="display:flex;gap:8px;background:var(--bg2);padding:6px;border-radius:10px;margin-bottom:24px;max-width:400px">
+      <button class="toggle-btn active" id="btn-mensal" onclick="setPeriodo('mensal')" style="flex:1;padding:12px;border:none;background:var(--ink);color:var(--bg);border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s">
+        Mensal
+      </button>
+      <button class="toggle-btn" id="btn-anual" onclick="setPeriodo('anual')" style="flex:1;padding:12px;border:none;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s">
+        Anual <span style="background:var(--lime);color:var(--lime-ink);padding:2px 8px;border-radius:12px;font-size:11px;margin-left:6px">-26%</span>
+      </button>
+    </div>
+
     <div style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Escolha seu plano</div>
     <div class="planos-grid">
       <div class="plano-card selected" id="plano-pro" onclick="selecionarPlano('pro',this)">
@@ -466,17 +476,17 @@ function renderStatus() {
   const corBarra = pct >= 100 ? 'danger' : pct >= 70 ? 'warning' : 'ok';
 
   if (isTrial) {
-    // Mostra card de Trial
+    // Mostra card de Trial - segue modelo do card Pro ativo
     const trialEndFmt = new Date(PRESTADOR.trial_ends_at).toLocaleDateString('pt-BR');
     card.innerHTML = `
-      <div class="status-card pro" style="background:var(--gold-l);border:1.5px solid var(--gold)">
-        <div class="status-badge" style="background:var(--gold);color:var(--lime-ink)"><div class="dot"></div> Trial Pro Ativo</div>
+      <div class="status-card pro">
+        <div class="status-badge pro"><div class="dot"></div> Trial Pro Ativo</div>
         <div class="status-name">🎉 Teste grátis por 7 dias</div>
         <div class="status-desc">Todos os recursos Pro disponíveis! Seu trial termina em ${trialDaysRemaining} ${trialDaysRemaining === 1 ? 'dia' : 'dias'}.</div>
-        <div class="status-meta" style="border-color:rgba(212,168,32,.3)">
+        <div class="status-meta">
           <div class="meta-item">
             <div class="meta-label">Trial expira em</div>
-            <div class="meta-val" style="color:var(--gold)">${trialEndFmt}</div>
+            <div class="meta-val">${trialEndFmt}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Após trial</div>
@@ -572,6 +582,33 @@ window.selecionarPlano = function(plano, el) {
   document.getElementById('val-botao').textContent = plano === 'anual' ? '29' : '39';
 };
 
+// Toggle de periodicidade
+window.setPeriodo = function(periodo) {
+  const btnMensal = document.getElementById('btn-mensal');
+  const btnAnual = document.getElementById('btn-anual');
+  
+  // Atualiza estilo dos botões
+  btnMensal.classList.toggle('active', periodo === 'mensal');
+  btnAnual.classList.toggle('active', periodo === 'anual');
+  
+  // Atualiza cores
+  if (periodo === 'mensal') {
+    btnMensal.style.background = 'var(--ink)';
+    btnMensal.style.color = 'var(--bg)';
+    btnAnual.style.background = 'transparent';
+    btnAnual.style.color = 'var(--muted)';
+  } else {
+    btnAnual.style.background = 'var(--ink)';
+    btnAnual.style.color = 'var(--bg)';
+    btnMensal.style.background = 'transparent';
+    btnMensal.style.color = 'var(--muted)';
+  }
+  
+  // Atualiza o plano selecionado automaticamente
+  const planoCard = periodo === 'mensal' ? document.getElementById('plano-pro') : document.getElementById('plano-anual');
+  selecionarPlano(periodo, planoCard);
+};
+
 window.selecionarMetodo = function(metodo, el) {
   metodoSelecionado = metodo;
   document.querySelectorAll('.metodo-btn').forEach(b => b.classList.remove('selected'));
@@ -652,7 +689,12 @@ window.assinar = async function() {
     const res = await fetch(`${window.SUPABASE_URL}/functions/v1/criar-assinatura`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ billing_type: metodoSelecionado, plano: planoSelecionado, cpf_cnpj: cpfCnpj }),
+      body: JSON.stringify({
+        billing_type: metodoSelecionado,
+        plano: planoSelecionado,
+        ciclo: planoSelecionado === 'anual' ? 'YEARLY' : 'MONTHLY',
+        cpf_cnpj: cpfCnpj
+      }),
     });
 
     const data = await res.json();

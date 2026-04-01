@@ -72,11 +72,17 @@ Pro:  Gráficos, exportar CSV, comparativo mensal, por serviço
 
 ### Decisão 3: Preço Pro
 
-**Status:** ✅ **DEFINIDO**
+**Status:** ✅ **IMPLEMENTADO** (2026-03-31)
 
 - **Mensal:** R$39/mês
 - **Anual:** R$29/mês (R$348/ano) = 26% de desconto
 - **Análise:** Preço competitivo, margem saudável, ROI claro para cliente
+
+**Implementação:**
+- Toggle Mensal/Anual em `planos.html`
+- Edge Function `criar-assinatura` com suporte a ciclo YEARLY
+- Campo `assinatura_periodicidade` no banco
+- Badge de periodicidade no `painel.html`
 
 ---
 

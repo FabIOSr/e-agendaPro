@@ -632,6 +632,11 @@ body {
   </div>
 </div>
 
+<!-- BADGE PERIODICIDADE PRO -->
+<div id="badge-pro-periodicidade" style="display:none;text-align:center;padding:8px;background:var(--bg2);border-bottom:1px solid var(--bord);font-size:12px;color:var(--muted)">
+  <span style="color:var(--lime)">✓</span> Plano Pro <span id="pro-periodicidade-text"></span> ativo
+</div>
+
 <!-- LAYOUT -->
 <div class="layout">
 
@@ -727,7 +732,7 @@ window.fazerLogout = async () => {
 // ── AVATAR / NOME DO PRESTADOR ───────────────────────────────────────────
 const { data: prestador } = await supabase
   .from('prestadores')
-  .select('nome, slug, plano')
+  .select('nome, slug, plano, assinatura_periodicidade')
   .eq('id', userId)
   .maybeSingle();
 
@@ -745,8 +750,17 @@ document.title = `Agenda — ${nomePrestador}`;
 async function initBannerFree() {
   const plano = prestador?.plano || 'free';
 
-  // Se for Pro, não mostra nada
+  // Se for Pro, não mostra banner free
   if (plano === 'pro') {
+    // Mostra badge de periodicidade Pro
+    const badge = document.getElementById('badge-pro-periodicidade');
+    const periodicidadeText = document.getElementById('pro-periodicidade-text');
+    
+    if (badge && periodicidadeText) {
+      badge.style.display = 'block';
+      const periodicidade = prestador?.assinatura_periodicidade || 'MONTHLY';
+      periodicidadeText.textContent = periodicidade === 'YEARLY' ? '(plano anual)' : '(plano mensal)';
+    }
     return;
   }
 

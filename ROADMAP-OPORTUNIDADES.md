@@ -133,11 +133,11 @@ TOTAL            │   12    │   4   │    1     │      0
 
 ### 💰 Monetização & Conversão
 
-| ID | Oportunidade | Impacto | Esforço | ROI |
-|----|-------------|---------|---------|-----|
-| M-1 | Plano Anual com desconto | ⭐⭐⭐⭐⭐ | 2h | Alto |
-| M-2 | Depósito para agendar | ⭐⭐⭐⭐ | 8h | Médio |
-| M-3 | Upsell em momentos de valor | ⭐⭐⭐⭐ | 3h | Alto |
+| ID | Oportunidade | Impacto | Esforço | ROI | Status |
+|----|-------------|---------|---------|-----|--------|
+| M-1 | Plano Anual com desconto | ⭐⭐⭐⭐⭐ | 2h | Alto | ✅ IMPLEMENTADO |
+| M-2 | Depósito para agendar | ⭐⭐⭐⭐ | 8h | Médio | ⏳ Pendente |
+| M-3 | Upsell em momentos de valor | ⭐⭐⭐⭐ | 3h | Alto | ⏳ Pendente |
 
 ### 📈 Retenção & Churn Reduction
 
@@ -503,11 +503,35 @@ async function onSearchChange(query) {
 
 ## 🚀 Features de Impacto
 
-### M-1: Plano Anual com Desconto
+### M-1: Plano Anual com Desconto ✅ IMPLEMENTADO
+
+**Status:** ✅ CONCLUÍDO em 2026-03-31
 
 **Problema:** Preço anual já está definido (R$29/mês = 26% de desconto), mas não tem UI para escolher.
 
-**Solução:**
+**Solução Implementada:**
+- Toggle Mensal/Anual no topo de `planos.html`
+- Edge Function `criar-assinatura` atualizada para suportar ciclo `YEARLY`
+- Webhook `webhook-asaas` salva periodicidade no banco
+- Campo `assinatura_periodicidade` adicionado à tabela `prestadores`
+- Badge no `painel.html` mostra periodicidade do plano Pro
+
+**Preços:**
+| Plano | Valor | Cobrança | Economia |
+|-------|-------|----------|----------|
+| Mensal | R$ 39/mês | Todo mês | — |
+| Anual | R$ 29/mês | R$ 348/ano | 26% (R$ 120) |
+
+**Arquivos modificados:**
+- `pages/planos.html` - Toggle de periodicidade
+- `pages/painel.html` - Badge de periodicidade
+- `supabase/functions/criar-assinatura/index.ts` - Suporte a ciclo YEARLY
+- `supabase/functions/webhook-asaas/index.ts` - Salva periodicidade
+- `migrations/22_periodicidade_assinatura.sql` - Novo campo no banco
+
+---
+
+**Solução Original (referência):**
 
 ```html
 <!-- pages/planos.html -->
@@ -1590,15 +1614,15 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 ### Fase 1: Quick Wins (Semana 1)
 **Objetivo:** Melhorias rápidas com alto impacto
 
-| Tarefa | Esforço | Prioridade |
-|--------|---------|------------|
-| Q-1: Toast "Salvo" | 1h | Alta |
-| Q-2: Undo ações | 2h | Alta |
-| Q-5: Busca clientes | 2h | Alta |
-| M-1: Plano Anual | 2h | Alta |
-| R-2: Cancel Survey | 2h | Alta |
+| Tarefa | Esforço | Prioridade | Status |
+|--------|---------|------------|--------|
+| Q-1: Toast "Salvo" | 1h | Alta | ✅ IMPLEMENTADO |
+| Q-2: Undo ações | 2h | Alta | ⏳ Pendente |
+| Q-5: Busca clientes | 2h | Alta | ⏳ Pendente |
+| M-1: Plano Anual | 2h | Alta | ✅ IMPLEMENTADO |
+| R-2: Cancel Survey | 2h | Alta | ⏳ Pendente |
 
-**Total:** 9h (2 dias)
+**Total:** 9h (2 dias) — 3h concluídas
 
 ---
 
