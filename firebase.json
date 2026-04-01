@@ -10,7 +10,6 @@
       "firebase.json",
       "**/.*",
       "migrations/**",
-      "modules/**",
       "patches/**",
       "README.md",
       "DEPLOY.html",

@@ -274,23 +274,6 @@
     }
     @keyframes shimmer { to { background-position: -200% 0; } }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 20px;
-      font-size: 14px;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 999;
-    }
-    .toast.show { opacity: 1; }
-
     .footer-link {
       text-align: center;
       margin-top: 24px;
@@ -417,9 +400,8 @@
     <div class="skeleton" style="width:100%;height:48px;border-radius:10px"></div>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script src="/config.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
@@ -436,13 +418,6 @@
     let horaSelecionada = null; // "HH:MM"
 
     // ---------- utilitários ----------
-    function showToast(msg, dur = 3500) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), dur);
-    }
-
     function formatarDataHora(iso) {
       const d = new Date(iso);
       return d.toLocaleString('pt-BR', {
@@ -791,7 +766,7 @@
         console.error(e);
         btn.disabled = false;
         btn.innerHTML = 'Confirmar reagendamento';
-        showToast('Erro ao reagendar. Tente novamente.');
+        toast('Erro ao reagendar. Tente novamente.', false);
       }
     };
 

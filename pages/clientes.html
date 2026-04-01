@@ -3,6 +3,8 @@
 
 <head>
   <script src="/config.js"></script>
+  <script src="/modules/sentry.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgendaPro — Clientes</title>
@@ -724,36 +726,6 @@
       font-size: 14px;
     }
 
-    /* ── TOAST ── */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: var(--bg3);
-      border: 1px solid var(--bord2);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 11px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      opacity: 0;
-      transition: all .3s;
-      pointer-events: none;
-      white-space: nowrap;
-      z-index: 300;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .toast.ok {
-      border-color: rgba(200, 240, 96, .3);
-      color: var(--lime);
-    }
-
     /* ── EXPORT BTN ── */
     .btn-export {
       background: var(--bg3);
@@ -870,8 +842,6 @@
     <button class="drawer-close" onclick="fecharDrawer()">✕</button>
     <div id="drawer-body"></div>
   </div>
-
-  <div class="toast" id="toast"></div>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -1188,16 +1158,6 @@
       document.getElementById('drawer').classList.remove('open');
     };
 
-    // Toast notification
-    function showToast(msg, tipo = 'ok') {
-      const t = document.getElementById('toast');
-      if (!t) return;
-      t.textContent = msg;
-      t.className = `toast show ${tipo}`;
-      setTimeout(() => { t.className = 'toast'; }, 2500);
-    }
-    window.showToast = showToast;
-
     window._salvarObs = async function (tel, btn) {
       const obs = document.getElementById(`obs-${tel}`)?.value ?? '';
       const cliente = todosClientes.find(c => c.telefone === tel);
@@ -1219,9 +1179,9 @@
       btn.textContent = '💾 Salvar';
 
       if (error) {
-        showToast('Erro ao salvar', '');
+        toast('Erro ao salvar', false);
       } else {
-        showToast('Observação salva!');
+        toast('Observação salva!');
         cliente.observacoes = obs; // cache local
       }
     };

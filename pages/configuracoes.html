@@ -3,6 +3,8 @@
 
 <head>
   <script src="/config.js"></script>
+  <script src="/modules/sentry.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgendaPro — Configurações</title>
@@ -1107,35 +1109,7 @@
       background: #b8e050;
     }
 
-    /* toast */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: var(--bg3);
-      border: 1px solid var(--bord2);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 11px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      opacity: 0;
-      transition: all .3s;
-      pointer-events: none;
-      white-space: nowrap;
-      z-index: 200;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .toast.ok {
-      border-color: rgba(200, 240, 96, .3);
-      color: var(--lime);
-    }
+  
 
     /* modal confirmação */
     .modal-overlay {
@@ -1823,8 +1797,6 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
     const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
@@ -2023,7 +1995,7 @@
         if (foto_url) payload.foto_url = foto_url;
 
         const { error } = await supabase.from('prestadores').update(payload).eq('id', userId);
-        console.log('Update payload:', payload);
+        //console.log('Update payload:', payload);
         console.log('Update error:', error);
         if (error) throw error;
         fotoFile = null;
@@ -2913,15 +2885,6 @@
       document.getElementById('sec-' + id).classList.add('active');
       document.getElementById('ni-' + id).classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    // ── TOAST ─────────────────────────────────────────────────────────────────
-    window.toast = function (msg, ok = true) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.className = 'toast show' + (ok ? ' ok' : '');
-      clearTimeout(t._t);
-      t._t = setTimeout(() => t.className = 'toast', 3000);
     };
 
     // ── START ─────────────────────────────────────────────────────────────────

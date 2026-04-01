@@ -132,23 +132,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 20px;
-      font-size: 14px;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 999;
-    }
-    .toast.show { opacity: 1; }
-
+    
     #estado-loading, #estado-dados, #estado-cancelado,
     #estado-erro, #estado-expirado { display: none; }
     #estado-loading { display: flex; flex-direction: column; align-items: center; gap: 16px; }
@@ -237,9 +221,8 @@
     <button class="btn btn-ghost" onclick="window.location.reload()">Tentar novamente</button>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script src="/config.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
@@ -250,13 +233,6 @@
         .forEach(e => document.getElementById(e).style.display = 'none');
       const el = document.getElementById(id);
       el.style.display = (id === 'estado-loading') ? 'flex' : 'block';
-    }
-
-    function showToast(msg, dur = 3000) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), dur);
     }
 
     function formatarDataHora(iso) {
@@ -358,7 +334,7 @@
         console.error(e);
         btn.disabled = false;
         btn.innerHTML = 'Sim, cancelar agendamento';
-        showToast('Erro ao cancelar. Tente novamente.');
+        toast('Erro ao cancelar. Tente novamente.', false);
       }
     };
 

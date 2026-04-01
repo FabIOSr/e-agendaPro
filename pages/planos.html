@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
 <script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<script src="/modules/ui-helpers.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgendaPro — Plano e cobrança</title>
@@ -181,15 +183,6 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 .btn-modal-keep:hover { background: #2a2820; }
 .btn-modal-cancel { background: var(--rust-l); color: var(--rust); border: 1.5px solid rgba(200,72,48,.3) !important; }
 .btn-modal-cancel:hover { background: #f5d8d3; }
-
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-  background: var(--ink); color: var(--bg); border-radius: 10px;
-  padding: 12px 20px; font-size: 13px; font-weight: 500;
-  opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap; z-index: 200;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -337,8 +330,6 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
     </div>
   </div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -635,7 +626,7 @@ window.assinar = async function() {
 
       // Trial ativado com sucesso!
       const diasRestantes = trialData.days_remaining || 7;
-      showToast(`🎉 Trial de ${diasRestantes} dias ativado! Você já pode usar todos os recursos Pro.`);
+      toast(`🎉 Trial de ${diasRestantes} dias ativado! Você já pode usar todos os recursos Pro.`);
 
       // Redireciona para painel após 2 segundos
       setTimeout(() => {
@@ -649,7 +640,7 @@ window.assinar = async function() {
 
     const cpfCnpj = document.getElementById('input-cpf-cnpj')?.value.replace(/\D/g, '');
     if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {
-      showToast('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.');
+      toast('Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.', false);
       btn.disabled = false;
       btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">' + (planoSelecionado === 'anual' ? '29' : '39') + '</span>/mês';
       return;
@@ -669,9 +660,9 @@ window.assinar = async function() {
 
     if (data.payment_url) {
       window.open(data.payment_url, '_blank');
-      showToast('Link de pagamento aberto! Após pagar, seu plano será ativado em instantes.');
+      toast('Link de pagamento aberto! Após pagar, seu plano será ativado em instantes.');
     } else {
-      showToast('Assinatura criada. Verifique seu e-mail para concluir o pagamento.');
+      toast('Assinatura criada. Verifique seu e-mail para concluir o pagamento.');
     }
 
     // Polling até webhook ativar (máx 60s)
@@ -685,7 +676,7 @@ window.assinar = async function() {
         if (isPro) {
           renderStatus();
           await carregarHistoricoReal();
-          showToast('🎉 Plano Pro ativado!');
+          toast('🎉 Plano Pro ativado!');
         }
         btn.disabled = false;
         btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">' + (planoSelecionado === 'anual' ? '29' : '39') + '</span>/mês';
@@ -693,7 +684,7 @@ window.assinar = async function() {
     }, 3000);
 
   } catch (e) {
-    showToast('Erro: ' + e.message);
+    toast('Erro: ' + e.message, false);
     btn.disabled = false;
     btn.innerHTML = '✦ Assinar Pro — R$<span id="val-botao">39</span>/mês';
   }
@@ -725,19 +716,11 @@ window.confirmarCancelamento = async function() {
     await carregarPlanoReal();
     renderStatus();
     await carregarHistoricoReal();
-    showToast('Assinatura cancelada. Acesso Pro até o fim do período pago.');
+    toast('Assinatura cancelada. Acesso Pro até o fim do período pago.', false);
   } catch (e) {
-    showToast('Erro ao cancelar: ' + e.message);
+    toast('Erro ao cancelar: ' + e.message, false);
   }
 };
-
-// ── TOAST ──────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 4000);
-}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 document.getElementById('modal-overlay').addEventListener('click', e => {

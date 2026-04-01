@@ -221,23 +221,6 @@
     }
     @keyframes shimmer { to { background-position: -200% 0; } }
 
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 20px;
-      font-size: 14px;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 999;
-    }
-    .toast.show { opacity: 1; }
-
     .footer-link {
       margin-top: 28px;
       font-size: 12px;
@@ -335,9 +318,8 @@
     <p class="sub" id="msg-erro">Este link de avaliação não é válido ou expirou.</p>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script src="/config.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
@@ -350,12 +332,6 @@
     const descs = ['', 'Péssimo 😞', 'Ruim 😕', 'Regular 😐', 'Bom 😊', 'Excelente! 🤩'];
 
     // ---------- utilitários ----------
-    function showToast(msg, dur = 3500) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), dur);
-    }
 
     function mostrar(id) {
       ['card-loading','card-form','card-ja-avaliado','card-sucesso','card-erro']
@@ -540,7 +516,7 @@
         console.error(e);
         btn.disabled = false;
         btn.innerHTML = 'Enviar avaliação';
-        showToast('Erro ao enviar avaliação. Tente novamente.');
+        toast('Erro ao enviar avaliação. Tente novamente.', false);
       }
     };
 

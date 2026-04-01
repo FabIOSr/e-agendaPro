@@ -9,6 +9,17 @@
 //   5. Slots no passado (data/hora já passou)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+
+// Inicializa Sentry (se DSN configurado)
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: Deno.env.get("SENTRY_ENVIRONMENT") || "production",
+    tracesSampleRate: 0.1,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -383,6 +394,14 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (err) {
+    // Captura erro no Sentry
+    if (SENTRY_DSN) {
+      Sentry.captureException(err, {
+        tags: { function: "horarios-disponiveis" },
+        extra: { prestador_slug, servico_id, data },
+      });
+    }
+    
     console.error("Erro:", err);
     return Response.json(
       { erro: "Erro interno", detalhe: String(err) },

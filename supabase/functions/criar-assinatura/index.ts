@@ -11,6 +11,17 @@
 // Header: Authorization: Bearer <supabase-jwt>
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+
+// Inicializa Sentry (se DSN configurado)
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: Deno.env.get("SENTRY_ENVIRONMENT") || "production",
+    tracesSampleRate: 0.1,
+  });
+}
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -189,6 +200,14 @@ Deno.serve(async (req: Request) => {
       { headers: CORS_HEADERS }
     );
   } catch (err) {
+    // Captura erro no Sentry
+    if (SENTRY_DSN) {
+      Sentry.captureException(err, {
+        tags: { function: "criar-assinatura" },
+        extra: { billing_type, plano },
+      });
+    }
+    
     console.error("Erro criar-assinatura:", err);
     return Response.json(
       { erro: "Erro interno", detalhe: String(err) },

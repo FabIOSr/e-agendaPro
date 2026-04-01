@@ -5,6 +5,17 @@
 // Segurança: valida o header "asaas-access-token" contra ASAAS_WEBHOOK_TOKEN
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+
+// Inicializa Sentry (se DSN configurado)
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: Deno.env.get("SENTRY_ENVIRONMENT") || "production",
+    tracesSampleRate: 0.1,
+  });
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -39,13 +50,14 @@ function calcularValidadeAte(ciclo: string): Date {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS });
-  }
+  try {
+    if (req.method === "OPTIONS") {
+      return new Response(null, { headers: CORS });
+    }
 
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405, headers: CORS });
-  }
+    if (req.method !== "POST") {
+      return new Response("Method not allowed", { status: 405, headers: CORS });
+    }
 
   // ── Validação do token ──────────────────────────────────────────────────
   const webhookToken  = req.headers.get("asaas-access-token");
@@ -187,4 +199,19 @@ Deno.serve(async (req: Request) => {
   }
 
   return Response.json({ ok: true }, { headers: CORS });
+} catch (err) {
+  // Captura erro no Sentry
+  if (SENTRY_DSN) {
+    Sentry.captureException(err, {
+      tags: { function: "webhook-asaas" },
+      extra: { evento: payload?.event },
+    });
+  }
+  
+  console.error("Erro webhook-asaas:", err);
+  return Response.json(
+    { erro: "Erro interno no webhook" },
+    { status: 500, headers: CORS }
+  );
+}
 });

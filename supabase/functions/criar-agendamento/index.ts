@@ -19,6 +19,17 @@
 //   500 { erro: string }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+
+// Inicializa Sentry (se DSN configurado)
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: Deno.env.get("SENTRY_ENVIRONMENT") || "production",
+    tracesSampleRate: 0.1,
+  });
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -38,49 +49,50 @@ Deno.serve(async (req: Request) => {
     return new Response("Method not allowed", { status: 405, headers: CORS });
   }
 
-  // ── Parse do body ──────────────────────────────────────────────────────
-  let body: any;
   try {
-    body = await req.json();
-  } catch {
-    return Response.json({ erro: "Body inválido" }, { status: 400, headers: CORS });
-  }
+    // ── Parse do body ──────────────────────────────────────────────────────
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ erro: "Body inválido" }, { status: 400, headers: CORS });
+    }
 
-  const { prestador_id, servico_id, cliente_nome, cliente_tel, cliente_email, data_hora } = body;
+    const { prestador_id, servico_id, cliente_nome, cliente_tel, cliente_email, data_hora } = body;
 
-  if (!prestador_id || !servico_id || !cliente_nome || !cliente_tel || !data_hora) {
-    return Response.json(
-      { erro: "Campos obrigatórios: prestador_id, servico_id, cliente_nome, cliente_tel, data_hora" },
-      { status: 400, headers: CORS }
+    if (!prestador_id || !servico_id || !cliente_nome || !cliente_tel || !data_hora) {
+      return Response.json(
+        { erro: "Campos obrigatórios: prestador_id, servico_id, cliente_nome, cliente_tel, data_hora" },
+        { status: 400, headers: CORS }
+      );
+    }
+
+    // Validação básica de data_hora
+    const dataHoraDate = new Date(data_hora);
+    if (isNaN(dataHoraDate.getTime())) {
+      return Response.json(
+        { erro: "data_hora inválido. Use ISO 8601 (ex: 2026-04-10T09:00:00-03:00)" },
+        { status: 400, headers: CORS }
+      );
+    }
+
+    if (dataHoraDate < new Date()) {
+      return Response.json(
+        { erro: "Não é possível agendar no passado" },
+        { status: 400, headers: CORS }
+      );
+    }
+
+    // ── Supabase (service role para bypassar RLS) ──────────────────────────
+    // Usamos service role pois a tabela agendamentos tem RLS que exige auth.
+    // A validação de negócio (limite free, serviço ativo, prestador existe)
+    // é feita aqui antes de qualquer escrita.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-  }
 
-  // Validação básica de data_hora
-  const dataHoraDate = new Date(data_hora);
-  if (isNaN(dataHoraDate.getTime())) {
-    return Response.json(
-      { erro: "data_hora inválido. Use ISO 8601 (ex: 2026-04-10T09:00:00-03:00)" },
-      { status: 400, headers: CORS }
-    );
-  }
-
-  if (dataHoraDate < new Date()) {
-    return Response.json(
-      { erro: "Não é possível agendar no passado" },
-      { status: 400, headers: CORS }
-    );
-  }
-
-  // ── Supabase (service role para bypassar RLS) ──────────────────────────
-  // Usamos service role pois a tabela agendamentos tem RLS que exige auth.
-  // A validação de negócio (limite free, serviço ativo, prestador existe)
-  // é feita aqui antes de qualquer escrita.
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
-
-  // ── 1. Valida que o prestador existe ───────────────────────────────────
+    // ── 1. Valida que o prestador existe ───────────────────────────────────
   const { data: prestador, error: errPrest } = await supabase
     .from("prestadores")
     .select("id, plano, plano_valido_ate")
@@ -261,4 +273,19 @@ Deno.serve(async (req: Request) => {
     { ok: true, agendamento_id: agendamento.id },
     { status: 200, headers: CORS }
   );
+} catch (err) {
+  // Captura erro no Sentry
+  if (SENTRY_DSN) {
+    Sentry.captureException(err, {
+      tags: { function: "criar-agendamento" },
+      extra: { prestador_id, servico_id, cliente_nome, cliente_tel },
+    });
+  }
+  
+  console.error("Erro inesperado:", err);
+  return Response.json(
+    { erro: "Erro interno no servidor" },
+    { status: 500, headers: CORS }
+  );
+}
 });

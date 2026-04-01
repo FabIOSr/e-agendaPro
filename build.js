@@ -18,7 +18,10 @@ dotenv.config({ path: path.join(__dirname, '.env.local') });
 const env = {
   SUPABASE_URL: process.env.SUPABASE_URL || '',
   SUPABASE_ANON: process.env.SUPABASE_ANON || '',
-  APP_URL: process.env.APP_URL || ''
+  APP_URL: process.env.APP_URL || '',
+  SENTRY_DSN: process.env.SENTRY_DSN || '',
+  SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT || 'production',
+  VERSION: process.env.npm_package_version || '1.0.0'
 };
 
 if (!env.SUPABASE_URL || !env.SUPABASE_ANON || !env.APP_URL) {
@@ -29,6 +32,8 @@ if (!env.SUPABASE_URL || !env.SUPABASE_ANON || !env.APP_URL) {
 console.log('🔧 Build started...');
 console.log(`   SUPABASE_URL: ${env.SUPABASE_URL}`);
 console.log(`   APP_URL: ${env.APP_URL}`);
+console.log(`   SENTRY_DSN: ${env.SENTRY_DSN ? 'configurado' : 'não configurado'}`);
+console.log(`   SENTRY_ENVIRONMENT: ${env.SENTRY_ENVIRONMENT}`);
 
 // ── Processa config.js ─────────────────────────────────────────────────────
 let configContent = fs.readFileSync(path.join(__dirname, 'config.js'), 'utf8');
@@ -37,7 +42,10 @@ configContent = configContent.replace(
   `const CONFIG_DEFAULTS = {
     SUPABASE_URL: '${env.SUPABASE_URL}',
     SUPABASE_ANON: '${env.SUPABASE_ANON}',
-    APP_URL: '${env.APP_URL}'
+    APP_URL: '${env.APP_URL}',
+    SENTRY_DSN: '${env.SENTRY_DSN}',
+    SENTRY_ENVIRONMENT: '${env.SENTRY_ENVIRONMENT}',
+    VERSION: '${env.VERSION}'
   }`
 );
 fs.writeFileSync(path.join(__dirname, 'config.js'), configContent);
