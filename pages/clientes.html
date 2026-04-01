@@ -780,7 +780,7 @@
   <div class="filters">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input class="search-input" id="search" placeholder="Buscar por nome ou telefone…" oninput="filtrar()">
+      <input class="search-input" id="search" placeholder="Buscar por nome, telefone ou email…" oninput="filtrar()">
     </div>
     <button class="filter-btn active" id="f-todos" onclick="setFiltro('todos',this)">Todos</button>
     <button class="filter-btn" id="f-vip" onclick="setFiltro('vip',this)">VIP (8+)</button>
@@ -989,7 +989,8 @@
                   filtroAtivo === 'sem-visita' ? diasSemVisita > 60 : true;
         const passaBusca = !q ||
           (c.nome || '').toLowerCase().includes(q) ||
-          (c.telefone || '').includes(q);
+          (c.telefone || '').includes(q) ||
+          (c.email || '').toLowerCase().includes(q);
         return passaFiltro && passaBusca;
       });
       ordenar();
@@ -1022,7 +1023,11 @@
       if (!tbody) return;
 
       if (clientesFiltrados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Nenhum cliente encontrado.</td></tr>`;
+        const q = document.getElementById('search')?.value || '';
+        const msg = q
+          ? `Nenhum cliente encontrado para "<strong>${q}</strong>"<br>Tente buscar por nome, telefone ou email.`
+          : 'Nenhum cliente cadastrado.';
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px 24px;color:var(--muted);font-size:14px;line-height:1.6">${msg}</td></tr>`;
         return;
       }
 
