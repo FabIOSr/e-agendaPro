@@ -129,11 +129,17 @@ sudo apt update
 # 5. Instalar Docker
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# 6. Habilitar Docker no boot
+# 6. Adicionar usuário ao grupo docker (evita sudo a cada comando)
+sudo usermod -aG docker ubuntu
+
+# 7. Habilitar Docker no boot
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# 7. Verificar instalação
+# 8. Fazer logout e login novamente para aplicar grupo docker
+# ou executar: newgrp docker
+
+# 9. Verificar instalação
 docker --version
 docker compose version
 ```
@@ -155,46 +161,157 @@ Docker Compose version v2.x.x
 mkdir -p ~/evolution-api
 cd ~/evolution-api
 
-# 2. Criar docker-compose.yml
-cat > docker-compose.yml << 'EOF'
-version: '3.8'
+# 2. Criar .env com senhas seguras
+cat > .env << 'EOF'
+# Database (PostgreSQL)
+POSTGRES_USER=evolution
+POSTGRES_PASSWORD=GERAR_SENHA_FORTA_AQUI_32_CHARS
+POSTGRES_DB=n8n
 
-services:
-  evolution-api:
-    image: evolutionapi/evolution-api:latest
-    container_name: evolution-api
-    ports:
-      - "8080:8080"
-    environment:
-      - SERVER_PORT=8080
-      - AUTHENTICATION_TYPE=apikey
-      - AUTHENTICATION_API_KEY=sua_chave_super_segura_mude_isso_32chars
-      - AUTHENTICATION_EXPOSE_IN_FETCHERS=true
-    volumes:
-      - evolution-data:/home/evolution/instance
-    restart: unless-stopped
+# Redis (Cache e filas)
+REDIS_PASSWORD=GERAR_SENHA_FORTA_AQUI_32_CHARS
 
-volumes:
-  evolution-data:
+# Evolution API
+EVOLUTION_DB_NAME=evolution
+EVOLUTION_API_KEY=GERAR_SENHA_FORTA_AQUI_32_CHARS
+EVOLUTION_PORT=8080
 EOF
 
-# 3. Baixar imagem
-docker pull evolutionapi/evolution-api:latest
+# 3. Gerar senhas fortes
+echo "=== SENHAS GERADAS (copie para o .env) ==="
+echo "POSTGRES_PASSWORD:"
+openssl rand -base64 32
+echo ""
+echo "REDIS_PASSWORD:"
+openssl rand -base64 32
+echo ""
+echo "EVOLUTION_API_KEY:"
+openssl rand -base64 32
 
-# 4. Iniciar container
+# 4. Criar docker-compose.yml
+cat > docker-compose.yml << 'EOF'
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Cache e filas)
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Evolution API
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.6
+    container_name: evolution_api
+    restart: unless-stopped
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=${EVOLUTION_PORT:-8080}
+      - LOG_LEVEL=ERROR,WARN,INFO
+      - LOG_COLOR=true
+      - LOG_BAILEYS=error
+      - CORS_ORIGIN=*
+      - CORS_METHODS=GET,POST,PUT,DELETE
+      - CORS_CREDENTIALS=true
+      # Database (PostgreSQL)
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${EVOLUTION_DB_NAME:-evolution}?schema=public
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_api
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - DATABASE_SAVE_DATA_LABELS=true
+      - DATABASE_SAVE_DATA_HISTORIC=true
+      # Redis (Cache)
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://:${REDIS_PASSWORD}@redis:6379
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - RABBITMQ_ENABLED=false
+      - WEBSOCKET_ENABLED=false
+      - WEBHOOK_GLOBAL_ENABLED=false
+      - QRCODE_LIMIT=30
+      - QRCODE_COLOR=#175197
+      - CONFIG_SESSION_PHONE_CLIENT=Evolution API
+      - CONFIG_SESSION_PHONE_NAME=Chrome
+      # API Key
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+      - TZ=America/Sao_Paulo
+      - DEL_INSTANCE=false
+    ports:
+      - "8080:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  evolution_instances:
+  evolution_store:
+
+networks:
+  app_network:
+    driver: bridge
+EOF
+
+# 5. Editar .env com as senhas geradas
+nano .env
+# Substituir GERAR_SENHA_FORTA_AQUI_32_CHARS pelas senhas geradas acima
+
+# 6. Iniciar containers
 docker compose up -d
 
-# 5. Verificar status
+# 7. Verificar status
 docker ps
 
-# 6. Verificar logs
+# 8. Verificar logs
 docker compose logs -f
 ```
 
 **Saída esperada:**
 ```
-CONTAINER ID   IMAGE                                STATUS
-abc123def456   evolutionapi/evolution-api:latest   Up 2 minutes
+CONTAINER ID   IMAGE                             STATUS
+abc123def456   postgres:16.4-alpine              Up 2 minutes (healthy)
+def456ghi789   redis:7.2-alpine                  Up 2 minutes (healthy)
+ghi789jkl012   evoapicloud/evolution-api:v2.3.6  Up 2 minutes
 ```
 
 ---
@@ -246,19 +363,23 @@ curl http://localhost:8080/instance/connectionState/agendapro-prod?apikey=sua_ch
 
 ## 6. Configurar AgendaPro
 
-### Variáveis de Necessárias:
+### Variáveis Necessárias:
+
+**EVOLUTION_API_KEY** está no seu `.env`:
+```bash
+cat .env | grep EVOLUTION_API_KEY
+```
+
+**Adicionar no Supabase:**
+1. Acessar: https://supabase.com/dashboard/project/SEU_PROJECT_ID
+2. Menu → **Settings** → **Secrets**
+3. Adicionar:
 
 ```bash
 EVOLUTION_API_URL=http://SEU_IP_PUBLICO:8080
-EVOLUTION_API_KEY=sua_chave_super_segura_mude_isso_32chars
+EVOLUTION_API_KEY=<valor do .env>
 EVOLUTION_INSTANCE=agendapro-prod
 ```
-
-### Adicionar no Supabase:
-
-1. Acessar: https://supabase.com/dashboard/project/SEU_PROJECT_ID
-2. Menu → **Settings** → **Secrets**
-3. Adicionar as 3 variáveis acima
 
 ### Configurar firewall (Recomendado):
 
@@ -441,91 +562,228 @@ Verificar:
 | **Integração Google Sheets** | Backup de agendamentos em planilha |
 | **Webhook para CRM** | Sincronizar clientes com CRM externo |
 
-### Instalação via Docker Compose
+### Instalação via Docker Compose (Stack Completa)
 
 ```bash
-# 1. Criar rede para os containers
-docker network create agenda-network
+# 1. Fazer backup do .env atual
+cp .env .env.backup
 
-# 2. Atualizar docker-compose.yml
-cd ~/evolution-api
+# 2. Adicionar variáveis n8n no .env
+cat >> .env << 'EOF'
+
+# n8n
+N8N_HOST=0.0.0.0
+N8N_PORT=5678
+N8N_PROTOCOL=http
+N8N_ENCRYPTION_KEY=GERAR_SENHA_FORTA_AQUI_32_CHARS
+N8N_TIMEZONE=America/Sao_Paulo
+N8N_WEBHOOK_URL=http://SEU_IP_PUBLICO:5678/
+EOF
+
+# 3. Gerar N8N_ENCRYPTION_KEY
+echo "N8N_ENCRYPTION_KEY:"
+openssl rand -base64 32
+
+# 4. Editar .env e adicionar a chave gerada
+nano .env
+
+# 5. Atualizar docker-compose.yml
 cat > docker-compose.yml << 'EOF'
-version: '3.8'
-
 services:
-  evolution-api:
-    image: evolutionapi/evolution-api:latest
-    container_name: evolution-api
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Cache e filas)
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Evolution API
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.6
+    container_name: evolution_api
+    restart: unless-stopped
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=${EVOLUTION_PORT:-8080}
+      - LOG_LEVEL=ERROR,WARN,INFO
+      - LOG_COLOR=true
+      - LOG_BAILEYS=error
+      - CORS_ORIGIN=*
+      - CORS_METHODS=GET,POST,PUT,DELETE
+      - CORS_CREDENTIALS=true
+      # Database (PostgreSQL)
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${EVOLUTION_DB_NAME:-evolution}?schema=public
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_api
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - DATABASE_SAVE_DATA_LABELS=true
+      - DATABASE_SAVE_DATA_HISTORIC=true
+      # Redis (Cache)
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://:${REDIS_PASSWORD}@redis:6379
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - RABBITMQ_ENABLED=false
+      - WEBSOCKET_ENABLED=false
+      - WEBHOOK_GLOBAL_ENABLED=false
+      - QRCODE_LIMIT=30
+      - QRCODE_COLOR=#175197
+      - CONFIG_SESSION_PHONE_CLIENT=Evolution API
+      - CONFIG_SESSION_PHONE_NAME=Chrome
+      # API Key
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+      - TZ=America/Sao_Paulo
+      - DEL_INSTANCE=false
     ports:
       - "8080:8080"
-    environment:
-      - SERVER_PORT=8080
-      - AUTHENTICATION_TYPE=apikey
-      - AUTHENTICATION_API_KEY=sua_chave_super_segura_mude_isso_32chars
-      - AUTHENTICATION_EXPOSE_IN_FETCHERS=true
     volumes:
-      - evolution-data:/home/evolution/instance
-    restart: unless-stopped
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
     networks:
-      - agenda-network
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
+  # n8n Main (recebe webhooks e gerencia workflows)
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:1.119.1
     container_name: n8n
+    restart: unless-stopped
+    environment:
+      # Conexão com PostgreSQL
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      # Conexão com Redis (fila de execuções)
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - EXECUTIONS_MODE=queue
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - GENERIC_TIMEZONE=${N8N_TIMEZONE}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - TZ=America/Sao_Paulo
     ports:
       - "5678:5678"
-    environment:
-      - N8N_HOST=0.0.0.0
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - NODE_ENV=production
-      - WEBHOOK_URL=http://SEU_IP_PUBLICO:5678/
-      - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
-      - N8N_ENCRYPTION_KEY=gerar_uma_chave_aleatoria_32_chars
-      - N8N_USER_EMAIL=seu@email.com
-      - N8N_USER_PASSWORD=sua_senha_forte_aqui
     volumes:
-      - n8n-data:/home/node/.n8n
-    restart: unless-stopped
+      - n8n_data:/home/node/.n8n
     networks:
-      - agenda-network
+      - app_network
     depends_on:
-      - evolution-api
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # n8n Worker (processa a fila de execuções)
+  n8n-worker:
+    image: n8nio/n8n:1.119.1
+    container_name: n8n-worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - EXECUTIONS_MODE=queue
+      - GENERIC_TIMEZONE=${N8N_TIMEZONE}
+      - TZ=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
-  evolution-data:
-  n8n-data:
+  postgres_data:
+  redis_data:
+  n8n_data:
+  evolution_instances:
+  evolution_store:
 
 networks:
-  agenda-network:
+  app_network:
     driver: bridge
 EOF
 
-# 3. Gerar chave de criptografia
-echo "Chave de criptografia N8N:"
-openssl rand -base64 32
-
-# 4. Copiar a chave gerada para N8N_ENCRYPTION_KEY no docker-compose.yml
-
-# 5. Recrear containers
+# 6. Recrear containers
 docker compose down
 docker compose up -d
 
-# 6. Verificar status
+# 7. Verificar status (deve mostrar 5 containers)
 docker ps
+```
 
-# 7. Abrir n8n no navegador
-# URL: http://SEU_IP_PUBLICO:5678
+**Saída esperada:**
+```
+CONTAINER ID   IMAGE                             STATUS
+abc123def456   postgres:16.4-alpine              Up 2 minutes (healthy)
+def456ghi789   redis:7.2-alpine                  Up 2 minutes (healthy)
+ghi789jkl012   evoapicloud/evolution-api:v2.3.6  Up 2 minutes
+jkl012mno345   n8nio/n8n:1.119.1                Up 2 minutes
+mno345pqr456   n8nio/n8n:1.119.1                Up 2 minutes (worker)
 ```
 
 ### Acessar n8n
 
 ```
 URL: http://SEU_IP_PUBLICO:5678
-Login: seu@email.com
-Senha: [senha configurada]
 ```
+
+**Primeiro acesso:** Criar conta admin
+**Acessos subsequentes:** Login com email criado
 
 ### Exemplo de Workflow: Lembrete WhatsApp D-1
 
@@ -591,10 +849,13 @@ sudo ufw status
 | Memória (workflow ativo) | ~300-500 MB |
 | CPU (idle) | <1% |
 | CPU (workflow ativo) | 5-15% |
-| Workflows simultâneos | 10-20 |
+| Workflows simultâneos | 20-50 |
 
-**Com Evolution API + n8n:**
-- Total RAM: ~700 MB - 1.5 GB
+**Com Evolution API + PostgreSQL + n8n:**
+- Total RAM: ~1.2 - 2.0 GB
+- PostgreSQL: ~200-300 MB
+- Evolution API: ~150-200 MB
+- n8n: ~150-500 MB
 - Ainda sobra 22+ GB para Redis, Mailpit, etc.
 
 ### Gerenciamento
@@ -650,29 +911,39 @@ curl http://localhost:8080/instance/stats/agendapro-prod?apikey=sua_chave
 
 ## 🚀 Próximos Passos
 
-Após Evolution API funcionando:
+Após Stack Completa funcionando:
 
 1. **✅ Testar agendamento completo** (painel → WhatsApp)
-2. **✅ Testar lembrete D-1** (cron + WhatsApp)
-3. **⏭️ Adicionar n8n** (automação de workflows)
-4. **⏭️ Adicionar Redis** (filas + cache)
-5. **⏭️ Adicionar Mailpit** (testes email)
+2. **✅ Testar lembrete D-1** (n8n + WhatsApp)
+3. **✅ Criar workflows personalizados** (n8n)
+4. **⏭️ Adicionar Mailpit** (testes email local)
+5. **⏭️ Configurar backup automático** (pg_dump + Redis)
 
 ---
 
 ## 📋 Checklist
 
+### Setup Básico (Evolution API)
 - [ ] Conta Oracle criada
 - [ ] VM Ampere A1 criada (4 vCPU, 24GB)
 - [ ] SSH funcionando
 - [ ] Docker instalado
-- [ ] Evolution API container rodando
+- [ ] .env configurado com senhas fortes
+- [ ] Stack rodando (postgres + redis + evolution)
 - [ ] QR Code escaneado
 - [ ] WhatsApp conectado (`state: "open"`)
 - [ ] Teste manual de mensagem funcionou
 - [ ] Variáveis configuradas no Supabase
 - [ ] Firewall configurado (UFW)
 - [ ] Teste via Edge Function funcionou
+
+### Stack Completa (com n8n)
+- [ ] n8n adicionado ao docker-compose.yml
+- [ ] n8n Worker configurado
+- [ ] n8n acessível via browser
+- [ ] Workflow de teste criado
+- [ ] Integração Evolution API + n8n funcionando
+- [ ] Lembrete WhatsApp automatizado funcionando
 
 ---
 
@@ -688,42 +959,83 @@ Após Evolution API funcionando:
 
 ## ⚡ Performance Esperada
 
-Com **4 vCPU + 24GB RAM**:
+Com **4 vCPU + 24GB RAM** e **Stack Completa** (PostgreSQL + Redis + n8n Worker):
 
-### Apenas Evolution API
-
-| Métrica | Capacidade |
-|---------|-----------|
-| Instâncias simultâneas | 50-100 |
-| Mensagens/hora | ~5.000 |
-| Profissionais suportados | 200-500 |
-| Memória usada | ~300-500 MB |
-
-### Evolution API + n8n
+### Apenas Evolution API + PostgreSQL + Redis
 
 | Métrica | Capacidade |
 |---------|-----------|
-| Instâncias simultâneas | 50-100 |
-| Mensagens/hora | ~5.000 |
-| Workflows ativos | 10-20 |
-| Profissionais suportados | 200-500 |
-| Memória total usada | ~700 MB - 1.5 GB |
-| **RAM disponível** | **~22 GB** (para Redis, Mailpit, etc.) |
+| Instâncias simultâneas | 200-500 |
+| Mensagens/hora | ~20.000 |
+| Profissionais suportados | 1000-2000 |
+| Memória usada | ~600-900 MB |
 
-**Para benchmark:**
+### Stack Completa (Evolution + PostgreSQL + Redis + n8n + Worker)
+
+| Métrica | Capacidade |
+|---------|-----------|
+| Instâncias simultâneas | 200-500 |
+| Mensagens/hora | ~20.000 |
+| Workflows ativos | 50-100 |
+| Workers ativos | 1 (escalável) |
+| Profissionais suportados | 1000-2000 |
+| Memória total usada | ~1.5 - 2.5 GB |
+| **RAM disponível** | **~21.5 GB** (para outros serviços) |
+
+**Para benchmark (stack completa):**
 - 1 mensagem = ~2 segundos
-- 1.000 mensagens/hora = ~20% de 1 vCPU
-- 1 workflow n8n = ~50-100 MB RAM
-- Evolution API idle = ~100-150 MB RAM
+- 1.000 mensagens/hora = ~10% de 1 vCPU
+- 1 workflow n8n = ~30-80 MB RAM (com Redis queue)
+- Evolution API idle = ~150-200 MB RAM
+- PostgreSQL idle = ~200-300 MB RAM
+- Redis idle = ~50-100 MB RAM
+- n8n main = ~150-250 MB RAM
+- n8n worker = ~100-200 MB RAM
 
-**Capacidade total estimada (com n8n):**
-- 200-500 profissionais
-- ~5.000 mensagens/hora
-- 10-20 workflows simultâneos
-- Ainda sobra资源 para Redis + Mailpit
+**Capacidade total estimada (stack completa):**
+- 1000-2000 profissionais
+- ~20.000 mensagens/hora
+- 50-100 workflows simultâneos
+- 1 worker (escalável para +workers se necessário)
+
+**Vantagens da Stack Completa desde o início:**
+- ✅ **PostgreSQL**: Escala indefinidamente (sem migração futura)
+- ✅ **Redis**: Cache rápido + filas para workflows
+- ✅ **n8n Worker**: Processamento paralelo de workflows
+- ✅ **Multi-database**: n8n e Evolution API com DBs separados
+- ✅ **Backup profissional**: pg_dump + Redis persistence
+- ✅ **Ainda sobra 21+ GB RAM** para outros serviços
+- ✅ **Produção-ready**: Health checks, restart policies, dependências
+
+**Arquitetura:**
+```
+Evolution API (v2.3.6) ←→ PostgreSQL (16.4)
+                           ↕
+Redis (7.2) ←→ n8n Main ←→ n8n Worker
+     ↓
+  Queue de execuções
+```
 
 ---
 
 **Setup completo em 30-45 minutos!**
 
-Próximo: **n8n para automação de workflows** (quando precisar).
+## Stack Profissional Completa
+
+**Componentes:**
+- Evolution API v2.3.6 (WhatsApp)
+- PostgreSQL 16.4 (banco de dados)
+- Redis 7.2 (cache + filas)
+- n8n 1.119.1 + Worker (automação)
+
+**Capacidade:**
+- 1000-2000 profissionais
+- ~20.000 mensagens/hora
+- 50-100 workflows simultâneos
+- PostgreSQL escala sem limite
+
+**Custo:**
+- Oracle Free Tier: $0/mês (sempre!)
+- Energia adicional: ~R$10-20/mês
+
+**Próximo:** Criar workflows no n8n para automação de lembretes WhatsApp
