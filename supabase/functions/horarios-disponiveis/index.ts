@@ -319,12 +319,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 4. Agendamentos confirmados no dia (JOIN com duração do serviço + buffer do prestador)
+    // 4. Agendamentos confirmados ou reservados no dia (reservado = bloqueado para lista de espera)
     const { data: agendamentos, error: errA } = await supabase
       .from("agendamentos")
       .select("data_hora, servicos(duracao_min)")
       .eq("prestador_id", prestadorId)
-      .eq("status", "confirmado")
+      .in("status", ["confirmado", "reservado"])
       .gte("data_hora", `${data}T00:00:00Z`)
       .lte("data_hora", `${data}T23:59:59Z`);
 

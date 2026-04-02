@@ -1,14 +1,16 @@
 // supabase/functions/cron-notificar-lista-espera/index.ts
 //
-// Cron job que notifica clientes na lista de espera quando vaga surge
-// Roda a cada 30 minutos (otimizado para reduzir custo)
+// Cron job que processa a lista de espera
+// Roda a cada 30 minutos (sincronizado com timeout de 30 min)
 //
-// Cron: */30 * * * *
+// Schedule: */30 * * * *
+//
+// 1. Verificar reservas expiradas e notificar próximo da fila
+// 2. Notificar novos clientes quando vaga surgir
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
 
-// Inicializa Sentry
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
   Sentry.init({
@@ -18,6 +20,8 @@ if (SENTRY_DSN) {
   });
 }
 
+const TIMEOUT_MINUTOS_DEFAULT = 30;
+
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -26,7 +30,18 @@ function corsHeaders() {
   };
 }
 
-// Envia WhatsApp via Evolution API
+function getDataAtualBRT(): string {
+  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    .split('/')
+    .reverse()
+    .join('-');
+}
+
+function getDataHoraAtualBRT(): Date {
+  const agoraBRT = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return new Date(agoraBRT);
+}
+
 async function enviarWhatsApp(telefone: string, mensagem: string) {
   const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
   const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
@@ -54,7 +69,6 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
   }
 }
 
-// Envia email via SendGrid
 async function enviarEmail(to: string, subject: string, html: string) {
   const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
   if (!sendgridKey) return false;
@@ -80,21 +94,6 @@ async function enviarEmail(to: string, subject: string, html: string) {
   }
 }
 
-// Obtém data atual no fuso BRT (America/Sao_Paulo)
-function getDataAtualBRT(): string {
-  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-    .split('/')
-    .reverse()
-    .join('-');
-}
-
-// Obtém data/hora atual no fuso BRT como Date
-function getDataHoraAtualBRT(): Date {
-  const agoraBRT = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  return new Date(agoraBRT);
-}
-
-// Verifica preferência de horário com validação precisa de minutos
 function prefereHorario(
   tipo: string,
   horaPreferida: string | null,
@@ -111,32 +110,24 @@ function prefereHorario(
     const [horaNum, minNum] = horaDisponivel.split(':').map(Number);
     const minutosTotais = horaNum * 60 + minNum;
     
-    // Definição precisa dos períodos com minutos
-    if (periodoPreferido === 'manha') {
-      // 08:00 (480 min) até 12:59 (779 min)
-      return minutosTotais >= 480 && minutosTotais <= 779;
-    }
-    if (periodoPreferido === 'tarde') {
-      // 13:00 (780 min) até 18:59 (1139 min)
-      return minutosTotais >= 780 && minutosTotais <= 1139;
-    }
-    if (periodoPreferido === 'noite') {
-      // 19:00 (1140 min) até 21:59 (1319 min)
-      return minutosTotais >= 1140 && minutosTotais <= 1319;
-    }
+    if (periodoPreferido === 'manha') return minutosTotais >= 480 && minutosTotais <= 779;
+    if (periodoPreferido === 'tarde') return minutosTotais >= 780 && minutosTotais <= 1139;
+    if (periodoPreferido === 'noite') return minutosTotais >= 1140 && minutosTotais <= 1319;
   }
 
   return false;
 }
 
+function gerarToken(): string {
+  return crypto.randomUUID();
+}
+
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders() });
   }
 
   try {
-    // Cria cliente Supabase com service role
     const authHeader = req.headers.get("Authorization");
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -146,7 +137,152 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    // Busca clientes na lista de espera (status: ativa ou notificada)
+    const agora = new Date();
+    const hoje = getDataAtualBRT();
+    const agoraBRT = getDataHoraAtualBRT();
+
+    console.log("🔄 Iniciando processamento da lista de espera...");
+
+    // ═══════════════════════════════════════════════════════════════
+    // PASSO 1: Verificar reservas expiradas e notificar próximo
+    // ═══════════════════════════════════════════════════════════════
+    const { data: reservasAtivas, error: erroReservas } = await supabase
+      .from("lista_espera")
+      .select("*")
+      .in("status", ["notificada", "agendada"])  // Inclui agendada para verificar
+      .not("token_reserva", "is", null);
+
+    if (erroReservas) {
+      Sentry.captureException(erroReservas);
+    }
+
+    let reservasExpiradas = 0;
+    let proximosNotificados = 0;
+
+    if (reservasAtivas) {
+      for (const reserva of reservasAtivas) {
+        // Pula se já foi agendada (cliente confirmou)
+        if (reserva.status === 'agendada') {
+          continue;
+        }
+
+        if (!reserva.reservado_em || !reserva.timeout_minutos) continue;
+
+        const dtReserva = new Date(reserva.reservado_em);
+        const timeoutMs = reserva.timeout_minutos * 60 * 1000;
+        const expiraEm = new Date(dtReserva.getTime() + timeoutMs);
+
+        if (agora >= expiraEm) {
+          console.log(`⏱️ Reserva ${reserva.id} expirou`);
+
+          const nomeCliente = reserva.cliente_nome.split(" ")[0];
+          const dataFmt = new Date(reserva.data_preferida).toLocaleDateString("pt-BR");
+
+          await enviarWhatsApp(
+            reserva.cliente_telefone,
+            `⏰ *Tempo Esgotado*\n\n` +
+            `Oi ${nomeCliente}! O prazo de ${reserva.timeout_minutos} minutos para confirmar o horário de ${dataFmt} às ${reserva.hora_preferida || reserva.periodo_preferido || 'livre'} expirou.\n\n` +
+            `A vaga foi oferecida ao próximo da fila. Você pode entrar novamente na lista de espera!`
+          );
+
+          await supabase
+            .from("lista_espera")
+            .update({
+              status: 'ativa',
+              status_atualizado_em: new Date().toISOString(),
+              token_reserva: null,
+              reservado_em: null,
+            })
+            .eq("id", reserva.id);
+
+          // Se tinha agendamento original, voltar para cancelado (não foi confirmado)
+          if (reserva.agendamento_original_id) {
+            await supabase
+              .from("agendamentos")
+              .update({ status: "cancelado" })
+              .eq("id", reserva.agendamento_original_id);
+            
+            console.log(`⏱️ Agendamento original ${reserva.agendamento_original_id} voltou para cancelado`);
+          }
+
+          reservasExpiradas++;
+
+          // Buscar próximo da fila para notificar
+          const { data: proximo } = await supabase
+            .from("lista_espera")
+            .select("*")
+            .eq("prestador_id", reserva.prestador_id)
+            .eq("data_preferida", reserva.data_preferida)
+            .eq("status", "ativa")
+            .order("criado_em", { ascending: true })
+            .limit(1)
+            .single();
+
+          if (proximo && reserva.hora_preferida) {
+            // Verificar se o horário ainda está disponível
+            const horariosResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/functions/v1/horarios-disponiveis`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": authHeader! },
+                body: JSON.stringify({
+                  prestador_id: reserva.prestador_id,
+                  data: reserva.data_preferida,
+                  servico_id: reserva.servico_id,
+                }),
+              }
+            );
+
+            const horariosData = await horariosResponse.json();
+            const horariosDisponiveis = horariosData.slots || [];
+            const horarioOcupado = horariosDisponiveis.find((h: any) => h.hora === reserva.hora_preferida && !h.disponivel);
+
+            if (!horarioOcupado) {
+              const { data: prestador } = await supabase
+                .from("prestadores")
+                .select("nome")
+                .eq("id", reserva.prestador_id)
+                .single();
+
+              const tokenProx = crypto.randomUUID();
+              const dataFmtProx = new Date(proximo.data_preferida).toLocaleDateString("pt-BR");
+              const nomeProx = proximo.cliente_nome.split(" ")[0];
+
+              const msgProx = `🎉 *VAGA LIBEROU!*\n\n` +
+                `Oi ${nomeProx}! Uma vaga surgiu que pode te interessar:\n\n` +
+                `📅 Data: ${dataFmtProx}\n` +
+                `⏰ Horário: ${reserva.hora_preferida}\n` +
+                `${proximo.servico_nome ? `💇 Serviço: ${proximo.servico_nome}\n` : ""}\n` +
+                `⚡ *Você tem ${TIMEOUT_MINUTOS_DEFAULT} minutos para confirmar!*\n` +
+                `⏰ Após este tempo, a vaga será oferecida ao próximo da fila.\n\n` +
+                `🔗 ${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenProx}`;
+
+              await enviarWhatsApp(proximo.cliente_telefone, msgProx);
+
+              await supabase
+                .from("lista_espera")
+                .update({
+                  status: 'notificada',
+                  status_atualizado_em: new Date().toISOString(),
+                  token_reserva: tokenProx,
+                  reservado_em: new Date().toISOString(),
+                  timeout_minutos: TIMEOUT_MINUTOS_DEFAULT,
+                  notificado_em: new Date().toISOString(),
+                })
+                .eq("id", proximo.id);
+
+              proximosNotificados++;
+            } else {
+              console.log(`⏰ Horário ${reserva.hora_preferida} já foi ocupado, não notifica próximo`);
+            }
+          }
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PASSO 2: Notificar clientes quando nova vaga surge (via trigger)
+    // ═══════════════════════════════════════════════════════════════
     const { data: listaEspera, error: erroBusca } = await supabase
       .from("lista_espera")
       .select(`
@@ -165,7 +301,7 @@ Deno.serve(async (req: Request) => {
         criado_em,
         status
       `)
-      .in("status", ["ativa", "notificada"])
+      .eq("status", "ativa")
       .order("criado_em", { ascending: true });
 
     if (erroBusca) {
@@ -177,24 +313,31 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!listaEspera || listaEspera.length === 0) {
-      return new Response(JSON.stringify({ mensagem: "Ninguém na lista de espera" }), {
+      return new Response(JSON.stringify({
+        sucesso: true,
+        mensagem: "Ninguém na lista de espera",
+        reservas_expiradas: reservasExpiradas,
+        proximos_notificados: proximosNotificados
+      }), {
         status: 200,
         headers: { ...corsHeaders(), "Content-Type": "application/json" },
       });
     }
 
-    // Filtra entradas cuja data preferida já passou (fuso BRT)
-    const hoje = getDataAtualBRT();
-    const listaValida = listaEspera.filter(item => item.data_preferida >= hoje);
+    const listaValida = listaEspera.filter((item: any) => item.data_preferida >= hoje);
 
     if (listaValida.length === 0) {
-      return new Response(JSON.stringify({ mensagem: "Todas as datas já passaram" }), {
+      return new Response(JSON.stringify({
+        sucesso: true,
+        mensagem: "Todas as datas já passaram",
+        reservas_expiradas: reservasExpiradas,
+        proximos_notificados: proximosNotificados
+      }), {
         status: 200,
         headers: { ...corsHeaders(), "Content-Type": "application/json" },
       });
     }
 
-    // Agrupa por prestador e data para otimizar chamadas
     const grupos = new Map<string, any[]>();
     for (const item of listaValida) {
       const key = `${item.prestador_id}|${item.data_preferida}`;
@@ -205,19 +348,24 @@ Deno.serve(async (req: Request) => {
     }
 
     let notificados = 0;
-    let falhas = 0;
 
-    // Processa cada grupo (prestador + data)
     for (const [key, clientes] of grupos.entries()) {
       const [prestadorId, dataPreferida] = key.split("|");
 
-      // Verifica se data já passou (segurança extra, fuso BRT)
-      const hoje = getDataAtualBRT();
-      if (dataPreferida < hoje) {
-        continue; // Data já passou
+      if (dataPreferida < hoje) continue;
+
+      // Buscar slug do prestador para chamar horarios-disponiveis
+      const { data: prestador } = await supabase
+        .from("prestadores")
+        .select("slug")
+        .eq("id", prestadorId)
+        .single();
+
+      if (!prestador?.slug) {
+        console.log(`⚠️ Prestador ${prestadorId} sem slug`);
+        continue;
       }
 
-      // Chama horarios-disponiveis para este prestador/data
       const primeiroServicoId = clientes[0].servico_id;
 
       const slotsResponse = await fetch(
@@ -229,7 +377,7 @@ Deno.serve(async (req: Request) => {
             "Authorization": authHeader!,
           },
           body: JSON.stringify({
-            prestador_id: prestadorId,
+            prestador_slug: prestador.slug,
             data: dataPreferida,
             servico_id: primeiroServicoId,
           }),
@@ -239,21 +387,13 @@ Deno.serve(async (req: Request) => {
       const slotsData = await slotsResponse.json();
       const slotsDisponiveis = slotsData.slots || [];
 
-      // Filtra slots disponíveis
       const horariosLiberados = slotsDisponiveis
         .filter((s: any) => s.disponivel === true)
         .map((s: any) => s.hora);
 
-      if (horariosLiberados.length === 0) {
-        continue; // Nenhum horário disponível neste dia
-      }
+      if (horariosLiberados.length === 0) continue;
 
-      // Obtém hora atual no fuso BRT para validações
-      const agora = getDataHoraAtualBRT();
-
-      // Para cada cliente, verifica se há horário compatível
       for (const cliente of clientes) {
-        // Encontra horário que casa com a preferência do cliente
         const horarioCompativel = horariosLiberados.find((hora: string) =>
           prefereHorario(
             cliente.tipo_preferencia,
@@ -263,51 +403,31 @@ Deno.serve(async (req: Request) => {
           )
         );
 
-        if (!horarioCompativel) {
-          continue; // Nenhum horário compatível com preferência
-        }
+        if (!horarioCompativel) continue;
 
-        // ⏰ Verifica antecedência mínima (2 horas) - fuso BRT
-        const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}:00-03:00`);
-        const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
+        const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}`);
+        const diffHoras = (horarioSlot.getTime() - agoraBRT.getTime()) / (1000 * 60 * 60);
 
         if (diffHoras < 2) {
-          console.log(
-            `⏰ Pulando ${horarioCompativel}: apenas ${diffHoras.toFixed(1)}h de antecedência`
-          );
-          continue; // Menos de 2 horas de antecedência
-        }
-
-        // Regra: Horário não pode estar no passado (mesmo dia, fuso BRT)
-        if (horarioSlot <= agora) {
-          console.log(`⏰ Pulando ${horarioCompativel}: horário já passou`);
+          console.log(`⏰ Pulando ${horarioCompativel}: apenas ${diffHoras.toFixed(1)}h de antecedência`);
           continue;
         }
 
-        // ✅ Horário compatível encontrado! Notifica o cliente.
+        const tokenReserva = gerarToken();
         const dataFmt = new Date(cliente.data_preferida).toLocaleDateString("pt-BR");
         const nomeCliente = cliente.cliente_nome.split(" ")[0];
 
-        // Mensagem WhatsApp
-        const mensagemWhatsApp = `🎉 *VAGA LIBEROU!*
+        const mensagemWhatsApp = `🎉 *VAGA LIBEROU!*\n\n` +
+          `Oi ${nomeCliente}! Uma vaga surgiu que pode te interessar:\n\n` +
+          `📅 Data: ${dataFmt}\n` +
+          `⏰ Horário: ${horarioCompativel}\n` +
+          `${cliente.servico_nome ? `💇 Serviço: ${cliente.servico_nome}\n` : ""}\n` +
+          `⚡ *Você tem ${TIMEOUT_MINUTOS_DEFAULT} minutos para confirmar!*\n` +
+          `⏰ Após este tempo, a vaga será oferecida ao próximo da fila.\n\n` +
+          `🔗 ${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenReserva}`;
 
-Oi ${nomeCliente}! Uma vaga surgiu que pode te interessar:
+        await enviarWhatsApp(cliente.cliente_telefone, mensagemWhatsApp);
 
-📅 Data: ${dataFmt}
-⏰ Horário: ${horarioCompativel}
-💇 Serviço: ${cliente.servico_nome || "A definir"}
-
-⚡ *Corre que é por ordem de chegada!*
-
-👉 Agende agora: ${Deno.env.get("APP_URL")}/agenda/${prestadorId}`;
-
-        // Envia WhatsApp
-        const enviadoWhatsApp = await enviarWhatsApp(
-          cliente.cliente_telefone,
-          mensagemWhatsApp
-        );
-
-        // Envia email se tiver email
         if (cliente.cliente_email) {
           const emailHtml = `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
@@ -319,54 +439,75 @@ Oi ${nomeCliente}! Uma vaga surgiu que pode te interessar:
                 ${cliente.servico_nome ? `<p><strong>💇 Serviço:</strong> ${cliente.servico_nome}</p>` : ""}
               </div>
               <p style="color:#8a8778;font-size:14px">
-                ⚡ Vagas da lista de espera são por ordem de chegada!
+                ⚡ Você tem <strong>${TIMEOUT_MINUTOS_DEFAULT} minutos</strong> para confirmar!<br>
+                Após este tempo, a vaga será oferecida ao próximo da fila.
               </p>
-              <a href="${Deno.env.get("APP_URL")}/agenda/${prestadorId}" 
+              <a href="${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenReserva}" 
                  style="display:inline-block;background:#c8f060;color:#000;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;margin-top:8px">
                 Agendar Agora
               </a>
             </div>
           `;
-          await enviarEmail(
-            cliente.cliente_email,
-            `🎉 Vaga liberou para ${dataFmt}!`,
-            emailHtml
-          );
+          await enviarEmail(cliente.cliente_email, `🎉 Vaga liberou para ${dataFmt}!`, emailHtml);
         }
 
-        // Atualiza status para notificada
-        const { error: erroUpdate } = await supabase
+        // Buscar agendamento original que foi cancelado para este horário
+        const dataHoraInicio = `${dataPreferida}T${horarioCompativel}:00-03:00`;
+        
+        const { data: agendamentoOriginal } = await supabase
+          .from("agendamentos")
+          .select("id")
+          .eq("prestador_id", prestadorId)
+          .eq("status", "cancelado")
+          .gte("data_hora", dataHoraInicio)
+          .lt("data_hora", new Date(new Date(dataHoraInicio).getTime() + 60 * 60 * 1000).toISOString())
+          .limit(1)
+          .single();
+
+        // Atualizar status do agendamento original para reservado (bloqueado para lista)
+        if (agendamentoOriginal) {
+          await supabase
+            .from("agendamentos")
+            .update({ status: "reservado" })
+            .eq("id", agendamentoOriginal.id);
+          
+          console.log(`🔒 Agendamento original ${agendamentoOriginal.id} marcado como reservado`);
+        }
+
+        await supabase
           .from("lista_espera")
           .update({
             status: 'notificada',
             status_atualizado_em: new Date().toISOString(),
+            token_reserva: tokenReserva,
+            reservado_em: new Date().toISOString(),
+            timeout_minutos: TIMEOUT_MINUTOS_DEFAULT,
+            notificado_em: new Date().toISOString(),
+            agendamento_original_id: agendamentoOriginal?.id || null,
           })
           .eq("id", cliente.id);
 
-        if (erroUpdate) {
-          Sentry.captureException(erroUpdate);
-          falhas++;
-        } else {
-          notificados++;
-          console.log(
-            `✅ Notificado: ${cliente.cliente_nome} para ${dataFmt} às ${horarioCompativel}`
-          );
-        }
+        notificados++;
+        console.log(`✅ Notificado: ${cliente.cliente_nome} para ${dataFmt} às ${horarioCompativel} (token: ${tokenReserva})`);
+
+        break;
       }
     }
 
     return new Response(JSON.stringify({
       sucesso: true,
       notificados,
-      falhas,
+      reservas_expiradas: reservasExpiradas,
+      proximos_notificados: proximosNotificados,
       total_processados: listaEspera.length,
-      timestamp: new Date().toISOString(),
+      timestamp: agora.toISOString(),
     }), {
       status: 200,
       headers: { ...corsHeaders(), "Content-Type": "application/json" },
     });
   } catch (e) {
     Sentry.captureException(e);
+    console.error("Erro geral:", e);
     return new Response(JSON.stringify({ erro: "Erro interno" }), {
       status: 500,
       headers: { ...corsHeaders(), "Content-Type": "application/json" },

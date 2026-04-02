@@ -58,13 +58,70 @@ Deno.serve(async (req: Request) => {
       return Response.json({ erro: "Body inválido" }, { status: 400, headers: CORS });
     }
 
-    const { prestador_id, servico_id, cliente_nome, cliente_tel, cliente_email, data_hora } = body;
+    const { prestador_id, servico_id, cliente_nome, cliente_tel, cliente_email, data_hora, token_reserva } = body;
 
     if (!prestador_id || !servico_id || !cliente_nome || !cliente_tel || !data_hora) {
       return Response.json(
         { erro: "Campos obrigatórios: prestador_id, servico_id, cliente_nome, cliente_tel, data_hora" },
         { status: 400, headers: CORS }
       );
+    }
+
+    // ── Supabase (service role para bypassar RLS) ──────────────────────────
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // ── 0. Sevier token de reserva da lista de espera ───────────────────────
+    let agendamentoOriginalId: string | null = null;
+    
+    if (token_reserva) {
+      // Validar token na lista de espera
+      const { data: reserva, error: erroReserva } = await supabase
+        .from("lista_espera")
+        .select("id, prestador_id, data_preferida, hora_preferida, agendamento_original_id, cliente_nome, cliente_telefone, cliente_email")
+        .eq("token_reserva", token_reserva)
+        .eq("status", "notificada")
+        .single();
+
+      if (erroReserva || !reserva) {
+        return Response.json(
+          { erro: "Token de reserva inválido ou expirado" },
+          { status: 400, headers: CORS }
+        );
+      }
+
+      // Verificar se o prestador é o mesmo
+      if (reserva.prestador_id !== prestador_id) {
+        return Response.json(
+          { erro: "Token não pertence a este prestador" },
+          { status: 400, headers: CORS }
+        );
+      }
+
+      // Verificar se o horário ainda está reservado (não expirou)
+      if (!reserva.reservado_em || !reserva.timeout_minutos) {
+        return Response.json(
+          { erro: "Reserva expirada. Por favor, tente novamente." },
+          { status: 400, headers: CORS }
+        );
+      }
+
+      const agora = new Date();
+      const dtReserva = new Date(reserva.reservado_em);
+      const timeoutMs = reserva.timeout_minutos * 60 * 1000;
+      const expiraEm = new Date(dtReserva.getTime() + timeoutMs);
+
+      if (agora >= expiraEm) {
+        return Response.json(
+          { erro: "Tempo para confirmar expirou. Por favor, tente novamente." },
+          { status: 400, headers: CORS }
+        );
+      }
+
+      // Guardar ID do agendamento original para cancelar depois
+      agendamentoOriginalId = reserva.agendamento_original_id;
     }
 
     // Validação básica de data_hora
@@ -82,15 +139,6 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: CORS }
       );
     }
-
-    // ── Supabase (service role para bypassar RLS) ──────────────────────────
-    // Usamos service role pois a tabela agendamentos tem RLS que exige auth.
-    // A validação de negócio (limite free, serviço ativo, prestador existe)
-    // é feita aqui antes de qualquer escrita.
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // ── 1. Valida que o prestador existe ───────────────────────────────────
   const { data: prestador, error: errPrest } = await supabase
@@ -221,6 +269,30 @@ Deno.serve(async (req: Request) => {
   if (errInsert || !agendamento) {
     console.error("Erro ao inserir agendamento:", errInsert);
     return Response.json({ erro: "Erro ao criar agendamento" }, { status: 500, headers: CORS });
+  }
+
+  // ── 5b. Cancelar agendamento original e atualizar lista de espera ─────────
+  if (agendamentoOriginalId) {
+    // Cancelar o agendamento original (era reservado, agora cancelado)
+    await supabase
+      .from("agendamentos")
+      .update({ status: "cancelado" })
+      .eq("id", agendamentoOriginalId);
+
+    // Atualizar lista de espera: marcar como agendada
+    if (token_reserva) {
+      await supabase
+        .from("lista_espera")
+        .update({
+          status: 'agendada',
+          status_atualizado_em: new Date().toISOString(),
+          token_reserva: null,
+          reservado_em: null,
+        })
+        .eq("token_reserva", token_reserva);
+    }
+
+    console.log(`🔄 Agendamento original ${agendamentoOriginalId} marcado como cancelado`);
   }
 
   // ── 6. Upsert em clientes (CRM) ────────────────────────────────────────

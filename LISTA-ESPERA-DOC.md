@@ -1,21 +1,15 @@
-# 📋 Lista de Espera Inteligente 2.1 — Documentação Completa
+# 📋 Lista de Espera Inteligente 2.5 — Documentação Completa
 
-**Versão:** 2.1.1 (Atualizado em 2026-04-02)
+**Versão:** 2.5 (Atualizado em 2026-04-02)
 
-**Mudanças na 2.1.1:**
-- ✅ Correção de fuso horário (BRT/UTC) em todas as validações
-- ✅ Validação precisa de períodos com minutos
-- ✅ Trigger otimizada (não reseta status desnecessariamente)
-- ✅ Functions legadas removidas (`notificar-lista-espera`, `entrada-lista-espera`)
-- ✅ Cleanup automático com cálculo correto de 30 dias
-
-**Mudanças na 2.1:**
-- ✅ Campo `status` adicionado (ativa/notificada/agendada/desistiu/expirada)
-- ✅ Trigger corrigido para `AFTER UPDATE` (detecta cancelamento por status)
-- ✅ Cleanup automático de entradas antigas (> 30 dias)
-- ✅ Edge function unificada (`lista-espera` com ações múltiplas)
-- ✅ Cron job otimizado (30 min em vez de 5 min)
-- ✅ Métricas de conversão adicionadas
+**Mudanças na 2.5:**
+- ✅ Sistema de reserva com timeout (30 min)
+- ✅ Token de reserva por notificação
+- ✅ Notificação em cascata (próximo da fila)
+- ✅ Front bloqueia horários reservados
+- ✅ Mensagem atualizada com tempo limite
+- ✅ Verificação de timeout no cron (a cada 30 min)
+- ✅ Ação "validar-reserva" para agendamento
 
 ---
 
@@ -39,29 +33,43 @@ A **Lista de Espera Inteligente** permite que clientes entrem em uma lista de es
 └──────────────────────────────────────────────────────────────┘
                             ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ 2. CANCELAMENTO LIBEROU VAGA                                 │
-│    └─ Trigger marca: status = 'ativa'                        │
+│ 2. CRON JOB (*/30 * * * *)                                    │
+│    ├─ Verifica reservas expiradas                             │
+│    └─ Se expirou: notifica próximo da fila                    │
 └──────────────────────────────────────────────────────────────┘
                             ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ 3. CRON JOB (*/30 * * * *)                                   │
-│    ├─ Busca: status IN ('ativa', 'notificada')               │
-│    ├─ Filtra: data_preferida >= hoje                         │
-│    └─ Chama: horarios-disponiveis                            │
+│ 3. VAGA LIBERADA (sem reserva ativa)                         │
+│    ├─ Busca: status = 'ativa'                                │
+│    ├─ Chama: horarios-disponiveis                             │
+│    └─ Filtra: compatível com preferência                      │
 └──────────────────────────────────────────────────────────────┘
                             ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ 4. VERIFICA COMPATIBILIDADE                                  │
-│    ├─ Slot disponível para o serviço?                        │
-│    ├─ Horário compatível com preferência?                    │
-│    └─ Antecedência >= 2 horas?                               │
+│ 4. NOTIFICA CLIENTE + RESERVA                                │
+│    ├─ Gera token_reserva UUID                                │
+│    ├─ Marca reservado_em = NOW()                             │
+│    ├─ timeout_minutos = 30                                   │
+│    └─ Mensagem: "Você tem 30 min para confirmar!"            │
 └──────────────────────────────────────────────────────────────┘
                             ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ 5. NOTIFICA CLIENTE                                          │
-│    ├─ WhatsApp (Evolution API)                               │
-│    ├─ Email (SendGrid)                                       │
-│    └─ Atualiza: status = 'notificada'                        │
+│ 5. CLIENTE AGENDA (via link com token)                       │
+│    ├─ Front envia token + data + hora                        │
+│    ├─ criar-agendamento valida token                         │
+│    └─ Se válido: cria agendamento + marca status='agendada' │
+└──────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│ 6. TIMEOUT (30 min)                                           │
+│    ├─ Cron verifica reservas expiradas                      │
+│    ├─ Se NÃO agendou: libera reserva (token=null)            │
+│    └─ Notifica próximo da fila (se houver)                   │
+└──────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│ 7. SE NINGUÉM DA LISTA AGENDAR                               │
+│    └─ Horário liberado para agendamento comum (front)        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -102,10 +110,25 @@ CREATE TABLE public.lista_espera (
   status TEXT DEFAULT 'ativa',            -- 'ativa' | 'notificada' | 'agendada' | 'desistiu' | 'expirada'
   status_atualizado_em TIMESTAMPTZ DEFAULT NOW(),
   
+  -- Sistema de reserva (2.5)
+  token_reserva UUID,                    -- Token para validar reserva
+  reservado_em TIMESTAMPTZ,              -- Quando a reserva foi criada
+  timeout_minutos INT DEFAULT 30,         -- Tempo para confirmar (padrão 30 min)
+  notificado_em TIMESTAMPTZ,             -- Quando foi notificado
+  
   -- Único por cliente/data/hora/serviço
   UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
 );
 ```
+
+### Novos Campos (v2.5)
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `token_reserva` | UUID | Token único gerado na notificação |
+| `reservado_em` | TIMESTAMPTZ | Timestamp de quando a reserva foi criada |
+| `timeout_minutos` | INT | Tempo em minutos para confirmar (padrão 30) |
+| `notificado_em` | TIMESTAMPTZ | Quando o cliente foi notificado |
 
 ### Status da Entrada
 
@@ -376,12 +399,23 @@ WHERE prestador_id = OLD.prestador_id
 
 **Nome:** `cron-notificar-lista-espera`
 
-**Schedule:** `*/30 * * * *` (a cada 30 minutos - otimizado)
+**Schedule:** `*/30 * * * *` (a cada 30 minutos)
 
 **Por que 30 minutos?**
 - Reduz custo de Edge Function (48 execuções/dia vs 288)
+- **Sincronizado com timeout de 30 min**: quando cron roda, reserva expira exatamente
 - Suficiente para notificar em tempo hábil
-- Pode ser complementado com webhook no cancelamento (notificação imediata)
+- Complementado com webhook no cancelamento (notificação imediata)
+
+**Fluxo otimizado v2.5:**
+```
+14:00 → Vaga cancelou → notifica Cliente A (timeout 30 min)
+14:30 → Cron roda → verifica expirações
+       → Se A não confirmou: libera e notifica Cliente B
+       → B tem novos 30 min (expira 15:00)
+15:00 → Cron roda → verifica expirações
+       → Se B não confirmou: libera e notifica Cliente C
+```
 
 **Deploy:**
 ```bash
