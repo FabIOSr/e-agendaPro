@@ -228,7 +228,7 @@ Deno.serve(async (req: Request) => {
       `⏰ Preferência: ${horaDisplay}\n` +
       `${servico_nome ? `💇 Serviço: ${servico_nome} (${servico_duracao_min} min)\n\n` : ""}` +
       `Te avisaremos se uma vaga surgir! ⏰\n\n` +
-      `Válido por 7 dias.`;
+      `Você será notificado(a) até 2h antes do horário.`;
 
     // Envia WhatsApp (não bloqueante)
     enviarWhatsApp(cliente_telefone, mensagemWhatsApp);
@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
               ${servico_nome ? `<li>💇 Serviço: ${servico_nome} (${servico_duracao_min} min)</li>` : ""}
             </ul>
           </div>
-          <p style="color:#8a8778;font-size:14px">Te avisaremos se uma vaga surgir! Válido por 7 dias.</p>
+          <p style="color:#8a8778;font-size:14px">Te avisaremos se uma vaga surgir! Notificações até 2h antes do horário.</p>
         </div>
       `;
       enviarEmail(cliente_email, "✅ Você está na Lista de Espera!", emailHtml);

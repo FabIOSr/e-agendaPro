@@ -59,6 +59,7 @@
 │  • 21:00 UTC → lembrete-d1                                  │
 │  • 03:00 UTC → downgrade-planos-vencidos + expirar_trials   │
 │  • */60 min  → solicitar-avaliacoes                         │
+│  • */5 min   → cron-notificar-lista-espera                  │
 └──────────┬───────────────┬──────────────────────────────────┘
            │               │
            ▼               ▼
@@ -195,6 +196,9 @@ google_calendar_tokens (
 16. trial_ends_at.sql           → trial de 7 dias, expirar_trials(), ativar_trial()
 17. ativar_trial_auto.sql       → auto-ativa trial no cadastro
 18. downgrade_limits.sql        → aplicar_limites_free(), downgrade_pro()
+22. periodicidade_assinatura.sql → coluna assinatura_periodicidade (MONTHLY/YEARLY)
+23. lista_espera.sql            → tabela lista_espera com preferências de horário
+24. cancelamentos_recentes.sql  → função agendamentos_cancelados_recentes()
 ```
 
 ---
@@ -213,8 +217,35 @@ google_calendar_tokens (
 | `reagendar-cliente` | GET/POST | token URL | Página HTML + execução de reagendamento pelo cliente |
 | `avaliacoes` | GET/POST | token URL / público | Página de avaliação + API pública de reviews |
 | `google-calendar-sync` | GET/POST | OAuth / JWT | Conecta Calendar e sincroniza criação/edição/cancelamento |
-| `entrada-lista-espera` | POST | JWT | Adiciona cliente na lista de espera e envia confirmação |
+| `entrada-lista-espera` | POST | JWT | Adiciona cliente na lista de espera com preferências de horário |
 | `notificar-lista-espera` | POST | webhook | Notifica clientes quando vaga surge (cancelamento) |
+| `cron-notificar-lista-espera` | POST | cron | Job a cada 5 min que notifica clientes na lista de espera |
+
+### Lista Espera Inteligente 2.0
+
+**Funcionalidade:** Clientes entram na lista de espera e são notificados automaticamente quando uma vaga é liberada por cancelamento.
+
+**Preferências de horário (3 tipos):**
+- **Exato:** Só notifica se liberar exatamente o horário escolhido (ex: 14:00)
+- **Período:** Notifica se liberar qualquer horário no período (manhã/tarde/noite)
+- **Qualquer:** Notifica se liberar qualquer horário no dia (máxima chance)
+
+**Regras de notificação:**
+- ✅ Notifica se `data_preferida >= hoje`
+- ❌ Não notifica se data já passou
+- ❌ Não notifica se horário < 2h a partir de agora (antecedência mínima)
+- Reutiliza `horarios-disponiveis` para verificar compatibilidade com serviço
+
+**Cron job:** `cron-notificar-lista-espera` roda a cada 5 minutos (`*/5 * * * *`)
+
+**Fluxo:**
+```
+1. Cliente entra na lista (escolhe serviço + preferência)
+2. Cancelamento libera vaga → trigger marca notificado=false
+3. Cron job detecta e verifica compatibilidade
+4. Notifica WhatsApp + Email se horário compatível
+5. Marca notificado=true
+```
 
 ### Deploy de todas as funções
 
@@ -222,8 +253,9 @@ google_calendar_tokens (
 for fn in horarios-disponiveis lembretes-whatsapp ativar-trial \
           criar-assinatura webhook-asaas cancelar-assinatura \
           cancelar-agendamento-cliente reagendar-cliente \
-          avaliacoes google-calendar-sync; do
-  supabase functions deploy $fn
+          avaliacoes google-calendar-sync entrada-lista-espera \
+          notificar-lista-espera cron-notificar-lista-espera; do
+  supabase functions deploy $fn --project-ref kevqgxmcoxmzbypdjhru
 done
 ```
 
@@ -455,12 +487,14 @@ firebase deploy --only hosting
 ## 10. Checklist de lançamento {#checklist}
 
 ### Banco e auth
-- [ ] Todas as 9 migrations rodadas em ordem
+- [ ] Todas as 11 migrations rodadas em ordem
 - [ ] Trigger `on_auth_user_created` funcionando (teste: criar usuário e ver linha em `prestadores`)
 - [ ] Trial auto-ativado no cadastro (plano='pro', trial_ends_at=+7d)
 - [ ] RLS testada: usuário A não acessa dados do usuário B
 - [ ] Google OAuth configurado e testado
-- [ ] Cron jobs ativos: `downgrade-planos-vencidos`, `expirar_trials`, `lembrete-d1`, `solicitar-avaliacoes`
+- [ ] Cron jobs ativos: `downgrade-planos-vencidos`, `expirar_trials`, `lembrete-d1`, `solicitar-avaliacoes`, `cron-notificar-lista-espera`
+- [ ] Migration 23 (lista_espera) aplicada com índices e RLS
+- [ ] Trigger `trg_marcar_lista_espera` funcionando após cancelamento
 
 ### Edge Functions
 - [ ] `horarios-disponiveis` → testa conflito com bloqueio e agendamento
@@ -471,6 +505,9 @@ firebase deploy --only hosting
 - [ ] `reagendar-cliente` → seleciona novo horário e atualiza
 - [ ] `avaliacoes` → envia, bloqueia dupla avaliação
 - [ ] `google-calendar-sync` → fluxo OAuth completo + criar/deletar evento
+- [ ] `entrada-lista-espera` → testa entrada com 3 tipos de preferência
+- [ ] `cron-notificar-lista-espera` → testa notificação após cancelamento
+- [ ] `notificar-lista-espera` → testa notificação individual
 
 ### Pagamentos
 - [ ] Fluxo completo testado no sandbox Asaas (Pix + Cartão)

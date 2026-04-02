@@ -139,7 +139,6 @@ Deno.serve(async (req: Request) => {
       .eq("data_preferida", data)
       .eq("agendado", false)
       .eq("notificado", false)
-      .gt("expira_em", new Date().toISOString())
       .order("criado_em", { ascending: true })
       .limit(1)
       .single();

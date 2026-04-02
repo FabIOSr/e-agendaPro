@@ -1,0 +1,700 @@
+# 📋 Lista de Espera Inteligente 2.0 — Documentação Completa
+
+## Visão Geral
+
+A **Lista de Espera Inteligente** permite que clientes entrem em uma lista de espera para horários específicos e sejam notificados automaticamente quando uma vaga é liberada por cancelamento.
+
+**Diferencial 2.0:** Cliente escolhe **como** quer ser notificado:
+- **Horário exato:** Só notifica se liberar exatamente aquele horário
+- **Período do dia:** Notifica se liberar qualquer horário no período (manhã/tarde/noite)
+- **Qualquer horário:** Notifica se liberar qualquer horário no dia
+
+---
+
+## 🏗️ Arquitetura
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ 1. CLIENTE ENTRA NA LISTA                                    │
+│    └─ Escolhe: serviço + data + preferência                  │
+└──────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│ 2. CANCELAMENTO LIBEROU VAGA                                 │
+│    └─ Trigger marca: notificado = FALSE                      │
+└──────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│ 3. CRON JOB (*/5 * * * *)                                    │
+│    ├─ Busca: notificado = FALSE, agendado = FALSE            │
+│    ├─ Filtra: data_preferida >= hoje                         │
+│    └─ Chama: horarios-disponiveis                            │
+└──────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│ 4. VERIFICA COMPATIBILIDADE                                  │
+│    ├─ Slot disponível para o serviço?                        │
+│    ├─ Horário compatível com preferência?                    │
+│    └─ Antecedência >= 2 horas?                               │
+└──────────────────────────────────────────────────────────────┘
+                            ↓
+┌──────────────────────────────────────────────────────────────┐
+│ 5. NOTIFICA CLIENTE                                          │
+│    ├─ WhatsApp (Evolution API)                               │
+│    ├─ Email (SendGrid)                                       │
+│    └─ Atualiza: notificado = TRUE                            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🗄️ Estrutura do Banco
+
+### Tabela `lista_espera`
+
+```sql
+CREATE TABLE public.lista_espera (
+  -- Identificação
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Vínculo com prestador
+  prestador_id UUID NOT NULL REFERENCES prestadores(id) ON DELETE CASCADE,
+  
+  -- Dados do cliente
+  cliente_nome TEXT NOT NULL,
+  cliente_telefone TEXT NOT NULL,
+  cliente_email TEXT,
+  
+  -- Preferência de horário/data
+  data_preferida DATE NOT NULL,
+  hora_preferida TIME,
+  
+  -- Serviço (para compatibilidade)
+  servico_id UUID REFERENCES servicos(id) ON DELETE CASCADE,
+  servico_nome TEXT,
+  servico_duracao_min INT,
+  
+  -- Tipo de preferência
+  tipo_preferencia TEXT DEFAULT 'exato',  -- 'exato' | 'periodo' | 'qualquer'
+  periodo_preferido TEXT,                 -- 'manha' | 'tarde' | 'noite'
+  
+  -- Controle de notificação
+  criado_em TIMESTAMPTZ DEFAULT NOW(),
+  notificado BOOLEAN DEFAULT FALSE,
+  notificado_em TIMESTAMPTZ,
+  agendado BOOLEAN DEFAULT FALSE,
+  
+  -- Único por cliente/data/hora/serviço
+  UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
+);
+```
+
+### Índices
+
+```sql
+CREATE INDEX idx_lista_espera_prestador ON lista_espera(prestador_id);
+CREATE INDEX idx_lista_espera_data ON lista_espera(data_preferida);
+CREATE INDEX idx_lista_espera_servico ON lista_espera(servico_id);
+CREATE INDEX idx_lista_espera_notificado ON lista_espera(notificado, agendado);
+```
+
+### RLS (Row Level Security)
+
+```sql
+ALTER TABLE public.lista_espera ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Prestador vê sua lista de espera"
+  ON lista_espera FOR SELECT TO authenticated
+  USING (
+    auth.uid() = (SELECT p.id FROM prestadores p WHERE p.id = prestador_id)
+  );
+```
+
+**Nota:** `prestadores.id` = `auth.users.id` (mesma UUID)
+
+---
+
+## ⚙️ Regras de Negócio
+
+### 1. Entrada na Lista
+
+| Campo | Obrigatório | Validação |
+|-------|-------------|-----------|
+| `prestador_id` | Sim | Deve existir em `prestadores` |
+| `cliente_nome` | Sim | - |
+| `cliente_telefone` | Sim | Formato WhatsApp (DD + número) |
+| `cliente_email` | Não | Formato email válido |
+| `data_preferida` | Sim | Data futura ou hoje |
+| `hora_preferida` | Depende | Obrigatório se `tipo='exato'` |
+| `servico_id` | Sim | Deve existir em `servicos` |
+| `tipo_preferencia` | Sim | `'exato'` (padrão), `'periodo'`, `'qualquer'` |
+| `periodo_preferido` | Depende | Obrigatório se `tipo='periodo'` |
+
+**Validação de Duplicidade:**
+```sql
+UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
+```
+
+Um cliente **pode** entrar múltiplas vezes se:
+- Data diferente
+- Serviço diferente
+- Horário diferente
+
+Um cliente **não pode** entrar duas vezes para o **mesmo** serviço/data/horário.
+
+---
+
+### 2. Tipos de Preferência
+
+#### **Tipo: `exato`**
+Cliente quer horário específico.
+
+```
+Exemplo:
+- Data: 25/04/2026
+- Hora: 14:00
+- Tipo: 'exato'
+
+Notifica apenas se:
+✅ Liberar exatamente 14:00
+❌ Liberar 13:00 ou 15:00
+```
+
+#### **Tipo: `periodo`**
+Cliente aceita qualquer horário no período.
+
+```
+Exemplo:
+- Data: 25/04/2026
+- Período: 'tarde' (13:00-18:00)
+- Tipo: 'periodo'
+
+Notifica se:
+✅ Liberar 13:00, 14:00, 15:00, 16:00, 17:00, 18:00
+❌ Liberar 09:00 (manhã)
+❌ Liberar 19:00 (noite)
+```
+
+**Períodos definidos:**
+- `manha`: 08:00-12:00
+- `tarde`: 13:00-18:00
+- `noite`: 19:00-21:00
+
+#### **Tipo: `qualquer`**
+Cliente aceita qualquer horário no dia.
+
+```
+Exemplo:
+- Data: 25/04/2026
+- Tipo: 'qualquer'
+
+Notifica se:
+✅ Liberar 09:00, 14:00, 18:00, etc.
+```
+
+---
+
+### 3. Notificação (Regras Críticas)
+
+#### **Regra 1: Data não pode estar no passado**
+
+```typescript
+const hoje = new Date().toISOString().split('T')[0]; // "2026-04-01"
+
+if (data_preferida < hoje) {
+  // ❌ Não notifica (data já passou)
+  continue;
+}
+```
+
+**Exemplo:**
+```
+Entrou para: 25/04/2026
+Hoje: 26/04/2026
+Status: ❌ Não notifica (data já passou)
+```
+
+---
+
+#### **Regra 2: Antecedência mínima de 2 horas**
+
+```typescript
+const agora = new Date();
+const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}`);
+const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
+
+if (diffHoras < 2) {
+  // ❌ Não notifica (menos de 2 horas)
+  continue;
+}
+```
+
+**Exemplos:**
+```
+Horário liberado: 25/04/2026 14:00
+
+20/04 10:00 → ✅ Notifica (5 dias antes, 4h > 2h)
+25/04 10:00 → ✅ Notifica (4h antes)
+25/04 11:59 → ✅ Notifica (2h antes)
+25/04 12:01 → ❌ Não notifica (1h59 antes)
+25/04 13:55 → ❌ Não notifica (5 min antes)
+25/04 14:05 → ❌ Não notifica (hora já passou)
+```
+
+**Por que 2 horas?**
+- Tempo de deslocamento (profissionais de beleza)
+- Margem para cliente se organizar
+- Evita notificações inúteis ("já era")
+
+**Como mudar:**
+```typescript
+// No cron-notificar-lista-espera/index.ts
+if (diffHoras < 4) continue;  // 4 horas
+if (diffHoras < 1) continue;  // 1 hora
+```
+
+---
+
+#### **Regra 3: Horário não pode estar no passado (mesmo dia)**
+
+```typescript
+const agora = new Date();
+const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}`);
+
+if (horarioSlot <= agora) {
+  // ❌ Não notifica (horário já passou)
+  continue;
+}
+```
+
+**Exemplo:**
+```
+Data: 25/04/2026
+Horário liberado: 14:00
+
+25/04 13:55 → ✅ Notifica (ainda dá tempo)
+25/04 14:05 → ❌ Não notifica (já passou)
+```
+
+---
+
+#### **Regra 4: Serviço deve caber no slot**
+
+```typescript
+// Chama horarios-disponiveis com servico_id do cliente
+const slotsResponse = await fetch('/horarios-disponiveis', {
+  body: JSON.stringify({
+    prestador_id,
+    data: dataPreferida,
+    servico_id: cliente.servico_id  // ← Importante!
+  })
+});
+
+// Filtra apenas slots que comportam o serviço
+const horariosLiberados = slotsDisponiveis
+  .filter(s => s.disponivel === true)
+  .map(s => s.hora);
+```
+
+**Exemplo:**
+```
+Cliente quer: Coloração (120 min)
+
+Slot liberado: 14:00-15:00 (60 min)
+❌ Não notifica (não cabe)
+
+Slot liberado: 14:00-16:00 (120 min)
+✅ Notifica (cabe)
+```
+
+---
+
+### 4. Trigger de Cancelamento
+
+```sql
+CREATE TRIGGER trg_marcar_lista_espera
+  AFTER DELETE ON agendamentos
+  FOR EACH ROW
+  EXECUTE FUNCTION marcar_lista_espera_para_notificacao();
+```
+
+**Função:**
+```sql
+UPDATE lista_espera
+SET notificado = FALSE  -- Para o cron job processar
+WHERE prestador_id = OLD.prestador_id
+  AND data_preferida = (OLD.data_hora)::DATE
+  AND agendado = FALSE;
+```
+
+**Quando dispara:**
+- Quando um agendamento é **cancelado** (DELETE)
+- Marca `notificado = FALSE` para o cron job detectar
+- Filtra por **mesmo prestador** e **mesma data**
+
+---
+
+## 🔄 Cron Job
+
+### Configuração
+
+**Nome:** `cron-notificar-lista-espera`
+
+**Schedule:** `*/5 * * * *` (a cada 5 minutos)
+
+**Deploy:**
+```bash
+supabase functions deploy cron-notificar-lista-espera --project-ref kevqgxmcoxmzbypdjhru
+```
+
+**Configurar no Supabase:**
+1. Dashboard → Edge Functions → `cron-notificar-lista-espera`
+2. Settings → Schedules
+3. Add Schedule → `*/5 * * * *`
+
+---
+
+### Fluxo Interno
+
+```typescript
+// 1. Busca clientes não notificados
+const { data: listaEspera } = await supabase
+  .from("lista_espera")
+  .select("*")
+  .eq("agendado", false)
+  .eq("notificado", false)
+  .order("criado_em", { ascending: true });
+
+// 2. Filtra data >= hoje
+const hoje = new Date().toISOString().split('T')[0];
+const listaValida = listaEspera.filter(
+  item => item.data_preferida >= hoje
+);
+
+// 3. Agrupa por prestador + data
+const grupos = new Map();
+for (const item of listaValida) {
+  const key = `${item.prestador_id}|${item.data_preferida}`;
+  grupos.get(key).push(item);
+}
+
+// 4. Para cada grupo, chama horarios-disponiveis
+for (const [key, clientes] of grupos.entries()) {
+  const slots = await fetch('/horarios-disponiveis', {...});
+  
+  // 5. Filtra slots disponíveis
+  const horariosLiberados = slots
+    .filter(s => s.disponivel)
+    .map(s => s.hora);
+  
+  // 6. Para cada cliente, encontra horário compatível
+  for (const cliente of clientes) {
+    const horarioCompativel = horariosLiberados.find(hora =>
+      prefereHorario(
+        cliente.tipo_preferencia,
+        cliente.hora_preferida,
+        cliente.periodo_preferido,
+        hora
+      )
+    );
+    
+    // 7. Verifica antecedência >= 2h
+    const diffHoras = (horarioSlot - agora) / (1000 * 60 * 60);
+    if (diffHoras < 2) continue;
+    
+    // 8. Notifica!
+    await enviarWhatsApp(cliente.telefone, mensagem);
+    await supabase
+      .from("lista_espera")
+      .update({
+        notificado: true,
+        notificado_em: new Date().toISOString()
+      })
+      .eq("id", cliente.id);
+  }
+}
+```
+
+---
+
+## 📱 Mensagens
+
+### WhatsApp (Entrada na Lista)
+
+```
+🎉 *Lista de Espera - {Prestador}*
+
+Oi {Nome}! Você entrou na lista de espera para:
+
+📅 Data: {dataFmt}
+⏰ Preferência: {horaDisplay}
+💇 Serviço: {servico_nome} ({duracao} min)
+
+Te avisaremos se uma vaga surgir! ⏰
+
+Você será notificado(a) até 2h antes do horário.
+```
+
+### WhatsApp (Vaga Liberou)
+
+```
+🎉 *VAGA LIBEROU!*
+
+Oi {Nome}! Uma vaga surgiu que pode te interessar:
+
+📅 Data: {dataFmt}
+⏰ Horário: {hora}
+💇 Serviço: {servico_nome}
+
+⚡ *Corre que é por ordem de chegada!*
+
+{link_agendamento}
+```
+
+### Email (Entrada na Lista)
+
+```html
+<div style="font-family:sans-serif;max-width:600px">
+  <h2 style="color:#c8f060">🎉 Lista de Espera</h2>
+  <p>Você entrou na lista de espera para <strong>{Prestador}</strong>:</p>
+  <div style="background:#f2f0ea;padding:16px;border-radius:8px">
+    <ul>
+      <li>📅 Data: {dataFmt}</li>
+      <li>⏰ Preferência: {horaDisplay}</li>
+      <li>💇 Serviço: {servico_nome}</li>
+    </ul>
+  </div>
+  <p style="color:#8a8778">
+    Te avisaremos se uma vaga surgir! Notificações até 2h antes do horário.
+  </p>
+</div>
+```
+
+---
+
+## 🧪 Testes
+
+### Cenário 1: Notificação Funciona
+
+```
+1. Cliente entra na lista para 25/04 às 14:00 (tipo: exato)
+2. Agendamento existente para 25/04 às 14:00 é cancelado
+3. Cron job roda (até 5 min)
+4. ✅ Cliente recebe WhatsApp "Vaga Liberou"
+5. ✅ notificado = true, notificado_em = NOW()
+```
+
+### Cenário 2: Data Já Passou
+
+```
+1. Cliente entra na lista para 01/04 às 14:00
+2. Hoje é 02/04
+3. Vaga libera para 01/04 às 14:00
+4. ❌ Cliente NÃO é notificado (data < hoje)
+```
+
+### Cenário 3: Menos de 2h de Antecedência
+
+```
+1. Cliente entra na lista para 25/04 às 14:00
+2. Hoje é 25/04, agora são 12:30
+3. Vaga libera para 25/04 às 14:00
+4. ❌ Cliente NÃO é notificado (1.5h < 2h)
+```
+
+### Cenário 4: Serviço Incompatível
+
+```
+1. Cliente quer Coloração (120 min)
+2. Vaga libera: 14:00-15:00 (60 min)
+3. ❌ Cliente NÃO é notificado (serviço não cabe)
+```
+
+### Cenário 5: Preferência de Período
+
+```
+1. Cliente quer "tarde" (13-18h)
+2. Vaga libera: 09:00 (manhã)
+3. ❌ Cliente NÃO é notificado
+4. Vaga libera: 15:00 (tarde)
+5. ✅ Cliente É notificado
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Problema: Cliente não está sendo notificado
+
+**Verificar:**
+1. `notificado = false` no banco?
+2. `agendado = false` no banco?
+3. `data_preferida >= hoje`?
+4. Horário tem >= 2h de antecedência?
+5. Serviço cabe no slot disponível?
+6. Preferência de horário é compatível?
+
+**Debug:**
+```bash
+# Logs do cron job
+supabase functions logs cron-notificar-lista-espera
+```
+
+---
+
+### Problema: Notificação chegando em cima da hora
+
+**Causa:** Antecedência mínima configurada errada.
+
+**Solução:**
+```typescript
+// Verificar no cron-notificar-lista-espera/index.ts
+if (diffHoras < 2) continue;  // Deve ser 2 (horas)
+```
+
+---
+
+### Problema: Cliente notificado para data passada
+
+**Causa:** Filtro de data não está funcionando.
+
+**Solução:**
+```typescript
+// Verificar filtro
+const hoje = new Date().toISOString().split('T')[0];
+const listaValida = listaEspera.filter(
+  item => item.data_preferida >= hoje  // Deve ser >=
+);
+```
+
+---
+
+## 📊 Métricas (Futuro)
+
+**Dashboard do Prestador:**
+- Total na lista de espera
+- Notificados hoje
+- Agendados da lista (conversão)
+- Taxa de conversão (%)
+
+**Alertas:**
+- Cliente na lista há > 7 dias sem notificação
+- Taxa de conversão < 10%
+
+---
+
+## 🔐 Segurança
+
+### RLS (Row Level Security)
+
+```sql
+-- Apenas o prestador pode ver sua própria lista
+CREATE POLICY "Prestador vê sua lista de espera"
+  ON lista_espera FOR SELECT TO authenticated
+  USING (
+    auth.uid() = (SELECT p.id FROM prestadores p WHERE p.id = prestador_id)
+  );
+```
+
+### Grants
+
+```sql
+GRANT INSERT ON lista_espera TO authenticated;
+GRANT UPDATE ON lista_espera TO authenticated;
+```
+
+**Nota:** Cliente pode entrar na lista, mas não pode ver/editar outros registros.
+
+---
+
+## 📝 Migration 23 Completa
+
+```sql
+-- migration 23: Lista Espera Inteligente
+DROP TABLE IF EXISTS public.lista_espera;
+
+CREATE TABLE public.lista_espera (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  prestador_id UUID NOT NULL REFERENCES prestadores(id) ON DELETE CASCADE,
+  cliente_nome TEXT NOT NULL,
+  cliente_telefone TEXT NOT NULL,
+  cliente_email TEXT,
+  data_preferida DATE NOT NULL,
+  hora_preferida TIME,
+  servico_id UUID REFERENCES servicos(id) ON DELETE CASCADE,
+  servico_nome TEXT,
+  servico_duracao_min INT,
+  tipo_preferencia TEXT DEFAULT 'exato',
+  periodo_preferido TEXT,
+  criado_em TIMESTAMPTZ DEFAULT NOW(),
+  notificado BOOLEAN DEFAULT FALSE,
+  notificado_em TIMESTAMPTZ,
+  agendado BOOLEAN DEFAULT FALSE,
+  UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
+);
+
+COMMENT ON COLUMN lista_espera.data_preferida IS 
+'Data de interesse. Notificações só ocorrem até esta data (com min. 2h antecedência).';
+
+-- Índices
+CREATE INDEX idx_lista_espera_prestador ON lista_espera(prestador_id);
+CREATE INDEX idx_lista_espera_data ON lista_espera(data_preferida);
+CREATE INDEX idx_lista_espera_servico ON lista_espera(servico_id);
+CREATE INDEX idx_lista_espera_notificado ON lista_espera(notificado, agendado);
+
+-- RLS
+ALTER TABLE lista_espera ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Prestador vê sua lista de espera"
+  ON lista_espera FOR SELECT TO authenticated
+  USING (auth.uid() = (SELECT p.id FROM prestadores p WHERE p.id = prestador_id));
+
+-- Trigger
+CREATE OR REPLACE FUNCTION marcar_lista_espera_para_notificacao()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    UPDATE lista_espera
+    SET notificado = FALSE
+    WHERE prestador_id = OLD.prestador_id
+      AND data_preferida = (OLD.data_hora)::DATE
+      AND agendado = FALSE;
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_marcar_lista_espera ON agendamentos;
+CREATE TRIGGER trg_marcar_lista_espera
+  AFTER DELETE ON agendamentos
+  FOR EACH ROW
+  EXECUTE FUNCTION marcar_lista_espera_para_notificacao();
+
+-- Grants
+GRANT INSERT ON lista_espera TO authenticated;
+GRANT UPDATE ON lista_espera TO authenticated;
+```
+
+---
+
+## 🚀 Deploy Checklist
+
+- [ ] Migration 23 aplicada no Supabase
+- [ ] Migration 24 aplicada (placeholder)
+- [ ] Edge function `entrada-lista-espera` deployada
+- [ ] Edge function `cron-notificar-lista-espera` deployada
+- [ ] Edge function `notificar-lista-espera` deployada
+- [ ] Cron job configurado no Supabase (*/5 * * * *)
+- [ ] Teste de entrada na lista (3 tipos de preferência)
+- [ ] Teste de cancelamento → notificação
+- [ ] Teste de antecedência mínima (2h)
+- [ ] Teste de data passada (não notifica)
+- [ ] WhatsApp Evolution API configurado
+- [ ] Email SendGrid configurado
+
+---
+
+**Última atualização:** 2026-04-01  
+**Versão:** 2.0  
+**Status:** ✅ Implementado

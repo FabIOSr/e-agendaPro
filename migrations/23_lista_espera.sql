@@ -2,6 +2,7 @@
 -- Permite que clientes entrem na lista de espera para horários específicos
 -- Notificação automática quando vaga surge por cancelamento
 
+DROP TABLE IF EXISTS public.lista_espera;
 -- Tabela de lista de espera
 CREATE TABLE IF NOT EXISTS public.lista_espera (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -29,7 +30,6 @@ COMMENT ON COLUMN public.lista_espera.data_preferida IS
 -- Índice para busca rápida
 CREATE INDEX IF NOT EXISTS idx_lista_espera_prestador ON public.lista_espera(prestador_id);
 CREATE INDEX IF NOT EXISTS idx_lista_espera_data ON public.lista_espera(data_preferida);
-CREATE INDEX IF NOT EXISTS idx_lista_espera_expira ON public.lista_espera(expira_em);
 CREATE INDEX IF NOT EXISTS idx_lista_espera_servico ON public.lista_espera(servico_id);
 CREATE INDEX IF NOT EXISTS idx_lista_espera_notificado ON public.lista_espera(notificado, agendado);
 
@@ -41,15 +41,13 @@ CREATE POLICY "Prestador vê sua lista de espera"
   FOR SELECT
   TO authenticated
   USING (
-    auth.uid() = (SELECT user_id FROM public.prestadores WHERE id = prestador_id)
+    auth.uid() = (SELECT p.id FROM public.prestadores p WHERE p.id = prestador_id)
   );
 
 -- Trigger: marcar para notificação quando agendamento for cancelado
 -- A notificação real é feita por cron job (cron-notificar-lista-espera)
 CREATE OR REPLACE FUNCTION public.marcar_lista_espera_para_notificacao()
 RETURNS TRIGGER AS $$
-DECLARE
-  vaga_na_lista RECORD;
 BEGIN
   -- Só dispara em cancelamento (DELETE)
   IF TG_OP = 'DELETE' THEN
@@ -59,8 +57,7 @@ BEGIN
     SET notificado = FALSE  -- Mantém como não notificado para o cron processar
     WHERE prestador_id = OLD.prestador_id
       AND data_preferida = (OLD.data_hora)::DATE
-      AND agendado = FALSE
-      AND expira_em > NOW();
+      AND agendado = FALSE;
 
     RETURN OLD;
   END IF;

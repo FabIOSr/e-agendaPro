@@ -39,19 +39,112 @@
 - **Migration 24 criada:**
   - Função `agendamentos_cancelados_recentes()` (placeholder)
 
-**Validade:** 7 dias (configurável)  
-**Notificação:** WhatsApp (Evolution API) + Email (SendGrid)  
-**Cron:** */5 * * * * (a cada 5 minutos)
+### 📋 Regras de Notificação (Atualizado)
 
-**Arquivos criados:**
+**Antecedência Mínima:**
+- Notifica apenas se horário liberado for ≥ 2 horas a partir de agora
+- Evita notificações "em cima da hora" (ex: 13:59 para vaga 14:00)
+- Configurável no código: `diffHoras < 2`
+
+**Validade da Entrada:**
+- ✅ Notifica se `data_preferida >= hoje`
+- ❌ Não notifica se `data_preferida < hoje` (data já passou)
+- ❌ Não notifica se horário já passou (mesmo dia)
+- Sem expiração artificial de 7 dias (removido campo `expira_em`)
+
+**Compatibilidade:**
+- Reutiliza `horarios-disponiveis` para verificar se serviço cabe no slot
+- Considera duração do serviço do cliente vs duração do slot
+
+**Exemplo Prático:**
+```
+Cliente entra na lista: 25/04/2026 às 14:00
+
+20/04 10:00 → ✅ Notifica (5 dias antes)
+25/04 10:00 → ✅ Notifica (4h antes)
+25/04 11:59 → ✅ Notifica (2h antes)
+25/04 12:01 → ❌ Não notifica (1h59 antes)
+25/04 14:01 → ❌ Não notifica (hora já passou)
+26/04 08:00 → ❌ Não notifica (data já passou)
+```
+
+### 🔄 Fluxo Completo
+
+```
+1. CLIENTE ENTRA NA LISTA
+   ├─ Escolhe tipo de preferência (exato/período/qualquer)
+   ├─ Informa data e horário/período
+   ├─ Seleciona serviço (para compatibilidade)
+   └─ Recebe confirmação WhatsApp + Email
+
+2. CRON JOB (*/5 * * * *)
+   ├─ Busca: notificado=false, agendado=false
+   ├─ Filtra: data_preferida >= hoje
+   └─ Agrupa por prestador + data
+
+3. CANCELAMENTO LIBEROU VAGA
+   ├─ Trigger marca lista_espera.notificado=false
+   └─ Cron job detecta na próxima execução
+
+4. VERIFICA COMPATIBILIDADE
+   ├─ Chama horarios-disponiveis (serviço do cliente)
+   ├─ Filtra slots disponíveis
+   └─ Encontra horário compatível com preferência
+
+5. NOTIFICA CLIENTE
+   ├─ Verifica antecedência >= 2h
+   ├─ Envia WhatsApp (Evolution API)
+   ├─ Envia Email (SendGrid)
+   └─ Atualiza: notificado=true, notificado_em=NOW()
+```
+
+### 🗄️ Estrutura do Banco (Migration 23)
+
+```sql
+CREATE TABLE public.lista_espera (
+  id UUID PRIMARY KEY,
+  prestador_id UUID NOT NULL REFERENCES prestadores(id),
+  cliente_nome TEXT NOT NULL,
+  cliente_telefone TEXT NOT NULL,
+  cliente_email TEXT,
+  data_preferida DATE NOT NULL,
+  hora_preferida TIME,
+  servico_id UUID REFERENCES servicos(id),
+  servico_nome TEXT,
+  servico_duracao_min INT,
+  tipo_preferencia TEXT DEFAULT 'exato',  -- 'exato' | 'periodo' | 'qualquer'
+  periodo_preferido TEXT,                 -- 'manha' | 'tarde' | 'noite'
+  criado_em TIMESTAMPTZ DEFAULT NOW(),
+  notificado BOOLEAN DEFAULT FALSE,
+  notificado_em TIMESTAMPTZ,
+  agendado BOOLEAN DEFAULT FALSE,
+  UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
+);
+
+-- Índices
+CREATE INDEX idx_lista_espera_prestador ON lista_espera(prestador_id);
+CREATE INDEX idx_lista_espera_data ON lista_espera(data_preferida);
+CREATE INDEX idx_lista_espera_servico ON lista_espera(servico_id);
+CREATE INDEX idx_lista_espera_notificado ON lista_espera(notificado, agendado);
+
+-- RLS: apenas prestador vê sua lista
+CREATE POLICY "Prestador vê sua lista de espera"
+  ON lista_espera FOR SELECT TO authenticated
+  USING (auth.uid() = (SELECT p.id FROM prestadores p WHERE p.id = prestador_id));
+```
+
+### 📁 Arquivos Criados/Modificados
+
+**Criados:**
 - `migrations/24_cancelamentos_recentes.sql`
 - `supabase/functions/cron-notificar-lista-espera/index.ts`
 
-**Arquivos modificados:**
-- `migrations/23_lista_espera.sql` — Campos novos + índices
-- `pages/pagina-cliente.html` — Modal com preferências
-- `supabase/functions/entrada-lista-espera/index.ts` — Salva serviço + preferência
-- `CHANGELOG.md` — Esta entrada
+**Modificados:**
+- `migrations/23_lista_espera.sql` — Remove `expira_em`, corrige RLS
+- `pages/pagina-cliente.html` — Modal com preferências + texto atualizado
+- `supabase/functions/entrada-lista-espera/index.ts` — Salva serviço + preferência, mensagens atualizadas
+- `supabase/functions/notificar-lista-espera/index.ts` — Remove filtro `expira_em`
+- `CHANGELOG.md` — Esta documentação
 
 ---
 
