@@ -1,39 +1,57 @@
 # 🚀 Changelog — AgendaPro
 
-## [2026-04-01] — Lista Espera Inteligente + Busca de Clientes
+## [2026-04-01] — Lista Espera Inteligente 2.0 + Preferências de Horário
 
-### ✨ Nova Funcionalidade: Lista Espera Inteligente (R-1)
+### ✨ Nova Funcionalidade: Lista de Espera com Preferências
 
-**Permite que clientes entrem na lista de espera quando não há horários disponíveis**
+**Cliente escolhe como quer ser notificado quando vaga surgir**
 
-- **Modal de lista de espera** em `pagina-cliente.html`
-  - Acionado quando não há horários no dia selecionado
-  - Formulário com nome, telefone e email (opcional)
-  - Resumo da preferência (data/hora/serviço)
-- **Edge Function `entrada-lista-espera`**
-  - Valida e salva entrada na lista
-  - Envia confirmação por WhatsApp e email
-  - Previne duplicidade (mesmo cliente/horário)
-- **Edge Function `notificar-lista-espera`**
-  - Disparada automaticamente quando vaga surge (cancelamento)
-  - Notifica primeiro cliente da fila (FIFO)
-  - Envia WhatsApp + email com link para agendar
-- **Migration 23**
-  - Tabela `lista_espera` com RLS
-  - Trigger `trg_notificar_lista_espera` no cancelamento
-  - Índice para busca rápida
+- **3 tipos de preferência:**
+  - **Horário exato:** Só notifica se liberar exatamente aquele horário (ex: 14:00)
+  - **Período do dia:** Notifica se liberar qualquer horário no período (manhã/tarde/noite)
+  - **Qualquer horário:** Notifica se liberar qualquer horário no dia (máxima chance)
+
+- **Modal atualizado em `pagina-cliente.html`:**
+  - Radio buttons para escolher tipo de preferência
+  - Input de hora para "exato"
+  - Select de período (manhã/tarde/noite) para "período"
+  - Resumo mostra serviço + duração
+
+- **Edge Function `entrada-lista-espera` atualizada:**
+  - Salva `servico_id`, `servico_duracao_min`
+  - Salva `tipo_preferencia`, `periodo_preferido`
+  - Valida duplicidade inteligente (considera tipo de preferência)
+  - Mensagem WhatsApp/email personalizada com tipo de preferência
+
+- **Nova Edge Function `cron-notificar-lista-espera`:**
+  - Cron job que roda a cada 5 minutos
+  - Busca clientes não notificados na lista de espera
+  - Chama `horarios-disponiveis` para verificar slots disponíveis
+  - Filtra por compatibilidade: horário + período + preferência
+  - Notifica via WhatsApp (Evolution API) + Email (SendGrid)
+  - Marca como notificado após envio
+
+- **Migration 23 atualizada:**
+  - Campos: `servico_id`, `servico_duracao_min`, `tipo_preferencia`, `periodo_preferido`
+  - Índices novos: `idx_lista_espera_servico`, `idx_lista_espera_notificado`
+  - Trigger simplificada: só marca para notificação (cron faz o resto)
+
+- **Migration 24 criada:**
+  - Função `agendamentos_cancelados_recentes()` (placeholder)
 
 **Validade:** 7 dias (configurável)  
-**Notificação:** WhatsApp (Evolution API self-hosted) + Email (SendGrid)  
-**Privacidade:** RLS — apenas prestador vê sua lista
+**Notificação:** WhatsApp (Evolution API) + Email (SendGrid)  
+**Cron:** */5 * * * * (a cada 5 minutos)
 
 **Arquivos criados:**
-- `migrations/23_lista_espera.sql`
-- `supabase/functions/entrada-lista-espera/index.ts`
-- `supabase/functions/notificar-lista-espera/index.ts`
+- `migrations/24_cancelamentos_recentes.sql`
+- `supabase/functions/cron-notificar-lista-espera/index.ts`
 
 **Arquivos modificados:**
-- `pages/pagina-cliente.html` — Modal + botão + funções
+- `migrations/23_lista_espera.sql` — Campos novos + índices
+- `pages/pagina-cliente.html` — Modal com preferências
+- `supabase/functions/entrada-lista-espera/index.ts` — Salva serviço + preferência
+- `CHANGELOG.md` — Esta entrada
 
 ---
 

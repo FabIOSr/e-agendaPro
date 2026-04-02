@@ -115,11 +115,15 @@ Deno.serve(async (req: Request) => {
       cliente_email,
       data_preferida,
       hora_preferida,
+      servico_id,
       servico_nome,
+      servico_duracao_min,
+      tipo_preferencia,
+      periodo_preferido,
     } = body;
 
     // Validações básicas
-    if (!prestador_id || !cliente_nome || !cliente_telefone || !data_preferida || !hora_preferida) {
+    if (!prestador_id || !cliente_nome || !cliente_telefone || !data_preferida) {
       return new Response(JSON.stringify({ erro: "Campos obrigatórios faltando" }), {
         status: 400,
         headers: { ...corsHeaders(), "Content-Type": "application/json" },
@@ -142,9 +146,7 @@ Deno.serve(async (req: Request) => {
       .eq("prestador_id", prestador_id)
       .eq("cliente_telefone", cliente_telefone)
       .eq("data_preferida", data_preferida)
-      .eq("hora_preferida", hora_preferida)
-      .eq("agendado", false)
-      .single();
+      .eq("agendado", false);
 
     if (erroBusca && erroBusca.code !== "PGRST116") {
       // PGRST116 = no rows found
@@ -155,14 +157,23 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (existente) {
-      return new Response(JSON.stringify({ 
-        erro: "Você já está na lista de espera para este horário",
-        id: existente.id 
-      }), {
-        status: 409,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+    // Verifica duplicidade considerando tipo de preferência
+    if (existente && existente.length > 0) {
+      const jaExiste = existente.some((e: any) => {
+        if (tipo_preferencia === 'exato') {
+          return e.hora_preferida === hora_preferida && e.servico_id === servico_id;
+        }
+        return false;
       });
+      
+      if (jaExiste) {
+        return new Response(JSON.stringify({
+          erro: "Você já está na lista de espera para este horário",
+        }), {
+          status: 409,
+          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Inserir na lista de espera
@@ -174,8 +185,12 @@ Deno.serve(async (req: Request) => {
         cliente_telefone,
         cliente_email: cliente_email || null,
         data_preferida,
-        hora_preferida,
+        hora_preferida: tipo_preferencia === 'exato' ? hora_preferida : null,
+        servico_id: servico_id || null,
         servico_nome: servico_nome || null,
+        servico_duracao_min: servico_duracao_min || 60,
+        tipo_preferencia: tipo_preferencia || 'exato',
+        periodo_preferido: periodo_preferido || null,
       })
       .select()
       .single();
@@ -203,12 +218,16 @@ Deno.serve(async (req: Request) => {
 
     // Mensagem de confirmação para o cliente
     const dataFmt = new Date(data_preferida).toLocaleDateString("pt-BR");
+    const horaDisplay = tipo_preferencia === 'exato' 
+      ? (hora_preferida || 'A definir')
+      : (tipo_preferencia === 'periodo' ? `Período: ${periodo_preferido}` : 'Qualquer horário');
+    
     const mensagemWhatsApp = `🎉 *Lista de Espera - ${prestador?.nome_fantasia || "AgendaPro"}*\n\n` +
       `Oi ${cliente_nome.split(" ")[0]}! Você entrou na lista de espera para:\n\n` +
       `📅 Data: ${dataFmt}\n` +
-      `⏰ Horário: ${hora_preferida}\n` +
-      `${servico_nome ? `💇 Serviço: ${servico_nome}\n\n` : ""}` +
-      `Te avisaremos imediatamente se uma vaga surgir! ⏰\n\n` +
+      `⏰ Preferência: ${horaDisplay}\n` +
+      `${servico_nome ? `💇 Serviço: ${servico_nome} (${servico_duracao_min} min)\n\n` : ""}` +
+      `Te avisaremos se uma vaga surgir! ⏰\n\n` +
       `Válido por 7 dias.`;
 
     // Envia WhatsApp (não bloqueante)
@@ -216,16 +235,22 @@ Deno.serve(async (req: Request) => {
 
     // Envia email se tiver email
     if (cliente_email) {
+      const horaDisplayEmail = tipo_preferencia === 'exato' 
+        ? (hora_preferida || 'A definir')
+        : (tipo_preferencia === 'periodo' ? `Período: ${periodo_preferido}` : 'Qualquer horário');
+      
       const emailHtml = `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
           <h2 style="color:#c8f060">🎉 Lista de Espera</h2>
-          <p>Você entrou na lista de espera para <strong>${prestador?.nome_fantase || "AgendaPro"}</strong>:</p>
-          <ul>
-            <li>📅 Data: ${dataFmt}</li>
-            <li>⏰ Horário: ${hora_preferida}</li>
-            ${servico_nome ? `<li>💇 Serviço: ${servico_nome}</li>` : ""}
-          </ul>
-          <p style="color:#8a8778;font-size:14px">Te avisaremos imediatamente se uma vaga surgir! Válido por 7 dias.</p>
+          <p>Você entrou na lista de espera para <strong>${prestador?.nome_fantasia || "AgendaPro"}</strong>:</p>
+          <div style="background:#f2f0ea;padding:16px;border-radius:8px;margin:16px 0">
+            <ul style="margin:0;padding-left:20px">
+              <li>📅 Data: ${dataFmt}</li>
+              <li>⏰ Preferência: ${horaDisplayEmail}</li>
+              ${servico_nome ? `<li>💇 Serviço: ${servico_nome} (${servico_duracao_min} min)</li>` : ""}
+            </ul>
+          </div>
+          <p style="color:#8a8778;font-size:14px">Te avisaremos se uma vaga surgir! Válido por 7 dias.</p>
         </div>
       `;
       enviarEmail(cliente_email, "✅ Você está na Lista de Espera!", emailHtml);

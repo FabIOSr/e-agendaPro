@@ -1625,10 +1625,25 @@
       const dataFmt = state.data.toLocaleDateString('pt-BR');
       const horaFmt = state.hora || '--:--';
       document.getElementById('resumo-lista-espera').textContent = `${dataFmt} às ${horaFmt}`;
-      document.getElementById('resumo-servico').textContent = state.servico?.nome || '';
+      document.getElementById('resumo-servico').textContent = `${state.servico?.nome || ''} (${state.servico?.duracaoMin || 60} min)`;
+      
+      // Setar hora exata com o valor selecionado (ou padrão 14:00)
+      const horaInput = document.getElementById('hora-exata');
+      if (horaInput && state.hora) {
+        horaInput.value = state.hora;
+      }
       
       const modal = document.getElementById('modal-lista-espera');
       if (modal) modal.style.display = 'flex';
+    };
+
+    window.mostrarOpcoesPreferencia = function() {
+      const exatoRadio = document.querySelector('input[value="exato"]');
+      const periodoRadio = document.querySelector('input[value="periodo"]');
+      const qualquerRadio = document.querySelector('input[value="qualquer"]');
+      
+      document.getElementById('opcao-exato').style.display = exatoRadio?.checked ? 'block' : 'none';
+      document.getElementById('opcao-periodo').style.display = periodoRadio?.checked ? 'block' : 'none';
     };
 
     window.fecharListaEspera = function() {
@@ -1646,6 +1661,20 @@
         return;
       }
 
+      // Capturar preferências
+      const tipoPreferenciaEl = document.querySelector('input[name="tipo-preferencia"]:checked');
+      const tipoPreferencia = tipoPreferenciaEl?.value || 'exato';
+      
+      let horaPreferida = null;
+      let periodoPreferido = null;
+      
+      if (tipoPreferencia === 'exato') {
+        horaPreferida = document.getElementById('hora-exata')?.value || '14:00';
+      } else if (tipoPreferencia === 'periodo') {
+        periodoPreferido = document.getElementById('periodo-select')?.value || 'tarde';
+      }
+      // 'qualquer' não precisa de hora ou período
+
       const btn = document.querySelector('.btn-entrar-lista-espera');
       if (btn) {
         btn.disabled = true;
@@ -1654,7 +1683,7 @@
 
       try {
         const dataFmt = state.data.toISOString().split('T')[0];
-        const horaFmt = state.hora || '10:00';
+        const horaFmt = horaPreferida || state.hora || '10:00';
 
         const res = await fetch(`${SUPABASE_URL}/functions/v1/entrada-lista-espera`, {
           method: 'POST',
@@ -1668,8 +1697,12 @@
             cliente_telefone: telefone,
             cliente_email: email || null,
             data_preferida: dataFmt,
-            hora_preferida: horaFmt,
+            hora_preferida: tipoPreferencia === 'exato' ? horaFmt : null,
+            servico_id: state.servico?.id || null,
             servico_nome: state.servico?.nome || null,
+            servico_duracao_min: state.servico?.duracaoMin || 60,
+            tipo_preferencia: tipoPreferencia,
+            periodo_preferido: periodoPreferido,
           }),
         });
 
@@ -1717,6 +1750,45 @@
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Preferência</div>
         <div style="font-weight:600;font-size:14px" id="resumo-lista-espera">--/--/-- às --:--</div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px" id="resumo-servico">--</div>
+      </div>
+
+      <!-- Preferência de horário -->
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">Como quer ser avisado?</label>
+        
+        <label style="display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer">
+          <input type="radio" name="tipo-preferencia" value="exato" checked onchange="mostrarOpcoesPreferencia()">
+          <div>
+            <div style="font-size:13px;font-weight:600">Horário específico</div>
+            <div style="font-size:11px;color:var(--muted)">Só me avise se liberar exatamente este horário</div>
+          </div>
+        </label>
+        <div id="opcao-exato" style="margin-left:26px;margin-top:8px">
+          <input type="time" id="hora-exata" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" value="14:00">
+        </div>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer">
+          <input type="radio" name="tipo-preferencia" value="periodo" onchange="mostrarOpcoesPreferencia()">
+          <div>
+            <div style="font-size:13px;font-weight:600">Período do dia</div>
+            <div style="font-size:11px;color:var(--muted)">Me avise se liberar qualquer horário neste período</div>
+          </div>
+        </label>
+        <div id="opcao-periodo" style="margin-left:26px;margin-top:8px;display:none">
+          <select id="periodo-select" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:100%">
+            <option value="manha">Manhã (06:00 - 12:00)</option>
+            <option value="tarde" selected>Tarde (13:00 - 18:00)</option>
+            <option value="noite">Noite (19:00 - 23:00)</option>
+          </select>
+        </div>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer">
+          <input type="radio" name="tipo-preferencia" value="qualquer" onchange="mostrarOpcoesPreferencia()">
+          <div>
+            <div style="font-size:13px;font-weight:600">Qualquer horário</div>
+            <div style="font-size:11px;color:var(--muted)">Me avise se liberar qualquer horário neste dia (mais chances!)</div>
+          </div>
+        </label>
       </div>
 
       <form onsubmit="event.preventDefault();entrarNaListaEspera()" style="display:flex;flex-direction:column;gap:12px">
