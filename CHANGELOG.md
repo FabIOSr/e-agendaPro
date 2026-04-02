@@ -1,5 +1,135 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-02] — Correções Críticas: Limite Free, Timezone e Build
+
+### 🔧 Correções Implementadas
+
+#### 1. **Validação de Limite Free no Backend**
+- **Arquivo:** `supabase/functions/criar-agendamento/index.ts`
+- Edge Function já validava limite de 10 agendamentos/mês para Free
+- **Adicionado:** Retorno do WhatsApp do prestador quando limite é atingido
+- **Frontend atualizado:** `pages/pagina-cliente.html` agora exibe banner com botão WhatsApp
+
+```typescript
+// Backend retorna WhatsApp para contato alternativo
+return Response.json({
+  erro: "limite_atingido",
+  count: count ?? 0,
+  limite: LIMITE_FREE,
+  whatsapp: prestador.whatsapp  // ← Novo
+}, { status: 403 });
+```
+
+#### 2. **Timezone Correto nas Edge Functions**
+- **Arquivos:** `cron-notificar-lista-espera/index.ts`, `horarios-disponiveis/index.ts`
+- **Problema:** `date-fns-tz` causava erro de bundle no Deno
+- **Solução:** Usar APIs nativas (`Intl.DateTimeFormat` e conversão manual)
+
+```typescript
+// Data atual em BRT (UTC-3) sem dependências externas
+function getDataAtualBRT(): string {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  const parts = formatter.formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+```
+
+#### 3. **Detecção de Timezone no Frontend**
+- **Arquivo:** `pages/pagina-cliente.html`
+- **Adicionado:** `state.timezone` detecta timezone do browser automaticamente
+- **Envio:** Timezone é enviado para Edge Function no payload
+
+```javascript
+const state = {
+  // ...
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+};
+```
+
+#### 4. **Build com Placeholders Corretos**
+- **Arquivos:** `config.js`, `build.js`, `modules/auth-session.js`
+- **Problema:** Validação falhava após build porque checava placeholders antigos
+- **Solução:** Placeholders `__VAR__` substituídos + validação atualizada
+
+```javascript
+// config.js (template)
+const CONFIG_DEFAULTS = {
+  SUPABASE_URL: '__SUPABASE_URL__',
+  // ...
+};
+
+// Validação pré-build: checa placeholders
+if (!config.SUPABASE_URL || config.SUPABASE_URL === '__SUPABASE_URL__' || ...)
+
+// build.js: atualiza validação pós-build
+configContent = configContent.replace(
+  /if \(!config\.SUPABASE_URL \|\| config\.SUPABASE_URL === '__SUPABASE_URL__' \|\| ...\)/,
+  `if (!config.SUPABASE_URL || !config.SUPABASE_ANON || !config.APP_URL)`
+);
+```
+
+#### 5. **Intervalo entre Slots (Free vs Pro)**
+- **Arquivo:** `pages/configuracoes.html` (já implementado)
+- **Status:** Confirmado que campo é desabilitado para usuários Free
+- **Backend:** `aplicar_limites_free()` reseta `intervalo_slot` para 0 no downgrade
+
+### 📝 Arquivos Modificados
+
+| Arquivo | Mudança |
+|---------|---------|
+| `config.js` | Placeholders `__VAR__` + validação simplificada |
+| `build.js` | Substituição de placeholders + atualização da validation |
+| `modules/auth-session.js` | Placeholders `__SUPABASE_URL__` e `__SUPABASE_ANON__` |
+| `supabase/functions/criar-agendamento/index.ts` | Retorna WhatsApp no erro 403 |
+| `supabase/functions/cron-notificar-lista-espera/index.ts` | Timezone com API nativa |
+| `supabase/functions/horarios-disponiveis/index.ts` | Timezone com API nativa |
+| `pages/pagina-cliente.html` | Detecta timezone + exibe WhatsApp no limite |
+
+### 🧪 Como Testar
+
+**Teste 1: Limite Free**
+```
+1. Crie conta Free
+2. Crie 10 agendamentos
+3. Tente criar 11º agendamento
+4. ✅ Banner "Agenda indisponível" com botão WhatsApp
+```
+
+**Teste 2: Build**
+```bash
+npm run build
+# ✅ Deve completar sem erros
+```
+
+**Teste 3: Timezone**
+```javascript
+// Console do browser na página de agendamento
+console.log(state.timezone);
+// ✅ "America/Sao_Paulo" (ou seu timezone local)
+```
+
+### 📦 Deploy
+
+```bash
+# 1. Build
+npm run build
+
+# 2. Deploy frontend
+firebase deploy --only hosting
+
+# 3. Deploy Edge Functions
+supabase functions deploy criar-agendamento --project-ref kevqgxmcoxmzbypdjhru
+supabase functions deploy cron-notificar-lista-espera --project-ref kevqgxmcoxmzbypdjhru
+supabase functions deploy horarios-disponiveis --project-ref kevqgxmcoxmzbypdjhru
+```
+
+---
+
 ## [2026-04-01] — Lista Espera Inteligente 2.0 + Preferências de Horário
 
 ### ✨ Nova Funcionalidade: Lista de Espera com Preferências

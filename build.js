@@ -37,30 +37,29 @@ console.log(`   SENTRY_ENVIRONMENT: ${env.SENTRY_ENVIRONMENT}`);
 
 // ── Processa config.js ─────────────────────────────────────────────────────
 let configContent = fs.readFileSync(path.join(__dirname, 'config.js'), 'utf8');
+configContent = configContent
+  .replace('__SUPABASE_URL__', env.SUPABASE_URL)
+  .replace('__SUPABASE_ANON__', env.SUPABASE_ANON)
+  .replace('__APP_URL__', env.APP_URL)
+  .replace('__SENTRY_DSN__', env.SENTRY_DSN)
+  .replace('__SENTRY_ENVIRONMENT__', env.SENTRY_ENVIRONMENT)
+  .replace('__VERSION__', env.VERSION);
+
+// Atualiza validação pós-build (valores não podem ser vazios)
 configContent = configContent.replace(
-  /const CONFIG_DEFAULTS = \{[^}]+\}/,
-  `const CONFIG_DEFAULTS = {
-    SUPABASE_URL: '${env.SUPABASE_URL}',
-    SUPABASE_ANON: '${env.SUPABASE_ANON}',
-    APP_URL: '${env.APP_URL}',
-    SENTRY_DSN: '${env.SENTRY_DSN}',
-    SENTRY_ENVIRONMENT: '${env.SENTRY_ENVIRONMENT}',
-    VERSION: '${env.VERSION}'
-  }`
+  /if \(!config\.SUPABASE_URL \|\| config\.SUPABASE_URL === '__SUPABASE_URL__' \|\|\s*!config\.SUPABASE_ANON \|\| config\.SUPABASE_ANON === '__SUPABASE_ANON__' \|\|\s*!config\.APP_URL \|\| config\.APP_URL === '__APP_URL__'\)/,
+  `if (!config.SUPABASE_URL || !config.SUPABASE_ANON || !config.APP_URL)`
 );
+
 fs.writeFileSync(path.join(__dirname, 'config.js'), configContent);
 console.log('   ✅ config.js');
 
 // ── Processa auth-session.js ───────────────────────────────────────────────
 let authContent = fs.readFileSync(path.join(__dirname, 'modules/auth-session.js'), 'utf8');
-authContent = authContent.replace(
-  "const SUPABASE_URL  = window.SUPABASE_URL;",
-  `const SUPABASE_URL  = '${env.SUPABASE_URL}';`
-);
-authContent = authContent.replace(
-  "const SUPABASE_ANON = window.SUPABASE_ANON;",
-  `const SUPABASE_ANON = '${env.SUPABASE_ANON}';`
-);
+authContent = authContent
+  .replace("const SUPABASE_URL  = '__SUPABASE_URL__';", `const SUPABASE_URL  = '${env.SUPABASE_URL}';`)
+  .replace("const SUPABASE_ANON = '__SUPABASE_ANON__';", `const SUPABASE_ANON = '${env.SUPABASE_ANON}';`);
+
 fs.writeFileSync(path.join(__dirname, 'modules/auth-session.js'), authContent);
 console.log('   ✅ modules/auth-session.js');
 

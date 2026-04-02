@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
     // ── 1. Valida que o prestador existe ───────────────────────────────────
   const { data: prestador, error: errPrest } = await supabase
     .from("prestadores")
-    .select("id, plano, plano_valido_ate")
+    .select("id, plano, plano_valido_ate, whatsapp")
     .eq("id", prestador_id)
     .maybeSingle();
 
@@ -201,7 +201,12 @@ Deno.serve(async (req: Request) => {
     if ((count ?? 0) >= LIMITE_FREE) {
       console.log(`Limite free atingido para prestador ${prestador_id}: ${count} agendamentos`);
       return Response.json(
-        { erro: "limite_atingido", count: count ?? 0, limite: LIMITE_FREE },
+        { 
+          erro: "limite_atingido", 
+          count: count ?? 0, 
+          limite: LIMITE_FREE,
+          whatsapp: prestador.whatsapp 
+        },
         { status: 403, headers: CORS }
       );
     }

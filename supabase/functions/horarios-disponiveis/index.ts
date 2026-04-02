@@ -21,6 +21,9 @@ if (SENTRY_DSN) {
   });
 }
 
+const TIMEZONE_BRT = 'America/Sao_Paulo';
+const BRT_OFFSET_MS = -180 * 60 * 1000; // BRT é UTC-3
+
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
@@ -105,7 +108,11 @@ function gerarSlots(
   intervaloMin = 0,
   bloqueiosRecorrentes: BloqueioRecorrente[] = []
 ): Slot[] {
-  const agora = new Date();
+  // Hora atual em BRT (UTC-3)
+  const now = new Date();
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const agora = new Date(utcTime + BRT_OFFSET_MS);
+  
   const slots: Slot[] = [];
 
   // O cursor avança pela cadência dos slots (intervaloSlot), não pelo buffer.

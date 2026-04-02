@@ -21,6 +21,7 @@ if (SENTRY_DSN) {
 }
 
 const TIMEOUT_MINUTOS_DEFAULT = 30;
+const TIMEZONE_BRT = 'America/Sao_Paulo';
 
 function corsHeaders() {
   return {
@@ -30,16 +31,34 @@ function corsHeaders() {
   };
 }
 
+/**
+ * Retorna data atual no fuso BRT como string YYYY-MM-DD
+ * Usa Intl.DateTimeFormat para conversão correta de timezone
+ */
 function getDataAtualBRT(): string {
-  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-    .split('/')
-    .reverse()
-    .join('-');
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: TIMEZONE_BRT,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
+/**
+ * Retorna data/hora atual no fuso BRT como Date
+ * Converte UTC para BRT manualmente
+ */
 function getDataHoraAtualBRT(): Date {
-  const agoraBRT = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  return new Date(agoraBRT);
+  const now = new Date();
+  // Obtém offset do timezone BRT em minutos
+  const offset = -180; // BRT é UTC-3 (180 minutos)
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const brtTime = new Date(utcTime + (offset * 60000));
+  return brtTime;
 }
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {

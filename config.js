@@ -1,5 +1,6 @@
 // config.js — Configurações do AgendaPro
 // As variáveis são injetadas pelo processo de build (build.js)
+// Placeholders: __VAR__ são substituídos no build
 
 (function() {
   const CONFIG_DEFAULTS = {

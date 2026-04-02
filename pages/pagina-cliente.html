@@ -1080,6 +1080,7 @@
       data: null, dataLabel: null,
       hora: null,
       nome: '', tel: '', email: '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Detecta timezone do browser
     };
 
     let calAno = new Date().getFullYear();
@@ -1532,6 +1533,7 @@
             cliente_tel: state.tel,
             cliente_email: state.email,
             data_hora: dataHoraISO,
+            timezone: state.timezone, // Timezone detectado do browser
           }),
         });
 
@@ -1539,6 +1541,10 @@
 
         // Limite free atingido (403)
         if (resp.status === 403 && resultado.erro === 'limite_atingido') {
+          // Atualiza o WhatsApp do prestador se retornado pelo backend
+          if (resultado.whatsapp) {
+            PRESTADOR.whatsapp = resultado.whatsapp;
+          }
           mostrarBannerLimite();
           window.irPara(1);
           if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
