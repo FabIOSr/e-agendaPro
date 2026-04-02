@@ -1,6 +1,13 @@
 # 📋 Lista de Espera Inteligente 2.1 — Documentação Completa
 
-**Versão:** 2.1 (Atualizado em 2026-04-01)
+**Versão:** 2.1.1 (Atualizado em 2026-04-02)
+
+**Mudanças na 2.1.1:**
+- ✅ Correção de fuso horário (BRT/UTC) em todas as validações
+- ✅ Validação precisa de períodos com minutos
+- ✅ Trigger otimizada (não reseta status desnecessariamente)
+- ✅ Functions legadas removidas (`notificar-lista-espera`, `entrada-lista-espera`)
+- ✅ Cleanup automático com cálculo correto de 30 dias
 
 **Mudanças na 2.1:**
 - ✅ Campo `status` adicionado (ativa/notificada/agendada/desistiu/expirada)
@@ -198,10 +205,10 @@ Notifica se:
 ❌ Liberar 19:00 (noite)
 ```
 
-**Períodos definidos:**
-- `manha`: 08:00-12:00
-- `tarde`: 13:00-18:00
-- `noite`: 19:00-21:00
+**Períodos definidos (com validação precisa de minutos):**
+- `manha`: 08:00-12:59 (480-779 minutos)
+- `tarde`: 13:00-18:59 (780-1139 minutos)
+- `noite`: 19:00-21:59 (1140-1319 minutos)
 
 #### **Tipo: `qualquer`**
 Cliente aceita qualquer horário no dia.
@@ -334,26 +341,32 @@ Slot liberado: 14:00-16:00 (120 min)
 
 ### 4. Trigger de Cancelamento
 
+**Importante:** O trigger usa `AFTER UPDATE` (não `DELETE`) porque o sistema utiliza **soft delete** via status.
+
 ```sql
 CREATE TRIGGER trg_marcar_lista_espera
-  AFTER DELETE ON agendamentos
+  AFTER UPDATE ON agendamentos
   FOR EACH ROW
+  WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'cancelado')
   EXECUTE FUNCTION marcar_lista_espera_para_notificacao();
 ```
 
 **Função:**
 ```sql
+-- Atualiza timestamp para forçar reprocessamento pelo cron job
+-- Mantém o status atual (não reseta para não perder estado)
 UPDATE lista_espera
-SET notificado = FALSE  -- Para o cron job processar
+SET status_atualizado_em = NOW()
 WHERE prestador_id = OLD.prestador_id
   AND data_preferida = (OLD.data_hora)::DATE
-  AND agendado = FALSE;
+  AND status IN ('ativa', 'notificada');
 ```
 
 **Quando dispara:**
-- Quando um agendamento é **cancelado** (DELETE)
-- Marca `notificado = FALSE` para o cron job detectar
+- Quando um agendamento é **cancelado** (UPDATE status = 'cancelado')
+- Atualiza `status_atualizado_em` para o cron job detectar
 - Filtra por **mesmo prestador** e **mesma data**
+- Mantém o status atual (ativa ou notificada)
 
 ---
 
@@ -414,16 +427,15 @@ supabase functions deploy lista-espera --project-ref kevqgxmcoxmzbypdjhru
 ### Fluxo Interno
 
 ```typescript
-// 1. Busca clientes não notificados
+// 1. Busca clientes na lista (status: ativa ou notificada)
 const { data: listaEspera } = await supabase
   .from("lista_espera")
   .select("*")
-  .eq("agendado", false)
-  .eq("notificado", false)
+  .in("status", ["ativa", "notificada"])
   .order("criado_em", { ascending: true });
 
-// 2. Filtra data >= hoje
-const hoje = new Date().toISOString().split('T')[0];
+// 2. Filtra data >= hoje (fuso BRT)
+const hoje = getDataAtualBRT(); // Função helper com timeZone: 'America/Sao_Paulo'
 const listaValida = listaEspera.filter(
   item => item.data_preferida >= hoje
 );
@@ -438,13 +450,16 @@ for (const item of listaValida) {
 // 4. Para cada grupo, chama horarios-disponiveis
 for (const [key, clientes] of grupos.entries()) {
   const slots = await fetch('/horarios-disponiveis', {...});
-  
+
   // 5. Filtra slots disponíveis
   const horariosLiberados = slots
     .filter(s => s.disponivel)
     .map(s => s.hora);
-  
-  // 6. Para cada cliente, encontra horário compatível
+
+  // 6. Obtém hora atual BRT para validações
+  const agora = getDataHoraAtualBRT();
+
+  // 7. Para cada cliente, encontra horário compatível
   for (const cliente of clientes) {
     const horarioCompativel = horariosLiberados.find(hora =>
       prefereHorario(
@@ -454,18 +469,24 @@ for (const [key, clientes] of grupos.entries()) {
         hora
       )
     );
-    
-    // 7. Verifica antecedência >= 2h
-    const diffHoras = (horarioSlot - agora) / (1000 * 60 * 60);
+
+    if (!horarioCompativel) continue;
+
+    // 8. Verifica antecedência >= 2h (fuso BRT)
+    const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}:00-03:00`);
+    const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
     if (diffHoras < 2) continue;
-    
-    // 8. Notifica!
+
+    // 9. Verifica se horário não está no passado (BRT)
+    if (horarioSlot <= agora) continue;
+
+    // 10. Notifica!
     await enviarWhatsApp(cliente.telefone, mensagem);
     await supabase
       .from("lista_espera")
       .update({
-        notificado: true,
-        notificado_em: new Date().toISOString()
+        status: 'notificada',
+        status_atualizado_em: new Date().toISOString()
       })
       .eq("id", cliente.id);
   }
@@ -663,12 +684,12 @@ const metrics = await supabase
 ### Problema: Cliente não está sendo notificado
 
 **Verificar:**
-1. `notificado = false` no banco?
-2. `agendado = false` no banco?
-3. `data_preferida >= hoje`?
-4. Horário tem >= 2h de antecedência?
-5. Serviço cabe no slot disponível?
-6. Preferência de horário é compatível?
+1. `status IN ('ativa', 'notificada')` no banco?
+2. `data_preferida >= hoje` (fuso BRT)?
+3. Horário tem >= 2h de antecedência?
+4. Serviço cabe no slot disponível?
+5. Preferência de horário é compatível?
+6. Horário não está no passado (BRT)?
 
 **Debug:**
 ```bash
@@ -680,11 +701,14 @@ supabase functions logs cron-notificar-lista-espera
 
 ### Problema: Notificação chegando em cima da hora
 
-**Causa:** Antecedência mínima configurada errada.
+**Causa:** Antecedência mínima configurada errada ou fuso horário incorreto.
 
 **Solução:**
 ```typescript
 // Verificar no cron-notificar-lista-espera/index.ts
+const agora = getDataHoraAtualBRT(); // Usar fuso BRT
+const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}:00-03:00`);
+const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
 if (diffHoras < 2) continue;  // Deve ser 2 (horas)
 ```
 
@@ -692,12 +716,12 @@ if (diffHoras < 2) continue;  // Deve ser 2 (horas)
 
 ### Problema: Cliente notificado para data passada
 
-**Causa:** Filtro de data não está funcionando.
+**Causa:** Filtro de data usando UTC em vez de BRT.
 
 **Solução:**
 ```typescript
 // Verificar filtro
-const hoje = new Date().toISOString().split('T')[0];
+const hoje = getDataAtualBRT(); // Usar fuso BRT
 const listaValida = listaEspera.filter(
   item => item.data_preferida >= hoje  // Deve ser >=
 );
@@ -743,11 +767,13 @@ GRANT UPDATE ON lista_espera TO authenticated;
 
 ---
 
-## 📝 Migration 23 Completa
+## 📝 Migration 23 Completa (Atualizada 2.1.1)
 
 ```sql
--- migration 23: Lista Espera Inteligente
-DROP TABLE IF EXISTS public.lista_espera;
+-- migration 23: Lista Espera Inteligente 2.1.1
+-- Atualizações: status, trigger UPDATE, cleanup automático, correção BRT
+
+DROP TABLE IF EXISTS public.lista_espera CASCADE;
 
 CREATE TABLE public.lista_espera (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -763,20 +789,23 @@ CREATE TABLE public.lista_espera (
   tipo_preferencia TEXT DEFAULT 'exato',
   periodo_preferido TEXT,
   criado_em TIMESTAMPTZ DEFAULT NOW(),
-  notificado BOOLEAN DEFAULT FALSE,
-  notificado_em TIMESTAMPTZ,
-  agendado BOOLEAN DEFAULT FALSE,
+  status TEXT DEFAULT 'ativa',            -- 'ativa' | 'notificada' | 'agendada' | 'desistiu' | 'expirada'
+  status_atualizado_em TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
 );
 
-COMMENT ON COLUMN lista_espera.data_preferida IS 
+COMMENT ON COLUMN lista_espera.data_preferida IS
 'Data de interesse. Notificações só ocorrem até esta data (com min. 2h antecedência).';
+
+COMMENT ON COLUMN lista_espera.status IS
+'Status da entrada: ativa (aguardando vaga), notificada (recebeu WhatsApp), agendada (convertida), desistiu (cliente cancelou), expirada (data passou)';
 
 -- Índices
 CREATE INDEX idx_lista_espera_prestador ON lista_espera(prestador_id);
 CREATE INDEX idx_lista_espera_data ON lista_espera(data_preferida);
 CREATE INDEX idx_lista_espera_servico ON lista_espera(servico_id);
-CREATE INDEX idx_lista_espera_notificado ON lista_espera(notificado, agendado);
+CREATE INDEX idx_lista_espera_status ON lista_espera(status) WHERE status IN ('ativa', 'notificada');
+CREATE INDEX idx_lista_espera_cleanup ON lista_espera(data_preferida) WHERE status NOT IN ('desistiu', 'expirada');
 
 -- RLS
 ALTER TABLE lista_espera ENABLE ROW LEVEL SECURITY;
@@ -785,17 +814,27 @@ CREATE POLICY "Prestador vê sua lista de espera"
   ON lista_espera FOR SELECT TO authenticated
   USING (auth.uid() = (SELECT p.id FROM prestadores p WHERE p.id = prestador_id));
 
--- Trigger
+CREATE POLICY "Prestador gerencia sua lista de espera"
+  ON lista_espera FOR UPDATE TO authenticated
+  USING (auth.uid() = (SELECT p.id FROM prestadores p WHERE p.id = prestador_id));
+
+CREATE POLICY "Cliente entra na lista de espera"
+  ON lista_espera FOR INSERT TO authenticated
+  WITH CHECK (TRUE);
+
+-- Trigger: marca após cancelamento de agendamento (UPDATE status)
 CREATE OR REPLACE FUNCTION marcar_lista_espera_para_notificacao()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF TG_OP = 'DELETE' THEN
+  -- Dispara apenas em cancelamento via UPDATE de status
+  IF TG_OP = 'UPDATE' AND OLD.status != 'cancelado' AND NEW.status = 'cancelado' THEN
+    -- Atualiza timestamp para forçar reprocessamento pelo cron job
     UPDATE lista_espera
-    SET notificado = FALSE
+    SET status_atualizado_em = NOW()
     WHERE prestador_id = OLD.prestador_id
       AND data_preferida = (OLD.data_hora)::DATE
-      AND agendado = FALSE;
-    RETURN OLD;
+      AND status IN ('ativa', 'notificada');
+    RETURN NEW;
   END IF;
   RETURN NULL;
 END;
@@ -803,13 +842,28 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_marcar_lista_espera ON agendamentos;
 CREATE TRIGGER trg_marcar_lista_espera
-  AFTER DELETE ON agendamentos
+  AFTER UPDATE ON agendamentos
   FOR EACH ROW
+  WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'cancelado')
   EXECUTE FUNCTION marcar_lista_espera_para_notificacao();
+
+-- Cleanup automático (diário)
+CREATE OR REPLACE FUNCTION cleanup_lista_espera()
+RETURNS void AS $$
+BEGIN
+  -- Marca como expirada entradas com data > 30 dias no passado
+  UPDATE lista_espera
+  SET status = 'expirada',
+      status_atualizado_em = NOW()
+  WHERE data_preferida < CURRENT_DATE - INTERVAL '30 days'
+    AND status IN ('ativa', 'notificada');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grants
 GRANT INSERT ON lista_espera TO authenticated;
 GRANT UPDATE ON lista_espera TO authenticated;
+GRANT EXECUTE ON FUNCTION cleanup_lista_espera TO service_role;
 ```
 
 ---
@@ -820,12 +874,15 @@ GRANT UPDATE ON lista_espera TO authenticated;
 - [ ] Função cleanup_lista_espera() criada
 - [ ] Edge function `lista-espera` deployada (unificada)
 - [ ] Edge function `cron-notificar-lista-espera` deployada
+- [ ] Functions legadas removidas (`notificar-lista-espera`, `entrada-lista-espera`)
 - [ ] Cron job configurado: `*/30 * * * *` (30 min)
 - [ ] Cron job cleanup configurado: `0 3 * * *` (diário 3 AM)
 - [ ] Teste de entrada na lista (3 tipos de preferência)
 - [ ] Teste de cancelamento → trigger dispara
-- [ ] Teste de notificação (antecedência mínima 2h)
-- [ ] Teste de data passada (não notifica)
+- [ ] Teste de notificação (antecedência mínima 2h, fuso BRT)
+- [ ] Teste de data passada (não notifica, fuso BRT)
+- [ ] Teste de horário passado (não notifica, fuso BRT)
+- [ ] Teste de período (manhã/tarde/noite com minutos)
 - [ ] Teste de saída da lista (status = desistiu)
 - [ ] WhatsApp Evolution API configurado
 - [ ] Email SendGrid configurado
@@ -833,7 +890,8 @@ GRANT UPDATE ON lista_espera TO authenticated;
 
 ---
 
-**Última atualização:** 2026-04-01  
-**Versão:** 2.1  
-**Status:** ✅ Implementado  
+**Última atualização:** 2026-04-02
+**Versão:** 2.1.1
+**Status:** ✅ Implementado
+**Mudanças 2.1.1:** correção fuso BRT, validação precisa de períodos, trigger otimizado, remoção de legado
 **Mudanças 2.1:** status, trigger UPDATE, cleanup, função unificada, cron 30min, métricas

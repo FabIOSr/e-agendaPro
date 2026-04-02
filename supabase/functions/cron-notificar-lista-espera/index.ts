@@ -80,7 +80,21 @@ async function enviarEmail(to: string, subject: string, html: string) {
   }
 }
 
-// Verifica preferência de horário
+// Obtém data atual no fuso BRT (America/Sao_Paulo)
+function getDataAtualBRT(): string {
+  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    .split('/')
+    .reverse()
+    .join('-');
+}
+
+// Obtém data/hora atual no fuso BRT como Date
+function getDataHoraAtualBRT(): Date {
+  const agoraBRT = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return new Date(agoraBRT);
+}
+
+// Verifica preferência de horário com validação precisa de minutos
 function prefereHorario(
   tipo: string,
   horaPreferida: string | null,
@@ -94,10 +108,22 @@ function prefereHorario(
   }
 
   if (tipo === 'periodo' && periodoPreferido) {
-    const horaNum = parseInt(horaDisponivel.split(':')[0]);
-    if (periodoPreferido === 'manha') return horaNum >= 8 && horaNum <= 12;
-    if (periodoPreferido === 'tarde') return horaNum >= 13 && horaNum <= 18;
-    if (periodoPreferido === 'noite') return horaNum >= 19 && horaNum <= 21;
+    const [horaNum, minNum] = horaDisponivel.split(':').map(Number);
+    const minutosTotais = horaNum * 60 + minNum;
+    
+    // Definição precisa dos períodos com minutos
+    if (periodoPreferido === 'manha') {
+      // 08:00 (480 min) até 12:59 (779 min)
+      return minutosTotais >= 480 && minutosTotais <= 779;
+    }
+    if (periodoPreferido === 'tarde') {
+      // 13:00 (780 min) até 18:59 (1139 min)
+      return minutosTotais >= 780 && minutosTotais <= 1139;
+    }
+    if (periodoPreferido === 'noite') {
+      // 19:00 (1140 min) até 21:59 (1319 min)
+      return minutosTotais >= 1140 && minutosTotais <= 1319;
+    }
   }
 
   return false;
@@ -157,8 +183,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Filtra entradas cuja data preferida já passou
-    const hoje = new Date().toISOString().split('T')[0];
+    // Filtra entradas cuja data preferida já passou (fuso BRT)
+    const hoje = getDataAtualBRT();
     const listaValida = listaEspera.filter(item => item.data_preferida >= hoje);
 
     if (listaValida.length === 0) {
@@ -185,8 +211,8 @@ Deno.serve(async (req: Request) => {
     for (const [key, clientes] of grupos.entries()) {
       const [prestadorId, dataPreferida] = key.split("|");
 
-      // Verifica se data já passou (segurança extra)
-      const hoje = new Date().toISOString().split('T')[0];
+      // Verifica se data já passou (segurança extra, fuso BRT)
+      const hoje = getDataAtualBRT();
       if (dataPreferida < hoje) {
         continue; // Data já passou
       }
@@ -222,6 +248,9 @@ Deno.serve(async (req: Request) => {
         continue; // Nenhum horário disponível neste dia
       }
 
+      // Obtém hora atual no fuso BRT para validações
+      const agora = getDataHoraAtualBRT();
+
       // Para cada cliente, verifica se há horário compatível
       for (const cliente of clientes) {
         // Encontra horário que casa com a preferência do cliente
@@ -238,9 +267,8 @@ Deno.serve(async (req: Request) => {
           continue; // Nenhum horário compatível com preferência
         }
 
-        // ⏰ Verifica antecedência mínima (2 horas)
-        const agora = new Date();
-        const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}`);
+        // ⏰ Verifica antecedência mínima (2 horas) - fuso BRT
+        const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}:00-03:00`);
         const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
 
         if (diffHoras < 2) {
@@ -248,6 +276,12 @@ Deno.serve(async (req: Request) => {
             `⏰ Pulando ${horarioCompativel}: apenas ${diffHoras.toFixed(1)}h de antecedência`
           );
           continue; // Menos de 2 horas de antecedência
+        }
+
+        // Regra: Horário não pode estar no passado (mesmo dia, fuso BRT)
+        if (horarioSlot <= agora) {
+          console.log(`⏰ Pulando ${horarioCompativel}: horário já passou`);
+          continue;
         }
 
         // ✅ Horário compatível encontrado! Notifica o cliente.

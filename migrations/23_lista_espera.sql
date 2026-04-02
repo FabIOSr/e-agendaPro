@@ -72,20 +72,22 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Dispara apenas em cancelamento via UPDATE de status
   IF TG_OP = 'UPDATE' AND OLD.status != 'cancelado' AND NEW.status = 'cancelado' THEN
-    -- Marca entradas na lista de espera para o mesmo dia
-    -- A notificação real será feita pelo cron job
+    -- Atualiza timestamp para forçar reprocessamento pelo cron job
+    -- Mantém o status atual (ativa ou notificada) para não perder o estado
     UPDATE public.lista_espera
-    SET status = 'ativa',  -- Garante que está ativa para notificação
-        status_atualizado_em = NOW()
+    SET status_atualizado_em = NOW()
     WHERE prestador_id = OLD.prestador_id
       AND data_preferida = (OLD.data_hora)::DATE
-      AND status IN ('ativa', 'notificada');  -- Atualiza apenas ativas ou já notificadas
+      AND status IN ('ativa', 'notificada');
 
     RETURN NEW;
   END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.marcar_lista_espera_para_notificacao IS
+'Atualiza timestamp da lista de espera quando agendamento é cancelado. O cron job fará a notificação.';
 
 -- Trigger que marca após cancelamento de agendamento (UPDATE status)
 DROP TRIGGER IF EXISTS trg_marcar_lista_espera ON public.agendamentos;

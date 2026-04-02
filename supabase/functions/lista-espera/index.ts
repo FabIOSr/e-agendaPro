@@ -57,6 +57,20 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
   }
 }
 
+// Obtém data atual no fuso BRT (America/Sao_Paulo)
+function getDataAtualBRT(): string {
+  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    .split('/')
+    .reverse()
+    .join('-');
+}
+
+// Obtém data/hora atual no fuso BRT como Date
+function getDataHoraAtualBRT(): Date {
+  const agoraBRT = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return new Date(agoraBRT);
+}
+
 // Envia email via SendGrid
 async function enviarEmail(to: string, subject: string, html: string) {
   const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
@@ -83,7 +97,7 @@ async function enviarEmail(to: string, subject: string, html: string) {
   }
 }
 
-// Verifica preferência de horário
+// Verifica preferência de horário com validação precisa de minutos
 function prefereHorario(
   tipo: string,
   horaPreferida: string | null,
@@ -97,10 +111,22 @@ function prefereHorario(
   }
 
   if (tipo === 'periodo' && periodoPreferido) {
-    const horaNum = parseInt(horaDisponivel.split(':')[0]);
-    if (periodoPreferido === 'manha') return horaNum >= 8 && horaNum <= 12;
-    if (periodoPreferido === 'tarde') return horaNum >= 13 && horaNum <= 18;
-    if (periodoPreferido === 'noite') return horaNum >= 19 && horaNum <= 21;
+    const [horaNum, minNum] = horaDisponivel.split(':').map(Number);
+    const minutosTotais = horaNum * 60 + minNum;
+    
+    // Definição precisa dos períodos com minutos
+    if (periodoPreferido === 'manha') {
+      // 08:00 (480 min) até 12:59 (779 min)
+      return minutosTotais >= 480 && minutosTotais <= 779;
+    }
+    if (periodoPreferido === 'tarde') {
+      // 13:00 (780 min) até 18:59 (1139 min)
+      return minutosTotais >= 780 && minutosTotais <= 1139;
+    }
+    if (periodoPreferido === 'noite') {
+      // 19:00 (1140 min) até 21:59 (1319 min)
+      return minutosTotais >= 1140 && minutosTotais <= 1319;
+    }
   }
 
   return false;
@@ -295,10 +321,20 @@ async function notificarListaEspera(body: any, supabase: any) {
     };
   }
 
+  // Obtém data atual no fuso BRT para validação correta
+  const hoje = getDataAtualBRT();
+  const agora = getDataHoraAtualBRT();
+  
   let notificados = 0;
 
   // Notifica cada cliente compatível
   for (const cliente of clientes) {
+    // Regra 1: Data não pode estar no passado (fuso BRT)
+    if (cliente.data_preferida < hoje) {
+      console.log(`📅 Pulando ${cliente.data_preferida}: data já passou (hoje: ${hoje})`);
+      continue;
+    }
+
     // Verifica compatibilidade de horário
     if (hora && !prefereHorario(
       cliente.tipo_preferencia,
@@ -309,14 +345,19 @@ async function notificarListaEspera(body: any, supabase: any) {
       continue;
     }
 
-    // Verifica antecedência mínima (2 horas)
+    // Regra 2: Verifica antecedência mínima (2 horas) - fuso BRT
     if (hora) {
-      const agora = new Date();
-      const horarioSlot = new Date(`${data}T${hora}`);
+      const horarioSlot = new Date(`${data}T${hora}:00-03:00`);
       const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
-      
+
       if (diffHoras < 2) {
         console.log(`⏰ Pulando ${hora}: apenas ${diffHoras.toFixed(1)}h de antecedência`);
+        continue;
+      }
+
+      // Regra 3: Horário não pode estar no passado (mesmo dia, fuso BRT)
+      if (horarioSlot <= agora) {
+        console.log(`⏰ Pulando ${hora}: horário já passou`);
         continue;
       }
     }
@@ -356,7 +397,13 @@ ${cliente.servico_nome ? `💇 Serviço: ${cliente.servico_nome}\n` : ""}
 
 // Ação: CLEANUP (cron job diário)
 async function cleanupListaEspera(supabase: any) {
-  // Marca como expirada entradas > 30 dias
+  // Calcula data de 30 dias atrás no fuso BRT
+  const hojeBRT = getDataAtualBRT();
+  const dataLimite = new Date(hojeBRT);
+  dataLimite.setDate(dataLimite.getDate() - 30);
+  const dataLimiteStr = dataLimite.toISOString().split('T')[0];
+  
+  // Marca como expirada entradas com data > 30 dias no passado
   const { error: erroUpdate } = await supabase
     .from("lista_espera")
     .update({
@@ -364,7 +411,7 @@ async function cleanupListaEspera(supabase: any) {
       status_atualizado_em: new Date().toISOString(),
     })
     .in("status", ["ativa", "notificada"])
-    .lt("data_preferida", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    .lt("data_preferida", dataLimiteStr);
 
   if (erroUpdate) {
     Sentry.captureException(erroUpdate);
