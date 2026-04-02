@@ -297,6 +297,16 @@
     <button class="btn btn-secondary" onclick="location.href='/'">Voltar</button>
   </div>
 
+  <!-- Card erro/inválido -->
+  <div class="card" id="card-invalido" style="display:none">
+    <div class="card-header">
+      <div class="icon danger">⚠️</div>
+      <h1>Link Inválido</h1>
+      <p class="sub" id="msg-invalido">Este link de confirmação não é válido ou já foi utilizado.</p>
+    </div>
+    <button class="btn btn-secondary" onclick="location.href='/'">Voltar</button>
+  </div>
+
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -315,9 +325,15 @@
       erroMsg.classList.add('show');
     }
 
+    function mostrarInvalido(msg) {
+      document.getElementById('msg-invalido').textContent = msg;
+      document.getElementById('card-reserva').style.display = 'none';
+      document.getElementById('card-invalido').style.display = 'block';
+    }
+
     async function validarToken() {
       if (!token) {
-        mostrarErro('Link inválido. Token não encontrado.');
+        mostrarInvalido('Link inválido. Token não encontrado.');
         return;
       }
 
@@ -340,7 +356,7 @@
           if (res.status === 410 || dataRes.erro?.includes('expirou')) {
             mostrarExpirado();
           } else {
-            mostrarErro(dataRes.erro || 'Reserva não encontrada ou expirada.');
+            mostrarInvalido(dataRes.erro || 'Reserva não encontrada ou expirada.');
           }
           return;
         }
@@ -368,7 +384,7 @@
 
       } catch (err) {
         console.error('Erro ao validar:', err);
-        mostrarErro('Erro ao validar reserva. Tente novamente.');
+        mostrarInvalido('Erro ao validar reserva. Tente novamente.');
       }
     }
 
