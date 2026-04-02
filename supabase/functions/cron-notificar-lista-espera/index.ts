@@ -1,14 +1,14 @@
 // supabase/functions/cron-notificar-lista-espera/index.ts
 //
-// Cron job que roda a cada 5 minutos e notifica clientes na lista de espera
-// quando uma vaga surge (por cancelamento)
+// Cron job que notifica clientes na lista de espera quando vaga surge
+// Roda a cada 30 minutos (otimizado para reduzir custo)
 //
-// Cron: */5 * * * * (a cada 5 minutos)
+// Cron: */30 * * * *
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
 
-// Inicializa Sentry (se DSN configurado)
+// Inicializa Sentry
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
   Sentry.init({
@@ -26,38 +26,29 @@ function corsHeaders() {
   };
 }
 
-// Envia WhatsApp via Evolution API (self-hosted)
+// Envia WhatsApp via Evolution API
 async function enviarWhatsApp(telefone: string, mensagem: string) {
   const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
   const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
   const instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME") || "agendapro-prod";
 
   if (!evolutionUrl || !evolutionKey) {
-    console.log("Evolution API não configurada, pulando envio de WhatsApp");
+    console.log("Evolution API não configurada");
     return false;
   }
 
   try {
     const res = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": evolutionKey,
-      },
+      headers: { "Content-Type": "application/json", "apikey": evolutionKey },
       body: JSON.stringify({
         number: telefone.replace(/\D/g, ""),
         textMessage: { text: mensagem },
       }),
     });
-
-    if (!res.ok) {
-      console.error("Evolution API erro:", res.status);
-      Sentry.captureMessage(`Evolution API erro ${res.status}`, { level: "warning" });
-      return false;
-    }
-    return true;
+    return res.ok;
   } catch (e) {
-    console.error("Erro ao enviar WhatsApp:", e);
+    console.error("Erro WhatsApp:", e);
     Sentry.captureException(e);
     return false;
   }
@@ -66,10 +57,7 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
 // Envia email via SendGrid
 async function enviarEmail(to: string, subject: string, html: string) {
   const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
-  if (!sendgridKey) {
-    console.log("SendGrid não configurado, pulando envio de email");
-    return false;
-  }
+  if (!sendgridKey) return false;
 
   try {
     const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -81,47 +69,37 @@ async function enviarEmail(to: string, subject: string, html: string) {
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
         from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
-        subject: subject,
+        subject,
         content: [{ type: "text/html", value: html }],
       }),
     });
-
-    if (!res.ok) {
-      const erro = await res.text();
-      console.error("SendGrid erro:", res.status, erro);
-      return false;
-    }
-    return true;
+    return res.ok;
   } catch (e) {
-    console.error("Erro ao enviar email:", e);
-    Sentry.captureException(e);
+    console.error("Erro Email:", e);
     return false;
   }
 }
 
-// Determina período do dia baseado na hora
-function getPeriodo(hora: string): string {
-  const h = parseInt(hora.split(":")[0]);
-  if (h >= 6 && h < 12) return "manha";
-  if (h >= 12 && h < 18) return "tarde";
-  return "noite";
-}
-
-// Verifica se a preferência do cliente casa com o horário liberado
+// Verifica preferência de horário
 function prefereHorario(
-  tipoPreferencia: string,
+  tipo: string,
   horaPreferida: string | null,
   periodoPreferido: string | null,
-  horaLiberada: string
+  horaDisponivel: string
 ): boolean {
-  if (tipoPreferencia === "exato") {
-    return horaPreferida === horaLiberada;
-  } else if (tipoPreferencia === "periodo") {
-    const periodoLiberado = getPeriodo(horaLiberada);
-    return periodoPreferido === periodoLiberado;
-  } else if (tipoPreferencia === "qualquer") {
-    return true;
+  if (tipo === 'qualquer') return true;
+
+  if (tipo === 'exato' && horaPreferida) {
+    return horaDisponivel === horaPreferida;
   }
+
+  if (tipo === 'periodo' && periodoPreferido) {
+    const horaNum = parseInt(horaDisponivel.split(':')[0]);
+    if (periodoPreferido === 'manha') return horaNum >= 8 && horaNum <= 12;
+    if (periodoPreferido === 'tarde') return horaNum >= 13 && horaNum <= 18;
+    if (periodoPreferido === 'noite') return horaNum >= 19 && horaNum <= 21;
+  }
+
   return false;
 }
 
@@ -132,24 +110,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Apenas POST (cron job)
-    if (req.method !== "POST") {
-      return new Response(JSON.stringify({ erro: "Método não permitido" }), {
-        status: 405,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
-      });
-    }
-
-    // Verifica se é chamado pelo cron (Authorization header)
+    // Cria cliente Supabase com service role
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader || !authHeader.includes("Bearer")) {
-      return new Response(JSON.stringify({ erro: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
-      });
-    }
-
-    // Criar cliente Supabase com service role
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -158,8 +120,7 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    // Busca TODOS os clientes na lista de espera que ainda não foram notificados
-    // e não foram agendados
+    // Busca clientes na lista de espera (status: ativa ou notificada)
     const { data: listaEspera, error: erroBusca } = await supabase
       .from("lista_espera")
       .select(`
@@ -175,10 +136,10 @@ Deno.serve(async (req: Request) => {
         servico_duracao_min,
         tipo_preferencia,
         periodo_preferido,
-        criado_em
+        criado_em,
+        status
       `)
-      .eq("agendado", false)
-      .eq("notificado", false)
+      .in("status", ["ativa", "notificada"])
       .order("criado_em", { ascending: true });
 
     if (erroBusca) {
@@ -209,7 +170,7 @@ Deno.serve(async (req: Request) => {
 
     // Agrupa por prestador e data para otimizar chamadas
     const grupos = new Map<string, any[]>();
-    for (const item of listaValida) {  // ← Usa listaValida (filtra passado)
+    for (const item of listaValida) {
       const key = `${item.prestador_id}|${item.data_preferida}`;
       if (!grupos.has(key)) {
         grupos.set(key, []);
@@ -231,7 +192,6 @@ Deno.serve(async (req: Request) => {
       }
 
       // Chama horarios-disponiveis para este prestador/data
-      // Precisamos de um servico_id para chamar, usa o primeiro cliente
       const primeiroServicoId = clientes[0].servico_id;
 
       const slotsResponse = await fetch(
@@ -305,49 +265,47 @@ Oi ${nomeCliente}! Uma vaga surgiu que pode te interessar:
 
 ⚡ *Corre que é por ordem de chegada!*
 
-Reserve agora: ${Deno.env.get("APP_URL") || "https://e-agendapro.web.app"}`;
+👉 Agende agora: ${Deno.env.get("APP_URL")}/agenda/${prestadorId}`;
 
         // Envia WhatsApp
-        const whatsappEnviado = await enviarWhatsApp(
+        const enviadoWhatsApp = await enviarWhatsApp(
           cliente.cliente_telefone,
           mensagemWhatsApp
         );
 
         // Envia email se tiver email
-        let emailEnviado = false;
         if (cliente.cliente_email) {
           const emailHtml = `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
               <h2 style="color:#c8f060">🎉 Vaga Liberou!</h2>
-              <p style="font-size:16px">Oi ${nomeCliente}!</p>
-              <p>Uma vaga surgiu que pode te interessar:</p>
+              <p>Olá ${nomeCliente}! Uma vaga compatível com sua preferência surgiu:</p>
               <div style="background:#f2f0ea;padding:16px;border-radius:8px;margin:16px 0">
-                <ul style="margin:0;padding-left:20px">
-                  <li>📅 Data: ${dataFmt}</li>
-                  <li>⏰ Horário: ${horarioCompativel}</li>
-                  ${cliente.servico_nome ? `<li>💇 Serviço: ${cliente.servico_nome}</li>` : ""}
-                </ul>
+                <p><strong>📅 Data:</strong> ${dataFmt}</p>
+                <p><strong>⏰ Horário:</strong> ${horarioCompativel}</p>
+                ${cliente.servico_nome ? `<p><strong>💇 Serviço:</strong> ${cliente.servico_nome}</p>` : ""}
               </div>
-              <p style="color:#8a8778;font-size:14px">⚡ <strong>Corre que é por ordem de chegada!</strong> Reserve agora pelo app.</p>
-              <a href="${Deno.env.get("APP_URL") || "https://e-agendapro.web.app"}" 
-                 style="display:inline-block;background:#c8f060;color:#1a2a08;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px">
-                Reservar Agora
+              <p style="color:#8a8778;font-size:14px">
+                ⚡ Vagas da lista de espera são por ordem de chegada!
+              </p>
+              <a href="${Deno.env.get("APP_URL")}/agenda/${prestadorId}" 
+                 style="display:inline-block;background:#c8f060;color:#000;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;margin-top:8px">
+                Agendar Agora
               </a>
             </div>
           `;
-          emailEnviado = await enviarEmail(
+          await enviarEmail(
             cliente.cliente_email,
-            "🎉 Vaga Liberou!",
+            `🎉 Vaga liberou para ${dataFmt}!`,
             emailHtml
           );
         }
 
-        // Atualiza status para notificado
+        // Atualiza status para notificada
         const { error: erroUpdate } = await supabase
           .from("lista_espera")
           .update({
-            notificado: true,
-            notificado_em: new Date().toISOString(),
+            status: 'notificada',
+            status_atualizado_em: new Date().toISOString(),
           })
           .eq("id", cliente.id);
 
@@ -368,15 +326,14 @@ Reserve agora: ${Deno.env.get("APP_URL") || "https://e-agendapro.web.app"}`;
       notificados,
       falhas,
       total_processados: listaEspera.length,
+      timestamp: new Date().toISOString(),
     }), {
       status: 200,
       headers: { ...corsHeaders(), "Content-Type": "application/json" },
     });
-
-  } catch (error) {
-    Sentry.captureException(error);
-    console.error("Erro na edge function:", error);
-    return new Response(JSON.stringify({ erro: "Erro interno do servidor" }), {
+  } catch (e) {
+    Sentry.captureException(e);
+    return new Response(JSON.stringify({ erro: "Erro interno" }), {
       status: 500,
       headers: { ...corsHeaders(), "Content-Type": "application/json" },
     });

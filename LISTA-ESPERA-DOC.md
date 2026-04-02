@@ -1,4 +1,16 @@
-# 📋 Lista de Espera Inteligente 2.0 — Documentação Completa
+# 📋 Lista de Espera Inteligente 2.1 — Documentação Completa
+
+**Versão:** 2.1 (Atualizado em 2026-04-01)
+
+**Mudanças na 2.1:**
+- ✅ Campo `status` adicionado (ativa/notificada/agendada/desistiu/expirada)
+- ✅ Trigger corrigido para `AFTER UPDATE` (detecta cancelamento por status)
+- ✅ Cleanup automático de entradas antigas (> 30 dias)
+- ✅ Edge function unificada (`lista-espera` com ações múltiplas)
+- ✅ Cron job otimizado (30 min em vez de 5 min)
+- ✅ Métricas de conversão adicionadas
+
+---
 
 ## Visão Geral
 
@@ -21,12 +33,12 @@ A **Lista de Espera Inteligente** permite que clientes entrem em uma lista de es
                             ↓
 ┌──────────────────────────────────────────────────────────────┐
 │ 2. CANCELAMENTO LIBEROU VAGA                                 │
-│    └─ Trigger marca: notificado = FALSE                      │
+│    └─ Trigger marca: status = 'ativa'                        │
 └──────────────────────────────────────────────────────────────┘
                             ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ 3. CRON JOB (*/5 * * * *)                                    │
-│    ├─ Busca: notificado = FALSE, agendado = FALSE            │
+│ 3. CRON JOB (*/30 * * * *)                                   │
+│    ├─ Busca: status IN ('ativa', 'notificada')               │
 │    ├─ Filtra: data_preferida >= hoje                         │
 │    └─ Chama: horarios-disponiveis                            │
 └──────────────────────────────────────────────────────────────┘
@@ -42,7 +54,7 @@ A **Lista de Espera Inteligente** permite que clientes entrem em uma lista de es
 │ 5. NOTIFICA CLIENTE                                          │
 │    ├─ WhatsApp (Evolution API)                               │
 │    ├─ Email (SendGrid)                                       │
-│    └─ Atualiza: notificado = TRUE                            │
+│    └─ Atualiza: status = 'notificada'                        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,24 +90,35 @@ CREATE TABLE public.lista_espera (
   tipo_preferencia TEXT DEFAULT 'exato',  -- 'exato' | 'periodo' | 'qualquer'
   periodo_preferido TEXT,                 -- 'manha' | 'tarde' | 'noite'
   
-  -- Controle de notificação
+  -- Controle de status (2.1)
   criado_em TIMESTAMPTZ DEFAULT NOW(),
-  notificado BOOLEAN DEFAULT FALSE,
-  notificado_em TIMESTAMPTZ,
-  agendado BOOLEAN DEFAULT FALSE,
+  status TEXT DEFAULT 'ativa',            -- 'ativa' | 'notificada' | 'agendada' | 'desistiu' | 'expirada'
+  status_atualizado_em TIMESTAMPTZ DEFAULT NOW(),
   
   -- Único por cliente/data/hora/serviço
   UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
 );
 ```
 
+### Status da Entrada
+
+| Status | Descrição | Quando usa |
+|--------|-----------|------------|
+| `ativa` | Aguardando vaga disponível | Cliente entrou na lista |
+| `notificada` | Recebeu notificação | Vaga liberou, cliente avisado |
+| `agendada` | Convertem em agendamento | Cliente agendou a vaga |
+| `desistiu` | Cliente desistiu | Remoção manual (cliente ou prestador) |
+| `expirada` | Data passou | Cleanup automático (> 30 dias) |
+
 ### Índices
 
 ```sql
+-- Índices para busca rápida
 CREATE INDEX idx_lista_espera_prestador ON lista_espera(prestador_id);
 CREATE INDEX idx_lista_espera_data ON lista_espera(data_preferida);
 CREATE INDEX idx_lista_espera_servico ON lista_espera(servico_id);
-CREATE INDEX idx_lista_espera_notificado ON lista_espera(notificado, agendado);
+CREATE INDEX idx_lista_espera_status ON lista_espera(status) WHERE status IN ('ativa', 'notificada');
+CREATE INDEX idx_lista_espera_cleanup ON lista_espera(data_preferida) WHERE status NOT IN ('desistiu', 'expirada');
 ```
 
 ### RLS (Row Level Security)
@@ -340,7 +363,12 @@ WHERE prestador_id = OLD.prestador_id
 
 **Nome:** `cron-notificar-lista-espera`
 
-**Schedule:** `*/5 * * * *` (a cada 5 minutos)
+**Schedule:** `*/30 * * * *` (a cada 30 minutos - otimizado)
+
+**Por que 30 minutos?**
+- Reduz custo de Edge Function (48 execuções/dia vs 288)
+- Suficiente para notificar em tempo hábil
+- Pode ser complementado com webhook no cancelamento (notificação imediata)
 
 **Deploy:**
 ```bash
@@ -350,7 +378,36 @@ supabase functions deploy cron-notificar-lista-espera --project-ref kevqgxmcoxmz
 **Configurar no Supabase:**
 1. Dashboard → Edge Functions → `cron-notificar-lista-espera`
 2. Settings → Schedules
-3. Add Schedule → `*/5 * * * *`
+3. Add Schedule → `*/30 * * * *`
+
+---
+
+### Cleanup Automático (Diário)
+
+**Função:** `cleanup_lista_espera()` (na migration 23)
+
+**Schedule:** `0 3 * * *` (3:00 AM diariamente)
+
+**O que faz:**
+```sql
+-- Marca como expirada entradas > 30 dias
+UPDATE lista_espera
+SET status = 'expirada',
+    status_atualizado_em = NOW()
+WHERE data_preferida < CURRENT_DATE - INTERVAL '30 days'
+  AND status IN ('ativa', 'notificada');
+```
+
+**Executar via cron:**
+```bash
+# Usar a função unificada lista-espera com action: cleanup
+supabase functions deploy lista-espera --project-ref kevqgxmcoxmzbypdjhru
+
+# Agendar no Supabase:
+# Edge Function: lista-espera
+# Body: { action: "cleanup" }
+# Schedule: 0 3 * * *
+```
 
 ---
 
@@ -522,6 +579,85 @@ Oi {Nome}! Uma vaga surgiu que pode te interessar:
 
 ---
 
+## 📊 Métricas e Conversão
+
+### Dashboard do Prestador
+
+**Métricas principais:**
+
+```sql
+-- Total na lista de espera (ativas)
+SELECT COUNT(*) as total_ativas
+FROM lista_espera
+WHERE prestador_id = 'UUID'
+  AND status = 'ativa';
+
+-- Taxa de conversão (últimos 30 dias)
+SELECT 
+  COUNT(*) FILTER (WHERE status = 'agendada')::NUMERIC / 
+  NULLIF(COUNT(*) FILTER (WHERE status IN ('notificada', 'agendada')), 0) * 100 
+  as taxa_conversao_percent
+FROM lista_espera
+WHERE prestador_id = 'UUID'
+  AND criado_em > NOW() - INTERVAL '30 days';
+
+-- Notificações por dia (últimos 7 dias)
+SELECT 
+  DATE(criado_em) as data,
+  COUNT(*) FILTER (WHERE status = 'notificada') as notificadas,
+  COUNT(*) FILTER (WHERE status = 'agendada') as agendadas
+FROM lista_espera
+WHERE prestador_id = 'UUID'
+  AND criado_em > NOW() - INTERVAL '7 days'
+GROUP BY DATE(criado_em)
+ORDER BY data DESC;
+
+-- Tempo médio na lista (antes de conversão)
+SELECT 
+  AVG(EXTRACT(EPOCH FROM (status_atualizado_em - criado_em)) / 3600) as horas_medias
+FROM lista_espera
+WHERE prestador_id = 'UUID'
+  AND status = 'agendada';
+
+-- Top horários de conversão
+SELECT 
+  hora_preferida,
+  COUNT(*) FILTER (WHERE status = 'agendada') as conversoes
+FROM lista_espera
+WHERE prestador_id = 'UUID'
+GROUP BY hora_preferida
+ORDER BY conversoes DESC
+LIMIT 5;
+```
+
+### KPIs Sugeridos
+
+| Métrica | Fórmula | Objetivo |
+|---------|---------|----------|
+| **Taxa de Conversão** | `(agendadas / notificadas) * 100` | > 25% |
+| **Tempo Médio de Resposta** | `AVG(status_atualizado_em - criado_em)` | < 24 horas |
+| **Vagas Preenchidas/mês** | `COUNT(status = 'agendada')` | Crescente |
+| **Churn na Lista** | `(desistiu + expirada) / total` | < 30% |
+
+### Queries para Dashboard
+
+```typescript
+// Edge function para métricas (futuro: lista-espera-metricas)
+const metrics = await supabase
+  .from('lista_espera')
+  .select(`
+    status,
+    count:status
+  `)
+  .eq('prestador_id', userId)
+  .group('status');
+
+// Resultado:
+// { ativa: 15, notificada: 8, agendada: 23, desistiu: 5, expirada: 2 }
+```
+
+---
+
 ## 🛠️ Troubleshooting
 
 ### Problema: Cliente não está sendo notificado
@@ -680,21 +816,24 @@ GRANT UPDATE ON lista_espera TO authenticated;
 
 ## 🚀 Deploy Checklist
 
-- [ ] Migration 23 aplicada no Supabase
-- [ ] Migration 24 aplicada (placeholder)
-- [ ] Edge function `entrada-lista-espera` deployada
+- [ ] Migration 23 aplicada no Supabase (com status e trigger UPDATE)
+- [ ] Função cleanup_lista_espera() criada
+- [ ] Edge function `lista-espera` deployada (unificada)
 - [ ] Edge function `cron-notificar-lista-espera` deployada
-- [ ] Edge function `notificar-lista-espera` deployada
-- [ ] Cron job configurado no Supabase (*/5 * * * *)
+- [ ] Cron job configurado: `*/30 * * * *` (30 min)
+- [ ] Cron job cleanup configurado: `0 3 * * *` (diário 3 AM)
 - [ ] Teste de entrada na lista (3 tipos de preferência)
-- [ ] Teste de cancelamento → notificação
-- [ ] Teste de antecedência mínima (2h)
+- [ ] Teste de cancelamento → trigger dispara
+- [ ] Teste de notificação (antecedência mínima 2h)
 - [ ] Teste de data passada (não notifica)
+- [ ] Teste de saída da lista (status = desistiu)
 - [ ] WhatsApp Evolution API configurado
 - [ ] Email SendGrid configurado
+- [ ] Métricas de conversão validadas
 
 ---
 
 **Última atualização:** 2026-04-01  
-**Versão:** 2.0  
-**Status:** ✅ Implementado
+**Versão:** 2.1  
+**Status:** ✅ Implementado  
+**Mudanças 2.1:** status, trigger UPDATE, cleanup, função unificada, cron 30min, métricas

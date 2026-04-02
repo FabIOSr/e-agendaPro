@@ -14,7 +14,7 @@
 //   APP_URL
 //
 //   Evolution API (WhatsApp):
-//   EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE
+//   EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE_NAME
 //
 //   SendGrid (Email):
 //   SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME
@@ -120,17 +120,17 @@ function mensagemLembretePrestador(ag: Agendamento): string {
 async function enviarWhatsApp(telefone: string, mensagem: string): Promise<void> {
   const apiUrl = Deno.env.get("EVOLUTION_API_URL");
   const apiKey = Deno.env.get("EVOLUTION_API_KEY");
-  const instance = Deno.env.get("EVOLUTION_INSTANCE");
+  const instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
-  if (!apiUrl || !apiKey || !instance) {
-    throw new Error("Evolution API não configurado (EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE)");
+  if (!apiUrl || !apiKey || !instanceName) {
+    throw new Error("Evolution API não configurado (EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE_NAME)");
   }
 
   // Evolution API usa formato internacional (55 + DDD + número)
   const numero = normalizarTelefone(telefone);
   const numeroInternacional = numero.startsWith("55") ? numero : `55${numero}`;
 
-  const url = `${apiUrl}/message/sendText/${instance}`;
+  const url = `${apiUrl}/message/sendText/${instanceName}`;
 
   const res = await fetch(url, {
     method: "POST",
