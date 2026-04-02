@@ -17,15 +17,14 @@ CREATE TABLE IF NOT EXISTS public.lista_espera (
   tipo_preferencia TEXT DEFAULT 'exato',  -- 'exato' | 'periodo' | 'qualquer'
   periodo_preferido TEXT,                 -- 'manha' | 'tarde' | 'noite'
   criado_em TIMESTAMPTZ DEFAULT NOW(),
-  expira_em TIMESTAMPTZ GENERATED ALWAYS AS (data_preferida + INTERVAL '7 days') STORED,
   notificado BOOLEAN DEFAULT FALSE,
   notificado_em TIMESTAMPTZ,
   agendado BOOLEAN DEFAULT FALSE,
   UNIQUE(cliente_telefone, data_preferida, hora_preferida, servico_id)
 );
 
-COMMENT ON COLUMN public.lista_espera.expira_em IS 
-'Expira 7 dias APÓS a data preferida (não 7 dias após criação)';
+COMMENT ON COLUMN public.lista_espera.data_preferida IS 
+'Data de interesse do cliente. Notificações só ocorrem até esta data (com min. 2h antecedência).';
 
 -- Índice para busca rápida
 CREATE INDEX IF NOT EXISTS idx_lista_espera_prestador ON public.lista_espera(prestador_id);

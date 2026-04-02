@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
     );
 
     // Busca TODOS os clientes na lista de espera que ainda não foram notificados
-    // e estão dentro do prazo de validade
+    // e não foram agendados
     const { data: listaEspera, error: erroBusca } = await supabase
       .from("lista_espera")
       .select(`
@@ -179,7 +179,6 @@ Deno.serve(async (req: Request) => {
       `)
       .eq("agendado", false)
       .eq("notificado", false)
-      .gt("expira_em", new Date().toISOString())
       .order("criado_em", { ascending: true });
 
     if (erroBusca) {
