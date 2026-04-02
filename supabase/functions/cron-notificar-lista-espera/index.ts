@@ -197,9 +197,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Filtra entradas cuja data preferida já passou
+    const hoje = new Date().toISOString().split('T')[0];
+    const listaValida = listaEspera.filter(item => item.data_preferida >= hoje);
+
+    if (listaValida.length === 0) {
+      return new Response(JSON.stringify({ mensagem: "Todas as datas já passaram" }), {
+        status: 200,
+        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      });
+    }
+
     // Agrupa por prestador e data para otimizar chamadas
     const grupos = new Map<string, any[]>();
-    for (const item of listaEspera) {
+    for (const item of listaValida) {  // ← Usa listaValida (filtra passado)
       const key = `${item.prestador_id}|${item.data_preferida}`;
       if (!grupos.has(key)) {
         grupos.set(key, []);
@@ -213,6 +224,12 @@ Deno.serve(async (req: Request) => {
     // Processa cada grupo (prestador + data)
     for (const [key, clientes] of grupos.entries()) {
       const [prestadorId, dataPreferida] = key.split("|");
+
+      // Verifica se data já passou (segurança extra)
+      const hoje = new Date().toISOString().split('T')[0];
+      if (dataPreferida < hoje) {
+        continue; // Data já passou
+      }
 
       // Chama horarios-disponiveis para este prestador/data
       // Precisamos de um servico_id para chamar, usa o primeiro cliente
@@ -260,6 +277,18 @@ Deno.serve(async (req: Request) => {
 
         if (!horarioCompativel) {
           continue; // Nenhum horário compatível com preferência
+        }
+
+        // ⏰ Verifica antecedência mínima (2 horas)
+        const agora = new Date();
+        const horarioSlot = new Date(`${dataPreferida}T${horarioCompativel}`);
+        const diffHoras = (horarioSlot.getTime() - agora.getTime()) / (1000 * 60 * 60);
+
+        if (diffHoras < 2) {
+          console.log(
+            `⏰ Pulando ${horarioCompativel}: apenas ${diffHoras.toFixed(1)}h de antecedência`
+          );
+          continue; // Menos de 2 horas de antecedência
         }
 
         // ✅ Horário compatível encontrado! Notifica o cliente.
