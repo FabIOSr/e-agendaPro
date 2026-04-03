@@ -17,6 +17,12 @@ test('migration 30 cria a RPC criar_agendamento_atomic', () => {
   assert.match(migration30, /SECURITY DEFINER/i);
 });
 
+test('migration 31 corrige a carga de intervalo_slot no prestador', () => {
+  const migration31 = readFileSync(new URL('../migrations/31_fix_criar_agendamento_atomic_intervalo_slot.sql', import.meta.url), 'utf8');
+  assert.match(migration31, /COALESCE\(intervalo_slot,\s*0\)\s+AS intervalo_slot/i);
+  assert.match(migration31, /WHEN v_is_pro AND v_prestador\.intervalo_slot > 0 THEN v_prestador\.intervalo_slot/i);
+});
+
 test('migration 30 usa lock transacional por prestador', () => {
   assert.match(migration30, /pg_advisory_xact_lock\s*\(\s*hashtext\(p_prestador_id::text\)\s*\)/i);
 });
