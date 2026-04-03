@@ -26,9 +26,19 @@ Este documento documenta **12 oportunidades** identificadas através de análise
 - **Quick Wins:** Pequenas melhorias com grande impacto (1-2h cada)
 - **Features de Impacto:** Funcionalidades novas que movem agulha (4-8h cada)
 - **Otimizações Estratégicas:** Melhorias de conversão e retenção
+- **Infraestrutura de Qualidade:** Testes automatizados, módulos compartilhados
 
 **Investimento total estimado:** 40-60 horas de desenvolvimento
 **ROI potencial:** +30-40% conversão, -20% churn, +15% ARPU
+
+### ✅ Conquistas Recentes (2026-04-03)
+
+**36 testes automatizados passando!**
+- Cobertura completa de geração de slots (antecedência, conflitos, bloqueios, cadência)
+- Normalização de respostas de agendamento
+- Classificação de eventos do webhook Asaas
+- Bug corrigido: antecedência mínima agora só aplica no mesmo dia (consistente com SQL)
+- ~200 linhas removidas das edge functions (DRY, módulos compartilhados)
 
 ---
 
@@ -1646,8 +1656,9 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 | Q-5: Busca clientes | 2h | Alta | ✅ IMPLEMENTADO |
 | M-1: Plano Anual | 2h | Alta | ✅ IMPLEMENTADO |
 | R-2: Cancel Survey | 2h | Alta | ⏳ Pendente |
+| T-1: Testes automatizados | 4h | Alta | ✅ IMPLEMENTADO |
 
-**Total:** 9h (2 dias) — 5h concluídas
+**Total:** 13h (2-3 dias) — 9h concluídas
 
 ---
 

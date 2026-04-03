@@ -1,5 +1,89 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-03] — Refatoração de Testes + Módulos Compartilhados
+
+### 🧪 Testes Automatizados (36 testes passando!)
+
+**Antes:** 4 testes básicos de geração de slots
+**Depois:** 36 testes cobrindo todas as regras de negócio críticas
+
+| Arquivo | Testes | Cobertura |
+|---------|--------|-----------|
+| `tests/scheduling-rules.test.js` | 24 | Slots, antecedência, conflitos, bloqueios, cadência, grade |
+| `tests/agendamento-response.test.js` | 4 | Normalização de resposta da SP |
+| `tests/asaas-webhook-rules.test.js` | 8 | Classificação de eventos, extração de payload, validade |
+
+**Novos testes adicionados:**
+- ✅ Antecedência mínima: só no mesmo dia (bug corrigido)
+- ✅ Antecedência: dias futuros ignoram regra
+- ✅ Conflitos com agendamentos (mesma duração, duração diferente, com buffer)
+- ✅ Bloqueios manuais (single e multi-slot)
+- ✅ Bloqueios recorrentes (dia correto vs outros dias)
+- ✅ Cadência e grade de horários (30 min, 15 min)
+- ✅ Serviço que não cabe no expediente
+- ✅ Múltiplos períodos (manhã + tarde)
+- ✅ Combinação: agendamento + bloqueio manual + recorrente
+- ✅ Ordenação e consistência de motivo_bloqueio
+- ✅ Classificação de eventos Asaas (ativar, desativar, inadimplente, ignorar)
+- ✅ Extração de assinatura (objeto, string, payload vazio)
+- ✅ Validade mensual e anual
+
+### 📦 Módulos Compartilhados
+
+**`modules/scheduling-rules.js`** (refatorado)
+- Bug corrigido: antecedência mínima agora só aplica no mesmo dia
+- Antes: bloqueava slots < 60 min SEMPRE (incorreto)
+- Depois: só bloqueia < 60 min se slot for no mesmo dia (consistente com SQL)
+- Comentários e JSDoc traduzidos para pt-BR
+- Exporta: `generateSlots`, `horaParaDate`, `dateParaHora`, `conflita`, `getAgoraBRT`
+
+**`modules/agendamento-response.js`** (novo)
+- Centraliza normalização do resultado da stored procedure `criar_agendamento_atomic`
+- Elimina ~15 linhas duplicadas na edge function `criar-agendamento`
+- Testes: sucesso, erro simples, payload de limite, fallback null
+
+**`modules/asaas-webhook-rules.js`** (novo)
+- Centraliza regras do webhook Asaas
+- Remove ~30 linhas hard-coded da edge function
+- Funções: `classificarEventoAsaas`, `extrairAssinaturaAsaas`, `calcularValidadeAte`
+- Testes: todos os eventos, extração payload (objeto/string), validade, payload vazio
+
+### 🔧 Edge Functions Simplificadas
+
+| Função | Linhas removidas | Mudança |
+|--------|-----------------|---------|
+| `horarios-disponiveis` | ~170 | Usa `generateSlots` do módulo compartilhado |
+| `webhook-asaas` | ~30 | Usa `classificarEventoAsaas` e `extrairAssinaturaAsaas` |
+| `criar-agendamento` | ~5 | Usa `normalizarResultadoCriacaoAgendamento` |
+
+### 📋 Infra de testes
+
+```bash
+# Executar todos os testes
+npm test
+
+# Runner: tests/run-tests.js (Node.js native test runner)
+# Convenção: arquivos *.test.js importam node:test + assert/strict
+```
+
+### 📁 Arquivos Modificados/Criados
+
+| Arquivo | Tipo | Descrição |
+|---------|------|-----------|
+| `modules/scheduling-rules.js` | Modificado | Bug fix de antecedência + JSDoc pt-BR |
+| `modules/agendamento-response.js` | Novo | Normalização de resposta |
+| `modules/asaas-webhook-rules.js` | Novo | Regras do webhook Asaas |
+| `tests/scheduling-rules.test.js` | Reescrito | 24 testes em pt-BR |
+| `tests/agendamento-response.test.js` | Novo | 4 testes |
+| `tests/asaas-webhook-rules.test.js` | Novo | 8 testes |
+| `tests/run-tests.js` | Novo | Runner |
+| `package.json` | Modificado | Script `test` adicionado |
+| `supabase/functions/horarios-disponiveis/index.ts` | Modificado | Usa módulo compartilhado |
+| `supabase/functions/webhook-asaas/index.ts` | Modificado | Usa módulo compartilhado |
+| `supabase/functions/criar-agendamento/index.ts` | Modificado | Usa módulo compartilhado |
+
+---
+
 ## [2026-04-02] — Correções Críticas: Limite Free, Timezone e Build
 
 ### 🔧 Correções Implementadas

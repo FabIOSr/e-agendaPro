@@ -509,6 +509,13 @@ firebase deploy --only hosting
 - [ ] `cron-notificar-lista-espera` → testa notificação após cancelamento
 - [ ] `notificar-lista-espera` → testa notificação individual
 
+### Testes automatizados
+- [ ] `npm test` passa todos (36 testes)
+- [ ] `scheduling-rules.test.js` → 24 testes de geração de slots
+- [ ] `agendamento-response.test.js` → 4 testes de normalização de resposta
+- [ ] `asaas-webhook-rules.test.js` → 8 testes de eventos Asaas
+- [ ] Cobertura: antecedência mínima, conflitos, bloqueios, cadência, grade, classificação de eventos
+
 ### Pagamentos
 - [ ] Fluxo completo testado no sandbox Asaas (Pix + Cartão)
 - [ ] Webhook recebendo eventos corretamente
@@ -547,12 +554,20 @@ agendapro/
 │   ├── painel-init.js         ← Proteção de rotas + gate de plano
 │   └── auth-migration.sql     ← Trigger de perfil + RLS
 │
+├── modules/                    ← Módulos compartilhados (frontend + testes)
+│   ├── scheduling-rules.js    ← Geração de slots (espelha SQL criar_agendamento_atomic)
+│   ├── agendamento-response.js ← Normalização de resposta da SP
+│   ├── asaas-webhook-rules.js ← Regras de eventos do Asaas
+│   ├── auth-session.js        ← Sessão e autenticação
+│   ├── sentry.js              ← Monitoramento de erros
+│   └── ui-helpers.js          ← Toast, modais, helpers de UI
+│
 ├── supabase/functions/
-│   ├── horarios-disponiveis/index.ts
+│   ├── horarios-disponiveis/index.ts      ← Usa generateSlots do módulo compartilhado
 │   ├── lembretes-whatsapp/index.ts
 │   ├── ativar-trial/index.ts
 │   ├── criar-assinatura/index.ts
-│   ├── webhook-asaas/index.ts
+│   ├── webhook-asaas/index.ts             ← Usa classificarEventoAsaas do módulo
 │   ├── cancelar-assinatura/index.ts
 │   ├── cancelar-agendamento-cliente/index.ts
 │   ├── reagendar-cliente/index.ts
@@ -570,6 +585,12 @@ agendapro/
 │   ├── ativar_trial_auto.sql
 │   └── downgrade_limits.sql
 │
+├── tests/                          ← Testes automatizados (Node.js native)
+│   ├── run-tests.js               ← Runner que importa todos os testes
+│   ├── scheduling-rules.test.js   ← 24 testes de geração de slots
+│   ├── agendamento-response.test.js ← 4 testes de normalização
+│   └── asaas-webhook-rules.test.js ← 8 testes de eventos Asaas
+│
 ├── pages/
 │   ├── landing-page/index.html
 │   ├── onboarding/index.html
@@ -579,7 +600,21 @@ agendapro/
 │   ├── configuracoes/index.html
 │   └── assinaturas/tela-planos/index.html
 │
-└── README.md                  ← este arquivo
+├── package.json                   ← Scripts: test, build, dev
+├── build.js                       ← Build com placeholders
+├── config.js                      ← Configuração de variáveis
+└── README.md                      ← este arquivo
+```
+
+### Executar testes
+
+```bash
+# Rodar todos os testes
+npm test
+
+# Output esperado
+# ✔ 36 tests passing
+# ✔ 0 failing
 ```
 
 ---
