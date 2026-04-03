@@ -205,7 +205,7 @@ async function getPreferencias(supabase: ReturnType<typeof createClient>, presta
   return data as PreferenciasNotificacao;
 }
 
-async function notificarCliente(ag: Agendamento, tipo: "confirmacao" | "lembrete"): Promise<string[]> {
+async function notificarCliente(ag: Agendamento, tipo: "confirmacao" | "lembrete", planoPrestador: string): Promise<string[]> {
   const enviados: string[] = [];
   const mensagem = tipo === "confirmacao" ? mensagemConfirmacaoCliente(ag) : mensagemLembreteCliente(ag);
 
@@ -223,15 +223,17 @@ async function notificarCliente(ag: Agendamento, tipo: "confirmacao" | "lembrete
     }
   }
 
-  // WhatsApp se configurado (cliente sempre recebe)
-  try {
-    const evolutionApi = Deno.env.get("EVOLUTION_API_URL");
-    if (evolutionApi) {
-      await enviarWhatsApp(ag.cliente_tel, mensagem);
-      enviados.push(`whatsapp:${ag.cliente_tel}`);
+  // WhatsApp apenas para prestadores Pro (diferencial do plano pago)
+  if (planoPrestador === 'pro') {
+    try {
+      const evolutionApi = Deno.env.get("EVOLUTION_API_URL");
+      if (evolutionApi) {
+        await enviarWhatsApp(ag.cliente_tel, mensagem);
+        enviados.push(`whatsapp:${ag.cliente_tel}`);
+      }
+    } catch (err) {
+      console.error("Erro WhatsApp cliente:", err);
     }
-  } catch (err) {
-    console.error("Erro WhatsApp cliente:", err);
   }
 
   return enviados;
@@ -280,14 +282,14 @@ async function notificarPrestador(ag: Agendamento, tipo: "confirmacao" | "lembre
 async function handleConfirmacao(supabase: ReturnType<typeof createClient>, agendamentoId: string) {
   const { data: ag, error } = await supabase
     .from("agendamentos")
-    .select(`id, prestador_id, data_hora, cliente_nome, cliente_tel, cliente_email, cancel_token, status, servicos(nome,duracao_min,preco), prestadores(nome,whatsapp,slug,email)`)
+    .select(`id, prestador_id, data_hora, cliente_nome, cliente_tel, cliente_email, cancel_token, status, servicos(nome,duracao_min,preco), prestadores(nome,whatsapp,slug,email,plano)`)
     .eq("id", agendamentoId)
     .single();
 
   if (error || !ag) throw new Error("Agendamento não encontrado");
 
   const prefs = await getPreferencias(supabase, ag.prestador_id);
-  const enviados = await notificarCliente(ag as Agendamento, "confirmacao");
+  const enviados = await notificarCliente(ag as Agendamento, "confirmacao", ag.prestadores.plano);
   const enviadosPrestador = await notificarPrestador(ag as Agendamento, "confirmacao", prefs);
 
   return { enviados: [...enviados, ...enviadosPrestador] };
@@ -302,7 +304,7 @@ async function handleLembreteD1(supabase: ReturnType<typeof createClient>) {
 
   const { data: agendamentos, error } = await supabase
     .from("agendamentos")
-    .select(`id, prestador_id, data_hora, cliente_nome, cliente_tel, cliente_email, cancel_token, status, servicos(nome,duracao_min,preco), prestadores(nome,whatsapp,slug,email)`)
+    .select(`id, prestador_id, data_hora, cliente_nome, cliente_tel, cliente_email, cancel_token, status, servicos(nome,duracao_min,preco), prestadores(nome,whatsapp,slug,email,plano)`)
     .eq("status", "confirmado")
     .gte("data_hora", inicioDia.toISOString())
     .lte("data_hora", fimDia.toISOString());
@@ -313,7 +315,7 @@ async function handleLembreteD1(supabase: ReturnType<typeof createClient>) {
   for (const ag of agendamentos ?? []) {
     try {
       const prefs = await getPreferencias(supabase, ag.prestador_id);
-      await notificarCliente(ag as Agendamento, "lembrete");
+      await notificarCliente(ag as Agendamento, "lembrete", ag.prestadores.plano);
       await notificarPrestador(ag as Agendamento, "lembrete", prefs);
       processados++;
       await new Promise((r) => setTimeout(r, 1500));

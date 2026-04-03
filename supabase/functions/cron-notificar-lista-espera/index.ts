@@ -50,15 +50,28 @@ function getDataAtualBRT(): string {
 
 /**
  * Retorna data/hora atual no fuso BRT como Date
- * Converte UTC para BRT manualmente
+ * Usa Intl.DateTimeFormat para considerar regras oficiais de timezone
  */
 function getDataHoraAtualBRT(): Date {
   const now = new Date();
-  // Obtém offset do timezone BRT em minutos
-  const offset = -180; // BRT é UTC-3 (180 minutos)
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const brtTime = new Date(utcTime + (offset * 60000));
-  return brtTime;
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: TIMEZONE_BRT,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value;
+  
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hour = get('hour');
+  const minute = get('minute');
+  const second = get('second');
+  
+  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}-03:00`);
 }
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
@@ -445,9 +458,11 @@ Deno.serve(async (req: Request) => {
           `⏰ Após este tempo, a vaga será oferecida ao próximo da fila.\n\n` +
           `🔗 ${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenReserva}`;
 
-        await enviarWhatsApp(cliente.cliente_telefone, mensagemWhatsApp);
+        // Tenta WhatsApp primeiro, com fallback para email
+        const sucessoWhatsApp = await enviarWhatsApp(cliente.cliente_telefone, mensagemWhatsApp);
 
-        if (cliente.cliente_email) {
+        if (!sucessoWhatsApp && cliente.cliente_email) {
+          // Fallback: se WhatsApp falhar, envia email
           const emailHtml = `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
               <h2 style="color:#c8f060">🎉 Vaga Liberou!</h2>
@@ -461,7 +476,29 @@ Deno.serve(async (req: Request) => {
                 ⚡ Você tem <strong>${TIMEOUT_MINUTOS_DEFAULT} minutos</strong> para confirmar!<br>
                 Após este tempo, a vaga será oferecida ao próximo da fila.
               </p>
-              <a href="${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenReserva}" 
+              <a href="${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenReserva}"
+                 style="display:inline-block;background:#c8f060;color:#000;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;margin-top:8px">
+                Agendar Agora
+              </a>
+            </div>
+          `;
+          await enviarEmail(cliente.cliente_email, `🎉 Vaga liberou para ${dataFmt}!`, emailHtml);
+        } else if (cliente.cliente_email) {
+          // Envia email mesmo com WhatsApp sucesso (reforço)
+          const emailHtml = `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+              <h2 style="color:#c8f060">🎉 Vaga Liberou!</h2>
+              <p>Olá ${nomeCliente}! Uma vaga compatível com sua preferência surgiu:</p>
+              <div style="background:#f2f0ea;padding:16px;border-radius:8px;margin:16px 0">
+                <p><strong>📅 Data:</strong> ${dataFmt}</p>
+                <p><strong>⏰ Horário:</strong> ${horarioCompativel}</p>
+                ${cliente.servico_nome ? `<p><strong>💇 Serviço:</strong> ${cliente.servico_nome}</p>` : ""}
+              </div>
+              <p style="color:#8a8778;font-size:14px">
+                ⚡ Você tem <strong>${TIMEOUT_MINUTOS_DEFAULT} minutos</strong> para confirmar!<br>
+                Após este tempo, a vaga será oferecida ao próximo da fila.
+              </p>
+              <a href="${Deno.env.get("APP_URL")}/confirmar-reserva?token=${tokenReserva}"
                  style="display:inline-block;background:#c8f060;color:#000;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:600;margin-top:8px">
                 Agendar Agora
               </a>

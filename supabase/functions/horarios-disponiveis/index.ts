@@ -22,7 +22,33 @@ if (SENTRY_DSN) {
 }
 
 const TIMEZONE_BRT = 'America/Sao_Paulo';
-const BRT_OFFSET_MS = -180 * 60 * 1000; // BRT é UTC-3
+
+/**
+ * Retorna hora atual no fuso BRT como Date.
+ * Usa Intl.DateTimeFormat para considerar regras oficiais de timezone
+ * (incluindo histórico de horário de verão).
+ */
+function getAgoraBRT(): Date {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: TIMEZONE_BRT,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value;
+  
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hour = get('hour');
+  const minute = get('minute');
+  const second = get('second');
+  
+  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}-03:00`);
+}
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -108,11 +134,7 @@ function gerarSlots(
   intervaloMin = 0,
   bloqueiosRecorrentes: BloqueioRecorrente[] = []
 ): Slot[] {
-  // Hora atual em BRT (UTC-3)
-  const now = new Date();
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const agora = new Date(utcTime + BRT_OFFSET_MS);
-  
+  const agora = getAgoraBRT(); // Hora atual em BRT (considera regras oficiais de timezone)
   const slots: Slot[] = [];
 
   // O cursor avança pela cadência dos slots (intervaloSlot), não pelo buffer.
@@ -238,8 +260,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log('DEBUG: Recebendo requisição para horarios-disponiveis');
-    
     const {
       prestador_slug,
       servico_id,
@@ -287,8 +307,6 @@ Deno.serve(async (req: Request) => {
 
     // Para usuários free, ignora intervalo_slot e usa sempre duração do serviço
     const intervaloSlotConfig = isPro ? prestador.intervalo_slot : null;
-
-    console.log('DEBUG intervaloMin:', intervaloMin, 'prestador_slug:', prestador_slug, 'isPro:', isPro, 'intervaloSlotConfig:', intervaloSlotConfig);
 
     // 2. Serviço e sua duração
     const { data: servico, error: errS } = await supabase
