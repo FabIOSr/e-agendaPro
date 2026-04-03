@@ -114,6 +114,105 @@
       color: rgba(250, 249, 246, .7);
     }
 
+    /* ── PRO: hero expandido ── */
+    .hero-meta {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; flex-wrap: wrap;
+      margin: 10px 0 14px;
+    }
+    .hero-meta-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: rgba(250,249,246,.65);
+    }
+    .hero-meta-item svg { opacity: .7; }
+    .hero-rating {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 12px; font-weight: 500; color: rgba(250,249,246,.9);
+    }
+    .hero-rating-star { color: #f9c846; font-size: 13px; }
+
+    /* ── PRO: próximo slot no hero ── */
+    .hero-next-slot {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; color: rgba(250,249,246,.8);
+      margin-top: 8px; cursor: pointer; transition: background .2s;
+    }
+    .hero-next-slot:hover { background: rgba(255,255,255,.18); }
+    .hero-next-slot-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4ade80; box-shadow: 0 0 6px #4ade8088;
+      flex-shrink: 0;
+    }
+
+    /* ── PRO: avaliações ── */
+    .avaliacoes-section {
+      max-width: 480px; margin: 0 auto; padding: 0 16px 32px;
+    }
+    .avaliacoes-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0 14px;
+    }
+    .avaliacoes-titulo {
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .avaliacoes-media {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .av-star { color: #f59e0b; font-size: 14px; }
+    .av-card {
+      background: white; border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+    }
+    .av-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    }
+    .av-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-m); display: flex; align-items: center;
+      justify-content: center; font-size: 13px; font-weight: 600;
+      color: var(--accent); flex-shrink: 0;
+    }
+    .av-nome { font-size: 13px; font-weight: 500; }
+    .av-data { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .av-stars { font-size: 12px; color: #f59e0b; letter-spacing: 1px; }
+    .av-comentario {
+      font-size: 13px; color: var(--muted); line-height: 1.6; margin-top: 4px;
+    }
+
+    /* ── PRO: galeria ── */
+    .galeria-section {
+      max-width: 480px; margin: 0 auto; padding: 0 16px 24px;
+    }
+    .galeria-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+      margin-top: 12px;
+    }
+    .galeria-item {
+      aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+      background: var(--bg2);
+    }
+    .galeria-item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .3s;
+    }
+    .galeria-item:hover img { transform: scale(1.05); }
+
+    /* ── Rodapé AgendaPro ── */
+    .agendapro-footer {
+      text-align: center; padding: 24px 16px 32px;
+      font-size: 12px; color: var(--faint);
+    }
+    .agendapro-footer a {
+      color: var(--accent); text-decoration: none; font-weight: 500;
+    }
+    .agendapro-footer a:hover { text-decoration: underline; }
+
     /* ── STEPS NAV ── */
     .steps-nav {
       display: flex;
@@ -796,11 +895,27 @@
 <body>
 
   <!-- HERO -->
-  <div class="hero">
+  <div class="hero" id="hero">
     <div class="hero-inner">
       <div class="avatar-wrap" id="hero-avatar">A</div>
       <h1 id="hero-nome">Carregando…</h1>
       <p class="hero-bio" id="hero-bio"></p>
+      <!-- PRO: meta info (localização + avaliação) -->
+      <div class="hero-meta" id="hero-meta" style="display:none">
+        <div class="hero-meta-item" id="hero-local" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="hero-local-text"></span>
+        </div>
+        <div class="hero-rating" id="hero-rating" style="display:none">
+          <span class="hero-rating-star">★</span>
+          <span id="hero-rating-text"></span>
+        </div>
+      </div>
+      <!-- PRO: próximo slot disponível -->
+      <div class="hero-next-slot" id="hero-next-slot" style="display:none" onclick="irParaAgendamento()">
+        <div class="hero-next-slot-dot"></div>
+        <span id="hero-next-slot-text">Ver horários</span>
+      </div>
       <div class="hero-tags" id="hero-tags" style="display:none"></div>
     </div>
   </div>
@@ -950,6 +1065,26 @@
   </div>
 
   <!-- STICKY FOOTER -->
+  <!-- PRO: Galeria de fotos -->
+  <div class="galeria-section" id="galeria-section" style="display:none">
+    <div class="section-title">Galeria</div>
+    <div class="galeria-grid" id="galeria-grid"></div>
+  </div>
+
+  <!-- PRO: Avaliações -->
+  <div class="avaliacoes-section" id="avaliacoes-section" style="display:none">
+    <div class="avaliacoes-header">
+      <div class="avaliacoes-titulo">Avaliações</div>
+      <div class="avaliacoes-media" id="avaliacoes-media"></div>
+    </div>
+    <div id="avaliacoes-lista"></div>
+  </div>
+
+  <!-- Rodapé AgendaPro (sempre visível, sutil) -->
+  <div class="agendapro-footer">
+    Agendamento por <a href="https://agendapro.com.br" target="_blank" rel="noopener">AgendaPro</a>
+  </div>
+
   <div class="sticky-footer" id="sticky-footer">
     <div class="sticky-inner">
       <div class="sticky-summary">
@@ -984,7 +1119,7 @@
 
       const { data, error } = await supabase
         .from('prestadores')
-        .select('id, nome, bio, foto_url, whatsapp, slug')
+        .select('id, nome, bio, foto_url, whatsapp, slug, plano, plano_valido_ate, cor_tema, categoria, local_exibicao, galeria_urls, cidade')
         .eq('slug', SLUG)
         .maybeSingle();
 
@@ -997,12 +1132,30 @@
 
       PRESTADOR = data;
 
-      // Preenche hero
+      // ── Cor de tema personalizada ──────────────────────────────────────
+      if (data.cor_tema) {
+        const r = document.documentElement;
+        r.style.setProperty('--accent', data.cor_tema);
+        // Versão clara (10% opacidade) e média (30%) derivadas da cor
+        r.style.setProperty('--accent-l', data.cor_tema + '1a');
+        r.style.setProperty('--accent-m', data.cor_tema + '4d');
+        // Gradiente do hero acompanha a cor
+        const heroEl = document.getElementById('hero');
+        if (heroEl) {
+          heroEl.style.setProperty('--hero-glow', data.cor_tema);
+          // Reaplica o pseudo-element via uma classe dinâmica no style tag
+          const styleEl = document.createElement('style');
+          styleEl.textContent = `.hero::before { background: radial-gradient(ellipse 80% 60% at 50% 120%, ${data.cor_tema} 0%, transparent 70%) !important; }`;
+          document.head.appendChild(styleEl);
+        }
+      }
+
+      // ── Preenche hero ─────────────────────────────────────────────────
       const nomeEl = document.getElementById('hero-nome');
-      const bioEl = document.getElementById('hero-bio');
-      const avEl = document.getElementById('hero-avatar');
+      const bioEl  = document.getElementById('hero-bio');
+      const avEl   = document.getElementById('hero-avatar');
       if (nomeEl) nomeEl.textContent = data.nome || 'Profissional';
-      if (bioEl) bioEl.textContent = data.bio || '';
+      if (bioEl)  bioEl.textContent  = data.bio  || '';
       if (avEl) {
         if (data.foto_url) {
           avEl.innerHTML = `<img src="${data.foto_url}" alt="${data.nome}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
@@ -1011,6 +1164,27 @@
         }
       }
       document.title = (data.nome || 'AgendaPro') + ' — Agendamento';
+
+      // ── Verifica se é Pro ─────────────────────────────────────────────
+      const GRACE = 3 * 24 * 60 * 60 * 1000;
+      const isPro  = data.plano === 'pro'
+        && data.plano_valido_ate
+        && new Date(data.plano_valido_ate) > new Date(Date.now() - GRACE);
+
+      if (isPro) {
+        await carregarConteudoPro(data);
+      } else {
+        // Free: exibe localização se disponível (mínimo de contexto)
+        const local = data.local_exibicao || data.cidade;
+        if (local) {
+          const metaEl = document.getElementById('hero-meta');
+          const localEl = document.getElementById('hero-local');
+          const localTxt = document.getElementById('hero-local-text');
+          if (metaEl) metaEl.style.display = 'flex';
+          if (localEl) localEl.style.display = 'flex';
+          if (localTxt) localTxt.textContent = local;
+        }
+      }
 
       // Carrega serviços
       const { data: servs } = await supabase
@@ -1025,10 +1199,6 @@
 
       // Verificar limite free logo ao carregar a página (apenas UX — proteção real está no backend)
       // Consulta direta é segura pois só lê dados públicos do prestador, sem alterar nada
-      const isPro = data?.plano === 'pro'
-        && data?.plano_valido_ate
-        && new Date(data.plano_valido_ate) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-
       if (!isPro) {
         const agora = new Date();
         const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
@@ -1694,13 +1864,14 @@
         const dataFmt = `${state.data.getFullYear()}-${String(state.data.getMonth() + 1).padStart(2, '0')}-${String(state.data.getDate()).padStart(2, '0')}`;
         const horaFmt = horaPreferida || state.hora || '10:00';
 
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/entrada-lista-espera`, {
+        const res = await fetch(`${window.SUPABASE_URL}/functions/v1/lista-espera`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${window.SUPABASE_ANON}`,
           },
           body: JSON.stringify({
+            action: 'entrar',
             prestador_id: PRESTADOR.id,
             cliente_nome: nome,
             cliente_telefone: telefone,
@@ -1734,6 +1905,156 @@
           btn.textContent = '🔔 Entrar na lista de espera';
         }
       }
+    };
+
+    // ── CONTEÚDO PRO ─────────────────────────────────────────────────────────
+
+    async function carregarConteudoPro(prestador) {
+      // Mostra localização + avaliação no hero
+      const metaEl = document.getElementById('hero-meta');
+      if (metaEl) metaEl.style.display = 'flex';
+
+      const local = prestador.local_exibicao || prestador.cidade;
+      if (local) {
+        const localEl  = document.getElementById('hero-local');
+        const localTxt = document.getElementById('hero-local-text');
+        if (localEl)  localEl.style.display  = 'flex';
+        if (localTxt) localTxt.textContent = local;
+      }
+
+      // Busca avaliações em paralelo com próximo slot
+      const [avaliacoes] = await Promise.all([
+        carregarAvaliacoesPro(prestador.id),
+        carregarProximoSlot(prestador),
+      ]);
+
+      // Galeria de fotos
+      if (prestador.galeria_urls?.length) {
+        carregarGaleria(prestador.galeria_urls);
+      }
+    }
+
+    async function carregarAvaliacoesPro(prestadorId) {
+      const { data: avs } = await supabase
+        .from('avaliacoes')
+        .select('nota, comentario, cliente_nome, created_at')
+        .eq('prestador_id', prestadorId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!avs || avs.length === 0) return;
+
+      const media = (avs.reduce((s, a) => s + a.nota, 0) / avs.length).toFixed(1);
+      const total = avs.length;
+
+      // Mostra rating no hero
+      const ratingEl  = document.getElementById('hero-rating');
+      const ratingTxt = document.getElementById('hero-rating-text');
+      if (ratingEl)  ratingEl.style.display  = 'flex';
+      if (ratingTxt) ratingTxt.textContent = `${media} · ${total} avaliação${total > 1 ? 'ões' : ''}`;
+
+      // Seção de avaliações abaixo dos serviços
+      const section  = document.getElementById('avaliacoes-section');
+      const mediaEl  = document.getElementById('avaliacoes-media');
+      const listaEl  = document.getElementById('avaliacoes-lista');
+      if (!section) return;
+
+      section.style.display = 'block';
+      if (mediaEl) mediaEl.innerHTML =
+        `<span class="av-star">★</span> ${media} <span style="font-weight:400;color:var(--muted)">(${total})</span>`;
+
+      if (listaEl) {
+        listaEl.innerHTML = avs
+          .filter(a => a.comentario)
+          .slice(0, 3)
+          .map(a => {
+            const inicial = (a.cliente_nome || '?')[0].toUpperCase();
+            const primeiro = (a.cliente_nome || '').split(' ')[0];
+            const data = new Date(a.created_at).toLocaleDateString('pt-BR', {
+              day: '2-digit', month: 'short'
+            });
+            const estrelas = '★'.repeat(a.nota) + '☆'.repeat(5 - a.nota);
+            return `<div class="av-card">
+              <div class="av-card-header">
+                <div class="av-avatar">${inicial}</div>
+                <div>
+                  <div class="av-nome">${primeiro}</div>
+                  <div class="av-data">${data}</div>
+                </div>
+                <div class="av-stars" style="margin-left:auto">${estrelas}</div>
+              </div>
+              ${a.comentario ? `<div class="av-comentario">"${a.comentario}"</div>` : ''}
+            </div>`;
+          }).join('');
+      }
+    }
+
+    async function carregarProximoSlot(prestador) {
+      try {
+        // Pega o primeiro serviço ativo para calcular próximo slot
+        const { data: servicos } = await supabase
+          .from('servicos')
+          .select('id, duracao_min')
+          .eq('prestador_id', prestador.id)
+          .eq('ativo', true)
+          .order('duracao_min')
+          .limit(1);
+
+        if (!servicos?.length) return;
+
+        // Testa os próximos 7 dias
+        const hoje = new Date();
+        for (let i = 0; i < 7; i++) {
+          const dia = new Date(hoje);
+          dia.setDate(hoje.getDate() + i);
+          const ano = dia.getFullYear();
+          const mes = String(dia.getMonth() + 1).padStart(2, '0');
+          const dd  = String(dia.getDate()).padStart(2, '0');
+          const dataStr = `${ano}-${mes}-${dd}`;
+
+          const resp = await fetch(
+            `${window.SUPABASE_URL}/functions/v1/horarios-disponiveis`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': window.SUPABASE_ANON },
+              body: JSON.stringify({
+                prestador_slug: prestador.slug,
+                servico_id: servicos[0].id,
+                data: dataStr,
+              }),
+            }
+          );
+          const json = await resp.json();
+          const livres = (json.slots || []).filter(s => s.disponivel);
+          if (livres.length) {
+            const slotEl = document.getElementById('hero-next-slot');
+            const slotTxt = document.getElementById('hero-next-slot-text');
+            if (slotEl) slotEl.style.display = 'flex';
+            const sem = ['dom','seg','ter','qua','qui','sex','sáb'];
+            const label = i === 0 ? 'hoje' : i === 1 ? 'amanhã' : sem[dia.getDay()];
+            if (slotTxt) slotTxt.textContent = `Próximo: ${label} às ${livres[0].hora}`;
+            return;
+          }
+        }
+      } catch(e) {
+        // Silencioso — não é crítico
+      }
+    }
+
+    function carregarGaleria(urls) {
+      const section = document.getElementById('galeria-section');
+      const grid    = document.getElementById('galeria-grid');
+      if (!section || !grid || !urls?.length) return;
+      section.style.display = 'block';
+      grid.innerHTML = urls.slice(0, 6).map(url =>
+        `<div class="galeria-item"><img src="${url}" alt="Trabalho" loading="lazy"></div>`
+      ).join('');
+    }
+
+    window.irParaAgendamento = function() {
+      // Scroll suave até a seleção de serviços
+      const el = document.getElementById('step-1');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     // ── INIT ──────────────────────────────────────────────────────────────────

@@ -1423,6 +1423,38 @@
                 <input class="input" id="p-endereco" placeholder="Rua e número">
               </div>
             </div>
+
+            <div class="field">
+              <label class="label">Local de exibição na página pública</label>
+              <input class="input" id="p-local" placeholder="Ex: Pinheiros, São Paulo">
+              <div style="font-size:11px;color:var(--muted);margin-top:4px">Aparece no perfil público para clientes saberem onde você atende.</div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="label">Categoria</label>
+                <select class="input" id="p-categoria">
+                  <option value="">Selecione…</option>
+                  <option value="beleza">💇 Beleza e Estética</option>
+                  <option value="saude">🩺 Saúde</option>
+                  <option value="fitness">🏋️ Fitness e Esportes</option>
+                  <option value="educacao">📚 Educação</option>
+                  <option value="terapia">🧘 Terapia e Bem-estar</option>
+                  <option value="estetica">✨ Estética</option>
+                  <option value="outro">📌 Outro</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label">Cor de destaque da página</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="color" id="p-cor-tema" value="#2d5a27"
+                    style="width:44px;height:38px;border:1.5px solid var(--bord);border-radius:8px;cursor:pointer;background:none;padding:2px">
+                  <input class="input mono" id="p-cor-tema-hex" placeholder="#2d5a27"
+                    style="flex:1" oninput="sincronizarCor(this.value)" maxlength="7">
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px">Cor dos botões e destaques na página de agendamento.</div>
+              </div>
+            </div>
           </div>
           <div class="card-footer">
             <button class="btn-ghost" onclick="resetarCampos()">Descartar</button>
@@ -1870,8 +1902,15 @@
       document.getElementById('p-bio').value = data.bio ?? '';
       document.getElementById('p-email').textContent = data.email ?? '—';
       document.getElementById('p-wpp').value = data.whatsapp ?? '';
-      document.getElementById('p-cidade').value = data.cidade ?? '';
-      document.getElementById('p-endereco').value = data.endereco ?? '';
+      document.getElementById('p-cidade').value   = data.cidade          ?? '';
+      document.getElementById('p-endereco').value = data.endereco        ?? '';
+      document.getElementById('p-local').value    = data.local_exibicao  ?? '';
+      if (document.getElementById('p-categoria'))
+        document.getElementById('p-categoria').value = data.categoria    ?? '';
+      if (data.cor_tema) {
+        document.getElementById('p-cor-tema').value     = data.cor_tema;
+        document.getElementById('p-cor-tema-hex').value = data.cor_tema;
+      }
       document.getElementById('p-intervalo').value = data.intervalo_min ?? 0;
       document.getElementById('p-intervalo-slot').value = data.intervalo_slot ?? '';
 
@@ -1884,6 +1923,19 @@
         document.getElementById('foto-inicial').textContent = ini;
       }
     }
+
+    window.sincronizarCor = function(hex) {
+      if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        const p = document.getElementById('p-cor-tema');
+        if (p) p.value = hex;
+      }
+    };
+    // Color picker → input hex
+    document.addEventListener('DOMContentLoaded', () => {
+      const picker = document.getElementById('p-cor-tema');
+      const hexInp = document.getElementById('p-cor-tema-hex');
+      if (picker && hexInp) picker.addEventListener('input', () => { hexInp.value = picker.value; });
+    });
 
     window.salvar = async function (secao) {
       if (secao === 'perfil') await salvarPerfil();
@@ -1989,8 +2041,11 @@
           slug: document.getElementById('p-slug').value.trim(),
           bio: document.getElementById('p-bio').value.trim(),
           whatsapp: document.getElementById('p-wpp').value.trim(),
-          cidade: document.getElementById('p-cidade').value.trim(),
-          endereco: document.getElementById('p-endereco').value.trim(),
+          cidade:          document.getElementById('p-cidade').value.trim(),
+          endereco:        document.getElementById('p-endereco').value.trim(),
+          local_exibicao:  document.getElementById('p-local')?.value.trim()        || null,
+          categoria:       document.getElementById('p-categoria')?.value           || null,
+          cor_tema:        document.getElementById('p-cor-tema-hex')?.value.trim() || null,
         };
         if (foto_url) payload.foto_url = foto_url;
 
