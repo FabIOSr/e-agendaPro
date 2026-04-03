@@ -93,8 +93,17 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
+  const errorContext: Record<string, unknown> = {
+    method: req.method,
+    content_type: req.headers.get("content-type"),
+    url: req.url,
+  };
+
   try {
     const { billing_type = "PIX", plano = "pro", ciclo = "MONTHLY" } = await req.json();
+    errorContext.billing_type = billing_type;
+    errorContext.plano = plano;
+    errorContext.ciclo = ciclo;
 
     // Valida plano
     if (!PLANOS[plano as keyof typeof PLANOS]) {
@@ -210,7 +219,7 @@ Deno.serve(async (req: Request) => {
     if (SENTRY_DSN) {
       Sentry.captureException(err, {
         tags: { function: "criar-assinatura" },
-        extra: { billing_type, plano },
+        extra: errorContext,
       });
     }
     

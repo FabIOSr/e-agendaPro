@@ -259,6 +259,12 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const errorContext: Record<string, unknown> = {
+    method: req.method,
+    content_type: req.headers.get("content-type"),
+    url: req.url,
+  };
+
   try {
     const {
       prestador_slug,
@@ -266,6 +272,10 @@ Deno.serve(async (req: Request) => {
       data,            // "2026-03-21"
       intervalo_slot,  // opcional, padrão 30 min
     } = await req.json();
+    errorContext.prestador_slug = prestador_slug;
+    errorContext.servico_id = servico_id;
+    errorContext.data = data;
+    errorContext.intervalo_slot = intervalo_slot;
 
     if (!prestador_slug || !servico_id || !data) {
       return Response.json(
@@ -423,7 +433,7 @@ Deno.serve(async (req: Request) => {
     if (SENTRY_DSN) {
       Sentry.captureException(err, {
         tags: { function: "horarios-disponiveis" },
-        extra: { prestador_slug, servico_id, data },
+        extra: errorContext,
       });
     }
     

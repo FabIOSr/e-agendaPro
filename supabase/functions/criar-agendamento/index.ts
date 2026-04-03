@@ -49,6 +49,12 @@ Deno.serve(async (req: Request) => {
     return new Response("Method not allowed", { status: 405, headers: CORS });
   }
 
+  const errorContext: Record<string, unknown> = {
+    method: req.method,
+    content_type: req.headers.get("content-type"),
+    url: req.url,
+  };
+
   try {
     // ── Parse do body ──────────────────────────────────────────────────────
     let body: any;
@@ -59,6 +65,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const { prestador_id, servico_id, cliente_nome, cliente_tel, cliente_email, data_hora, token_reserva } = body;
+    errorContext.prestador_id = prestador_id;
+    errorContext.servico_id = servico_id;
+    errorContext.cliente_nome = cliente_nome;
+    errorContext.cliente_tel = cliente_tel;
+    errorContext.cliente_email = cliente_email;
+    errorContext.data_hora = data_hora;
+    errorContext.token_reserva = Boolean(token_reserva);
 
     if (!prestador_id || !servico_id || !cliente_nome || !cliente_tel || !data_hora) {
       return Response.json(
@@ -355,7 +368,7 @@ Deno.serve(async (req: Request) => {
   if (SENTRY_DSN) {
     Sentry.captureException(err, {
       tags: { function: "criar-agendamento" },
-      extra: { prestador_id, servico_id, cliente_nome, cliente_tel },
+      extra: errorContext,
     });
   }
   
