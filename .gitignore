@@ -76,5 +76,6 @@ build/
 
 # Supabase
 supabase/.temp/
+supabase/.branches/
 
 .claude/
