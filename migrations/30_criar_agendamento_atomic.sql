@@ -18,16 +18,19 @@ DECLARE
   v_prestador RECORD;
   v_servico RECORD;
   v_reserva RECORD;
+  v_disponivel_no_dia BOOLEAN;
   v_agendamento_id UUID;
   v_agendamento_original_id UUID;
   v_count BIGINT;
+  v_cadencia_min INT;
+  v_agora_brt TIMESTAMP;
   v_fim_agendamento TIMESTAMPTZ;
-  v_inicio_menos TIMESTAMPTZ;
   v_inicio_local TIMESTAMP;
   v_fim_local TIMESTAMP;
   v_motivo TEXT;
   v_is_pro BOOLEAN;
   v_limite_free CONSTANT INT := 10;
+  v_antecedencia_minima CONSTANT INT := 60;
 BEGIN
   IF p_prestador_id IS NULL OR p_servico_id IS NULL OR p_cliente_nome IS NULL OR p_cliente_tel IS NULL OR p_data_hora IS NULL THEN
     RETURN jsonb_build_object(
@@ -47,7 +50,7 @@ BEGIN
     );
   END IF;
 
-  SELECT id, plano, plano_valido_ate, whatsapp
+  SELECT id, plano, plano_valido_ate, whatsapp, COALESCE(intervalo_min, 0) AS intervalo_min
     INTO v_prestador
     FROM public.prestadores
     WHERE id = p_prestador_id
@@ -123,6 +126,10 @@ BEGIN
     v_prestador.plano = 'pro'
     AND v_prestador.plano_valido_ate IS NOT NULL
     AND v_prestador.plano_valido_ate > NOW() - INTERVAL '3 days';
+  v_cadencia_min := CASE
+    WHEN v_is_pro AND COALESCE(v_prestador.intervalo_slot, 0) > 0 THEN v_prestador.intervalo_slot
+    ELSE v_servico.duracao_min + v_prestador.intervalo_min
+  END;
 
   IF NOT v_is_pro THEN
     SELECT COUNT(*)
@@ -146,18 +153,60 @@ BEGIN
   END IF;
 
   v_fim_agendamento := p_data_hora + make_interval(mins => v_servico.duracao_min);
-  v_inicio_menos := p_data_hora - make_interval(mins => v_servico.duracao_min);
+  v_agora_brt := NOW() AT TIME ZONE 'America/Sao_Paulo';
   v_inicio_local := p_data_hora AT TIME ZONE 'America/Sao_Paulo';
   v_fim_local := v_inicio_local + make_interval(mins => v_servico.duracao_min);
+
+  IF v_inicio_local::DATE = v_agora_brt::DATE
+     AND v_inicio_local < (v_agora_brt + make_interval(mins => v_antecedencia_minima)) THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'erro', 'Horário indisponível. Escolha um horário com pelo menos 60 minutos de antecedência.',
+      'http_status', 409
+    );
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.disponibilidade d
+    WHERE d.prestador_id = p_prestador_id
+      AND d.dia_semana = EXTRACT(DOW FROM v_inicio_local)::INT
+      AND d.hora_inicio <= v_inicio_local::TIME
+      AND d.hora_fim >= v_fim_local::TIME
+      AND (
+        (
+          (
+            EXTRACT(HOUR FROM v_inicio_local)::INT * 60
+            + EXTRACT(MINUTE FROM v_inicio_local)::INT
+          ) - (
+            EXTRACT(HOUR FROM d.hora_inicio)::INT * 60
+            + EXTRACT(MINUTE FROM d.hora_inicio)::INT
+          )
+        ) % v_cadencia_min
+      ) = 0
+  )
+    INTO v_disponivel_no_dia;
+
+  IF NOT v_disponivel_no_dia THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'erro', 'Horário não disponível. Por favor, escolha outro horário.',
+      'http_status', 409
+    );
+  END IF;
 
   IF EXISTS (
     SELECT 1
     FROM public.agendamentos a
+    JOIN public.servicos s_existente ON s_existente.id = a.servico_id
     WHERE a.prestador_id = p_prestador_id
       AND a.status IN ('confirmado', 'reservado')
       AND (v_agendamento_original_id IS NULL OR a.id <> v_agendamento_original_id)
       AND a.data_hora < v_fim_agendamento
-      AND a.data_hora > v_inicio_menos
+      AND (
+        a.data_hora
+        + make_interval(mins => s_existente.duracao_min + v_prestador.intervalo_min)
+      ) > p_data_hora
   ) THEN
     RETURN jsonb_build_object(
       'ok', false,
