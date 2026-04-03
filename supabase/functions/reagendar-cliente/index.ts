@@ -9,6 +9,15 @@
 // horarios-disponiveis que já existe.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as Sentry from "https://esm.sh/@sentry/deno@8";
+
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: Deno.env.get("SENTRY_ENVIRONMENT") ?? "production",
+  });
+}
 
 const APP_URL = Deno.env.get("APP_URL") ?? "https://e-agendapro.web.app";
 
@@ -31,7 +40,9 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
       "apikey": evolutionKey,
     },
     body: JSON.stringify({ number: telefone.replace(/\D/g, ""), textMessage: { text: mensagem } }),
-  }).catch(e => console.error("WhatsApp error:", e));
+  }).catch(e => {
+    if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "reagendar-cliente", step: "whatsapp" } });
+  });
 }
 
 async function enviarEmail(to: string, subject: string, html: string) {
@@ -50,7 +61,9 @@ async function enviarEmail(to: string, subject: string, html: string) {
       subject: subject,
       content: [{ type: "text/html", value: html }],
     }),
-  }).catch(e => console.error("Email error:", e));
+  }).catch(e => {
+    if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "reagendar-cliente", step: "email" } });
+  });
 }
 
 function paginaReagendar(ag: any, token: string, slots: any[]): string {
@@ -286,6 +299,24 @@ Deno.serve(async (req: Request) => {
       .from("agendamentos")
       .update({ data_hora: novaDataHora })
       .eq("id", ag.id);
+
+    // ── Sincronizar reagendamento com Google Calendar (não crítico) ────────
+    try {
+      const gcalUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/google-calendar-sync`;
+      await fetch(gcalUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          action: "reagendar",
+          agendamento_id: ag.id,
+        }),
+      });
+    } catch (e) {
+      if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "reagendar-cliente", step: "google-calendar" } });
+    }
 
     // Busca dados atualizados com email
     const { data: agAtualizado } = await supabase
