@@ -1250,7 +1250,8 @@
         ? `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} — ${state.duracaoMin} min`
         : '';
 
-      const dataStr = state.data.toISOString().slice(0, 10);
+      // Usa data local (não UTC) para evitar busca no dia errado em BRT
+      const dataStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const cacheKey = dataStr + '_' + state.servicoId;
       let slots = [];
 
@@ -1581,7 +1582,8 @@
         }
 
         // Limpa cache do dia e serviço para que na próxima visita os slots sejam rebuscados
-        const chave = d.toISOString().slice(0, 10) + '_' + state.servicoId;
+        // Usa data local (não UTC) para invalidar a chave correta em BRT
+        const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` + '_' + state.servicoId;
         delete slotsCache[chave];
 
         // Tela de sucesso
@@ -1688,7 +1690,8 @@
       }
 
       try {
-        const dataFmt = state.data.toISOString().split('T')[0];
+        // Usa data local (não UTC) para evitar dia errado em BRT
+        const dataFmt = `${state.data.getFullYear()}-${String(state.data.getMonth() + 1).padStart(2, '0')}-${String(state.data.getDate()).padStart(2, '0')}`;
         const horaFmt = horaPreferida || state.hora || '10:00';
 
         const res = await fetch(`${SUPABASE_URL}/functions/v1/entrada-lista-espera`, {
