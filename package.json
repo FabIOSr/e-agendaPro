@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.js",
-    "dev": "npx serve -l 3000 ."
+    "dev": "npm run build && npx serve -l 3000 dist"
   },
   "devDependencies": {
     "dotenv": "^16.3.1"

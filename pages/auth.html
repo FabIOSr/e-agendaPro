@@ -571,10 +571,7 @@ body::after {
 // Pode usar CDN: https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const SUPABASE_URL  = 'https://kevqgxmcoxmzbypdjhru.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
 // ── HELPERS ──────────────────────────────────────────────────────────────
 window.irPara = (id) => {

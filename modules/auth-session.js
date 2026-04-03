@@ -4,10 +4,17 @@
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const SUPABASE_URL  = 'https://kevqgxmcoxmzbypdjhru.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg';
+if (!window.SUPABASE_URL || !window.SUPABASE_ANON) {
+  throw new Error('❌ config.js deve ser carregado antes de auth-session.js');
+}
 
-if (!SUPABASE_URL || SUPABASE_URL === '__SUPABASE_URL__' || !SUPABASE_ANON || SUPABASE_ANON === '__SUPABASE_ANON__') {
+const SUPABASE_URL  = window.SUPABASE_URL;
+const SUPABASE_ANON = window.SUPABASE_ANON;
+
+if (
+  !SUPABASE_URL || SUPABASE_URL === '__SUPABASE_URL__' ||
+  !SUPABASE_ANON || SUPABASE_ANON === '__SUPABASE_ANON__'
+) {
   throw new Error('❌ Configuração incompleta. Execute: npm run build');
 }
 

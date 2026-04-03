@@ -4,18 +4,22 @@
 
 (function() {
   const CONFIG_DEFAULTS = {
-    SUPABASE_URL: 'https://kevqgxmcoxmzbypdjhru.supabase.co',
-    SUPABASE_ANON: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzc3NTgsImV4cCI6MjA4OTcxMzc1OH0.N6szx9ryreGph4DDLoFYhiHecOJg2G80xVnmoH6PkQg',
-    APP_URL: 'https://e-agendapro.web.app',
-    SENTRY_DSN: 'https://17c6e06768f45437c43076724835eaa7@o4511141658230784.ingest.us.sentry.io/4511141704957952',
-    SENTRY_ENVIRONMENT: 'development',
-    VERSION: '1.0.0'
+    SUPABASE_URL: '__SUPABASE_URL__',
+    SUPABASE_ANON: '__SUPABASE_ANON__',
+    APP_URL: '__APP_URL__',
+    SENTRY_DSN: '__SENTRY_DSN__',
+    SENTRY_ENVIRONMENT: '__SENTRY_ENVIRONMENT__',
+    VERSION: '__VERSION__'
   };
 
   const config = window.AGENDAPRO_CONFIG || CONFIG_DEFAULTS;
 
   // Valida se as variáveis foram configuradas
-  if (!config.SUPABASE_URL || !config.SUPABASE_ANON || !config.APP_URL) {
+  if (
+    !config.SUPABASE_URL || config.SUPABASE_URL === '__SUPABASE_URL__' ||
+    !config.SUPABASE_ANON || config.SUPABASE_ANON === '__SUPABASE_ANON__' ||
+    !config.APP_URL || config.APP_URL === '__APP_URL__'
+  ) {
     throw new Error('❌ Configuração incompleta. Execute: npm run build');
   }
 

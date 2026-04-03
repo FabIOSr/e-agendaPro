@@ -1,17 +1,30 @@
-// build.js — Script de build para injetar variáveis de ambiente
-// Uso: node build.js
-// 
-// Este script:
-// 1. Lê as variáveis do .env.local (ou .env)
-// 2. Substitui os placeholders nos arquivos JS
-// 3. Gera versão production-ready
-
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DIST_DIR = path.join(__dirname, 'dist');
+const BUILD_PATHS = [
+  'config.js',
+  'modules',
+  'pages',
+];
+
+function copyRecursive(srcPath, destPath) {
+  const stat = fs.statSync(srcPath);
+
+  if (stat.isDirectory()) {
+    fs.mkdirSync(destPath, { recursive: true });
+    for (const entry of fs.readdirSync(srcPath, { withFileTypes: true })) {
+      copyRecursive(path.join(srcPath, entry.name), path.join(destPath, entry.name));
+    }
+    return;
+  }
+
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  fs.copyFileSync(srcPath, destPath);
+}
 
 dotenv.config({ path: path.join(__dirname, '.env.local') });
 
@@ -21,7 +34,7 @@ const env = {
   APP_URL: process.env.APP_URL || '',
   SENTRY_DSN: process.env.SENTRY_DSN || '',
   SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT || 'production',
-  VERSION: process.env.npm_package_version || '1.0.0'
+  VERSION: process.env.npm_package_version || '1.0.0',
 };
 
 if (!env.SUPABASE_URL || !env.SUPABASE_ANON || !env.APP_URL) {
@@ -35,8 +48,15 @@ console.log(`   APP_URL: ${env.APP_URL}`);
 console.log(`   SENTRY_DSN: ${env.SENTRY_DSN ? 'configurado' : 'não configurado'}`);
 console.log(`   SENTRY_ENVIRONMENT: ${env.SENTRY_ENVIRONMENT}`);
 
-// ── Processa config.js ─────────────────────────────────────────────────────
-let configContent = fs.readFileSync(path.join(__dirname, 'config.js'), 'utf8');
+fs.rmSync(DIST_DIR, { recursive: true, force: true });
+for (const relativePath of BUILD_PATHS) {
+  copyRecursive(path.join(__dirname, relativePath), path.join(DIST_DIR, relativePath));
+}
+console.log('   ✅ dist/ gerado com allowlist');
+
+const distConfigPath = path.join(DIST_DIR, 'config.js');
+let configContent = fs.readFileSync(distConfigPath, 'utf8');
+
 configContent = configContent
   .replace('__SUPABASE_URL__', env.SUPABASE_URL)
   .replace('__SUPABASE_ANON__', env.SUPABASE_ANON)
@@ -45,23 +65,8 @@ configContent = configContent
   .replace('__SENTRY_ENVIRONMENT__', env.SENTRY_ENVIRONMENT)
   .replace('__VERSION__', env.VERSION);
 
-// Atualiza validação pós-build (valores não podem ser vazios)
-configContent = configContent.replace(
-  /if \(!config\.SUPABASE_URL \|\| config\.SUPABASE_URL === '__SUPABASE_URL__' \|\|\s*!config\.SUPABASE_ANON \|\| config\.SUPABASE_ANON === '__SUPABASE_ANON__' \|\|\s*!config\.APP_URL \|\| config\.APP_URL === '__APP_URL__'\)/,
-  `if (!config.SUPABASE_URL || !config.SUPABASE_ANON || !config.APP_URL)`
-);
-
-fs.writeFileSync(path.join(__dirname, 'config.js'), configContent);
-console.log('   ✅ config.js');
-
-// ── Processa auth-session.js ───────────────────────────────────────────────
-let authContent = fs.readFileSync(path.join(__dirname, 'modules/auth-session.js'), 'utf8');
-authContent = authContent
-  .replace("const SUPABASE_URL  = '__SUPABASE_URL__';", `const SUPABASE_URL  = '${env.SUPABASE_URL}';`)
-  .replace("const SUPABASE_ANON = '__SUPABASE_ANON__';", `const SUPABASE_ANON = '${env.SUPABASE_ANON}';`);
-
-fs.writeFileSync(path.join(__dirname, 'modules/auth-session.js'), authContent);
-console.log('   ✅ modules/auth-session.js');
+fs.writeFileSync(distConfigPath, configContent);
+console.log('   ✅ dist/config.js');
 
 console.log('🎉 Build completo!');
 console.log('');
