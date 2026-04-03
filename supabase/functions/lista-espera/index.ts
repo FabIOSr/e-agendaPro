@@ -13,6 +13,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+import { getDataAtualBRT, possuiJanelaUtilHoje } from "../../../modules/lista-espera-rules.js";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -58,13 +59,6 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
     Sentry.captureException(e);
     return false;
   }
-}
-
-function getDataAtualBRT(): string {
-  return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-    .split('/')
-    .reverse()
-    .join('-');
 }
 
 function getDataHoraAtualBRT(): Date {
@@ -146,6 +140,11 @@ async function entrarListaEspera(body: any, supabase: any) {
     periodo_preferido,
   } = body;
 
+  const hojeBrt = getDataAtualBRT();
+  if (data_preferida < hojeBrt) {
+    return { status: 400, body: { erro: "NÃ£o Ã© possÃ­vel entrar na lista de espera para uma data passada" } };
+  }
+
   if (!prestador_id || !cliente_nome || !cliente_telefone || !data_preferida) {
     return { status: 400, body: { erro: "Campos obrigatórios faltando" } };
   }
@@ -155,6 +154,28 @@ async function entrarListaEspera(body: any, supabase: any) {
     .select("nome, whatsapp")
     .eq("id", prestador_id)
     .single();
+
+  const dataObj = new Date(`${data_preferida}T12:00:00-03:00`);
+  const diaSemana = dataObj.getUTCDay();
+  const { data: disponibilidades } = await supabase
+    .from("disponibilidade")
+    .select("hora_inicio, hora_fim")
+    .eq("prestador_id", prestador_id)
+    .eq("dia_semana", diaSemana);
+
+  if (!possuiJanelaUtilHoje({
+    dataPreferida: data_preferida,
+    tipoPreferencia: tipo_preferencia,
+    horaPreferida: hora_preferida,
+    disponibilidades: disponibilidades ?? [],
+  })) {
+    return {
+      status: 400,
+      body: {
+        erro: "NÃ£o Ã© possÃ­vel entrar na lista de espera para hoje apÃ³s o fim do expediente ou para um horÃ¡rio que jÃ¡ passou",
+      },
+    };
+  }
 
   const { data: existente } = await supabase
     .from("lista_espera")

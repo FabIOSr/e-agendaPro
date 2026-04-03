@@ -4,9 +4,10 @@
 <head>
   <script src="/config.js"></script>
   <script src="/modules/sentry.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agendar — Ana Cabelos</title>
+  <title>Agendar - Ana Cabelos</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap"
     rel="stylesheet">
@@ -1218,7 +1219,7 @@
       return true;
     }
 
-    // ── RENDER SERVIÇOS DINÂMICO ──────────────────────────────────────────────
+     // ── RENDER SERVIÇOS DINÂMICO ──────────────────────────────────────────────
     const ICONES_PADRAO = ['✂️', '💅', '🏋️', '🎨', '💆', '💇', '🧴', '💈', '🩺', '📸'];
     function renderServicos() {
       const container = document.getElementById('servicos-container');
@@ -1335,7 +1336,7 @@
       }
     }
 
-    // ── STEP 1 — SERVIÇOS ─────────────────────────────────────────────────────
+     // ── STEP 1 — SERVIÇOS ─────────────────────────────────────────────────────
     window.selecionarServico = function (el, nome, dur, preco, icone, servicoId) {
       document.querySelectorAll('.servico-card').forEach(c => {
         c.classList.remove('selected');
@@ -1410,6 +1411,42 @@
     // ── STEP 3 — SLOTS (via Edge Function) ───────────────────────────────────
     const slotsCache = {}; // chave: "YYYY-MM-DD"
 
+    function horaParaMinutosListaEspera(hora) {
+      if (!hora) return null;
+      const [h, m] = hora.slice(0, 5).split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    async function podeEntrarListaEsperaNaDataSelecionada() {
+      if (!state.data) return false;
+
+      const agora = new Date();
+      const mesmaData =
+        state.data.getFullYear() === agora.getFullYear() &&
+        state.data.getMonth() === agora.getMonth() &&
+        state.data.getDate() === agora.getDate();
+
+      if (!mesmaData) return true;
+      if (!PRESTADOR?.id) return false;
+
+      try {
+        const { data: disponibilidades } = await supabase
+          .from('disponibilidade')
+          .select('hora_inicio, hora_fim')
+          .eq('prestador_id', PRESTADOR.id)
+          .eq('dia_semana', state.data.getDay());
+
+        const agoraMin = agora.getHours() * 60 + agora.getMinutes();
+        return Array.isArray(disponibilidades) && disponibilidades.some((disp) => {
+          const fim = horaParaMinutosListaEspera(disp.hora_fim);
+          return fim != null && fim > agoraMin;
+        });
+      } catch (e) {
+        console.warn('Nao foi possivel validar lista de espera para hoje:', e);
+        return false;
+      }
+    }
+
     async function renderSlots() {
       const grid = document.getElementById('slots-grid');
       const header = document.getElementById('slots-header');
@@ -1466,17 +1503,29 @@
 
       grid.innerHTML = '';
       if (slots.length === 0) {
+        const listaEsperaDisponivel = await podeEntrarListaEsperaNaDataSelecionada();
+        window.listaEsperaDisponivel = listaEsperaDisponivel;
         grid.innerHTML = `
           <div class="slots-empty" style="grid-column:1/-1;text-align:center;padding:32px 16px">
             <div style="font-size:32px;margin-bottom:8px">😔</div>
             <div style="font-weight:600;margin-bottom:4px">Sem horários disponíveis</div>
-            <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Que tal entrar na lista de espera?</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:${listaEsperaDisponivel ? '16px' : '4px'}">${listaEsperaDisponivel ? 'Que tal entrar na lista de espera?' : 'O expediente de hoje já terminou.'}</div>
             <button class="btn-lista-espera" onclick="abrirListaEspera()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
               🔔 Entrar na lista de espera
             </button>
           </div>`;
+        if (!listaEsperaDisponivel) {
+          const btnListaEspera = grid.querySelector('.btn-lista-espera');
+          if (btnListaEspera) btnListaEspera.remove();
+          const box = grid.querySelector('.slots-empty');
+          if (box) {
+            box.insertAdjacentHTML('beforeend', '<div style="font-size:12px;color:var(--faint)">Selecione outra data para verificar novos horários.</div>');
+          }
+        }
         return;
       }
+
+      window.listaEsperaDisponivel = true;
 
       slots.forEach(sl => {
         const hora = typeof sl === 'string' ? sl : sl.hora;
@@ -1795,12 +1844,18 @@
     };
 
     // ── LISTA DE ESPERA ───────────────────────────────────────────────────────
+    window.listaEsperaDisponivel = true;
+
     window.abrirListaEspera = function() {
       if (!state.data || !state.servico) {
-        alert('Por favor, selecione um serviço e uma data primeiro.');
+        toast('Selecione um serviço e uma data primeiro.', 'warning');
         return;
       }
-      
+      if (window.listaEsperaDisponivel === false) {
+        toast('Lista de espera indisponível para esta data ou horário.', 'warning');
+        return;
+      }
+
       // Atualizar resumo no modal
       const dataFmt = state.data.toLocaleDateString('pt-BR');
       const horaFmt = state.hora || '--:--';
@@ -1837,7 +1892,7 @@
       const email = document.getElementById('lista-espera-email')?.value.trim();
 
       if (!nome || !telefone) {
-        alert('Por favor, preencha nome e telefone.');
+        toast('Preencha nome e telefone.', 'warning');
         return;
       }
 
@@ -1891,16 +1946,16 @@
         const data = await res.json();
 
         if (res.ok) {
-          alert('✅ Você entrou na lista de espera! Te avisaremos se uma vaga surgir.');
+          toast('Você entrou na lista de espera! Te avisaremos se uma vaga surgir.');
           window.fecharListaEspera();
         } else if (res.status === 409) {
-          alert('⚠️ Você já está na lista de espera para este horário.');
+          toast('Você já está na lista de espera para este horário.', 'warning');
         } else {
-          alert('❌ Erro ao entrar na lista de espera: ' + (data.erro || 'Tente novamente.'));
+          toast('Erro ao entrar na lista: ' + (data.erro || 'Tente novamente.'), 'error');
         }
       } catch (err) {
         console.error('Erro lista de espera:', err);
-        alert('❌ Erro ao entrar na lista de espera. Tente novamente.');
+        toast('Erro ao entrar na lista de espera. Tente novamente.', 'error');
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -2155,3 +2210,7 @@
 </body>
 
 </html>
+
+
+
+
