@@ -1,15 +1,10 @@
 // supabase/functions/reagendar-cliente/index.ts
 //
-// Permite ao cliente remarcar um agendamento via link único no WhatsApp.
-//
-// GET  ?token=xxxx               → página de seleção de novo horário
-// POST { token, data, hora }     → executa o reagendamento
-//
-// A lógica de horários disponíveis reutiliza a mesma Edge Function
-// horarios-disponiveis que já existe.
+// Permite ao cliente remarcar um agendamento via link unico no WhatsApp.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8";
+import { handleReagendarClienteRequest } from "../../../modules/reagendar-cliente-handler.js";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -58,7 +53,7 @@ async function enviarEmail(to: string, subject: string, html: string) {
     body: JSON.stringify({
       personalizations: [{ to: [{ email: to }] }],
       from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
-      subject: subject,
+      subject,
       content: [{ type: "text/html", value: html }],
     }),
   }).catch(e => {
@@ -105,47 +100,51 @@ function paginaReagendar(ag: any, token: string, slots: any[]): string {
 <body>
 <div class="card">
   <div class="original" id="original">
-    <div class="big-icon">📅</div>
+    <div class="big-icon">📆</div>
     <h1>Remarcar agendamento</h1>
-    <p class="sub">Escolha uma nova data e horário para seu atendimento com <strong>${ag.prestadores?.nome}</strong>.</p>
-
+    <p class="sub">Escolha uma nova data e horario para seu atendimento com <strong>${ag.prestadores?.nome}</strong>.</p>
     <div class="atual">
       <strong>Agendamento atual</strong>
-      ${ag.servicos?.nome} · ${new Date(ag.data_hora).toLocaleDateString('pt-BR', {weekday:'long',day:'2-digit',month:'long',timeZone:'America/Sao_Paulo'})} às ${new Date(ag.data_hora).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}
+      ${ag.servicos?.nome} · ${new Date(ag.data_hora).toLocaleDateString('pt-BR', {weekday:'long',day:'2-digit',month:'long',timeZone:'America/Sao_Paulo'})} as ${new Date(ag.data_hora).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})}
     </div>
-
     <label>Nova data</label>
     <input type="date" id="data-input" min="${new Date().toISOString().slice(0,10)}" onchange="buscarSlots(this.value)">
-
-    <label>Novo horário</label>
+    <label>Novo horario</label>
     <div class="slots" id="slots-grid">
       <div class="empty-slots">Selecione uma data primeiro</div>
     </div>
-
     <button class="btn" id="btn-confirmar" disabled onclick="confirmar()">Confirmar remarcação</button>
     <button class="btn-ghost" onclick="history.back()">Cancelar</button>
   </div>
-
   <div class="success" id="success">
     <div class="big-icon">✅</div>
     <h1>Remarcado!</h1>
     <p class="sub" id="success-msg"></p>
   </div>
 </div>
-
 <script>
-const TOKEN          = '${token}';
-const SERVICO_ID     = '${ag.servico_id}';
+const TOKEN = '${token}';
+const SERVICO_ID = '${ag.servico_id}';
 const PRESTADOR_SLUG = '${ag.prestadores?.slug}';
-const SUPABASE_URL   = '${APP_URL}';
-let horaSelecionada  = null;
+const SUPABASE_URL = '${APP_URL}';
+const SLOTS_INICIAIS = ${slotsJson};
+let horaSelecionada = null;
+
+function renderSlots(slots) {
+  const grid = document.getElementById('slots-grid');
+  const disp = (slots ?? []).filter(s => s.disponivel);
+  if (disp.length === 0) {
+    grid.innerHTML = '<div class="empty-slots">Sem horarios disponiveis neste dia.</div>';
+    return;
+  }
+  grid.innerHTML = disp.map(s => \`<div class="slot" onclick="selecionarHora('\${s.hora}', this)">\${s.hora}</div>\`).join('');
+}
 
 async function buscarSlots(data) {
   const grid = document.getElementById('slots-grid');
-  grid.innerHTML = '<div class="empty-slots">Buscando horários…</div>';
+  grid.innerHTML = '<div class="empty-slots">Buscando horarios...</div>';
   horaSelecionada = null;
   document.getElementById('btn-confirmar').disabled = true;
-
   try {
     const res = await fetch(SUPABASE_URL + '/functions/v1/horarios-disponiveis', {
       method: 'POST',
@@ -153,18 +152,9 @@ async function buscarSlots(data) {
       body: JSON.stringify({ prestador_slug: PRESTADOR_SLUG, servico_id: SERVICO_ID, data }),
     });
     const { slots } = await res.json();
-    const disp = (slots ?? []).filter(s => s.disponivel);
-
-    if (disp.length === 0) {
-      grid.innerHTML = '<div class="empty-slots">Sem horários disponíveis neste dia.</div>';
-      return;
-    }
-
-    grid.innerHTML = disp.map(s => \`
-      <div class="slot" onclick="selecionarHora('\${s.hora}', this)">\${s.hora}</div>
-    \`).join('');
-  } catch(e) {
-    grid.innerHTML = '<div class="empty-slots">Erro ao buscar horários.</div>';
+    renderSlots(slots);
+  } catch {
+    grid.innerHTML = '<div class="empty-slots">Erro ao buscar horarios.</div>';
   }
 }
 
@@ -178,221 +168,50 @@ function selecionarHora(hora, el) {
 async function confirmar() {
   const data = document.getElementById('data-input').value;
   if (!data || !horaSelecionada) return;
-
   const btn = document.getElementById('btn-confirmar');
   btn.disabled = true;
-  btn.textContent = 'Confirmando…';
-
+  btn.textContent = 'Confirmando...';
   const res = await fetch(window.location.href, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: TOKEN, data, hora: horaSelecionada }),
   });
-
   if (res.ok) {
     const { nova_data_hora } = await res.json();
     const d = new Date(nova_data_hora);
-    const fmt = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', timeZone:'America/Sao_Paulo' })
-      + ' às ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });
+    const fmt = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', timeZone:'America/Sao_Paulo' }) + ' as ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });
     document.getElementById('success-msg').textContent = 'Seu atendimento foi remarcado para ' + fmt + '.';
     document.getElementById('original').classList.add('hide');
     document.getElementById('success').classList.add('show');
   } else {
     btn.disabled = false;
-    btn.textContent = 'Erro — tente novamente';
+    btn.textContent = 'Erro - tente novamente';
   }
 }
+
+if (SLOTS_INICIAIS.length) renderSlots(SLOTS_INICIAIS);
 </script>
 </body>
 </html>`;
 }
 
-// ---------------------------------------------------------------------------
-// Handler
-// ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
-  // OPTIONS para CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
-  }
-
-  const url = new URL(req.url);
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
-
-  if (req.method === "GET") {
-    const token = url.searchParams.get("token");
-    if (!token) return new Response("Token inválido", { status: 400, headers: CORS_HEADERS });
-
-    const { data: ag } = await supabase
-      .from("agendamentos")
-      .select("*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp)")
-      .eq("cancel_token", token)
-      .single();
-
-    if (!ag) return new Response("Agendamento não encontrado", { status: 404, headers: CORS_HEADERS });
-
-    // Busca slots disponíveis para hoje como ponto de partida
-    const hoje = new Date().toISOString().slice(0, 10);
-    let slots: any[] = [];
-    try {
-      const slotsRes = await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/functions/v1/horarios-disponiveis`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({
-            prestador_slug: ag.prestadores?.slug,
-            servico_id: ag.servico_id,
-            data: hoje,
-          }),
-        }
-      );
-      const slotsData = await slotsRes.json();
-      slots = slotsData.slots ?? [];
-    } catch {}
-
-    return new Response(paginaReagendar(ag, token, slots), {
-      headers: { "Content-Type": "text/html; charset=utf-8", ...CORS_HEADERS },
-    });
-  }
-
-  if (req.method === "POST") {
-    const { token, data, hora } = await req.json();
-    if (!token || !data || !hora) {
-      return Response.json({ erro: "Campos obrigatórios: token, data, hora" }, { status: 400, headers: CORS_HEADERS });
-    }
-
-    // Busca o agendamento atual
-    const { data: ag } = await supabase
-      .from("agendamentos")
-      .select("*, prestador_id, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email), cliente_email")
-      .eq("cancel_token", token)
-      .single();
-
-    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: CORS_HEADERS });
-
-    // Verifica se o novo horário ainda está disponível
-    const novaDataHora = new Date(`${data}T${hora}:00`).toISOString();
-
-    const { count } = await supabase
-      .from("agendamentos")
-      .select("id", { count: "exact", head: true })
-      .eq("prestador_id", ag.prestador_id)
-      .eq("status", "confirmado")
-      .neq("id", ag.id)
-      .gte("data_hora", new Date(`${data}T${hora}:00`).toISOString())
-      .lt("data_hora", new Date(`${data}T${hora}:00`).getTime() + (ag.servicos?.duracao_min ?? 60) * 60000 + "");
-
-    if ((count ?? 0) > 0) {
-      return Response.json({ erro: "Horário não disponível. Escolha outro." }, { status: 409, headers: CORS_HEADERS });
-    }
-
-    // Atualiza o agendamento
-    await supabase
-      .from("agendamentos")
-      .update({ data_hora: novaDataHora })
-      .eq("id", ag.id);
-
-    // ── Sincronizar reagendamento com Google Calendar (não crítico) ────────
-    try {
-      const gcalUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/google-calendar-sync`;
-      await fetch(gcalUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        },
-        body: JSON.stringify({
-          action: "reagendar",
-          agendamento_id: ag.id,
-        }),
-      });
-    } catch (e) {
-      if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "reagendar-cliente", step: "google-calendar" } });
-    }
-
-    // Busca dados atualizados com email
-    const { data: agAtualizado } = await supabase
-      .from("agendamentos")
-      .select("*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email)")
-      .eq("id", ag.id)
-      .single();
-
-    // Busca preferências de notificação do prestador
-    const { data: prefs } = await supabase
-      .from("preferencias_notificacao")
-      .select("*")
-      .eq("prestador_id", ag.prestador_id)
-      .single();
-
-    // Defaults se não tiver preferências
-    const notifWpp = prefs?.whatsapp_novo_agendamento ?? true;
-    const notifEmail = prefs?.email_novo_agendamento ?? true;
-
-    // Notifica prestador e cliente
-    const dataFmt = new Date(novaDataHora).toLocaleDateString("pt-BR", {
-      day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo",
-    });
-    const horaFmt = new Date(novaDataHora).toLocaleTimeString("pt-BR", {
-      hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
-    });
-
-    // WhatsApp do prestador (se preferência ativa)
-    if (agAtualizado?.prestadores?.whatsapp && notifWpp) {
-      await enviarWhatsApp(agAtualizado.prestadores.whatsapp,
-        `🔄 *Agendamento remarcado*\n\n` +
-        `👤 *Cliente:* ${agAtualizado.cliente_nome}\n` +
-        `📋 *Serviço:* ${agAtualizado.servicos?.nome}\n` +
-        `📅 *Novo horário:* ${dataFmt} às ${horaFmt}`
-      );
-    }
-
-    // Email para prestador (se preferência ativa)
-    if (agAtualizado?.prestadores?.email && notifEmail) {
-      await enviarEmail(
-        agAtualizado.prestadores.email,
-        `🔄 Agendamento remarcado por ${agAtualizado.cliente_nome}`,
-        `<div style="font-family: sans-serif;">
-          <h2>🔄 Agendamento Remarcado</h2>
-          <p><strong>Cliente:</strong> ${agAtualizado.cliente_nome}</p>
-          <p><strong>Serviço:</strong> ${agAtualizado.servicos?.nome}</p>
-          <p><strong>Novo horário:</strong> ${dataFmt} às ${horaFmt}</p>
-        </div>`
-      );
-    }
-
-    // WhatsApp do cliente
-    await enviarWhatsApp(agAtualizado?.cliente_tel || ag.cliente_tel,
-      `✅ Remarcado! Seu atendimento com *${agAtualizado?.prestadores?.nome || ag.prestadores?.nome}* foi remarcado para *${dataFmt} às ${horaFmt}*.\n\n` +
-      `Se precisar cancelar: ${APP_URL}/cancelar?token=${ag.cancel_token}`
-    );
-
-    // Email para cliente
-    if (agAtualizado?.cliente_email) {
-      await enviarEmail(
-        agAtualizado.cliente_email,
-        `✅ Agendamento remarcado com ${agAtualizado.prestadores?.nome}`,
-        `<div style="font-family: sans-serif;">
-          <h2>✅ Agendamento Remarcado</h2>
-          <p>Seu atendimento foi remarcado para <strong>${dataFmt} às ${horaFmt}</strong>.</p>
-          <p><strong>Serviço:</strong> ${agAtualizado.servicos?.nome}</p>
-          <p><strong>Profissional:</strong> ${agAtualizado.prestadores?.nome}</p>
-          <p style="margin-top: 20px;">
-            <a href="${APP_URL}/cancelar?token=${ag.cancel_token}" style="color: #c84830;">Cancelar agendamento</a>
-          </p>
-        </div>`
-      );
-    }
-
-    return Response.json({ ok: true, nova_data_hora: novaDataHora }, { headers: CORS_HEADERS });
-  }
-
-  return new Response("Method not allowed", { status: 405, headers: CORS_HEADERS });
+  return handleReagendarClienteRequest(req, {
+    appUrl: APP_URL,
+    corsHeaders: CORS_HEADERS,
+    createSupabaseClient: createClient,
+    getEnv: (key: string) => Deno.env.get(key),
+    fetchImpl: fetch,
+    renderPage: paginaReagendar,
+    enviarWhatsApp,
+    enviarEmail,
+    onUnexpectedError: (err: unknown, errorContext: Record<string, unknown>) => {
+      if (SENTRY_DSN) {
+        Sentry.captureException(err, {
+          tags: { function: "reagendar-cliente" },
+          extra: errorContext,
+        });
+      }
+    },
+  });
 });
