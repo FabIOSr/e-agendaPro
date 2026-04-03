@@ -50,6 +50,12 @@ function calcularValidadeAte(ciclo: string): Date {
 }
 
 Deno.serve(async (req: Request) => {
+  const errorContext: Record<string, unknown> = {
+    method: req.method,
+    content_type: req.headers.get("content-type"),
+    url: req.url,
+  };
+
   try {
     if (req.method === "OPTIONS") {
       return new Response(null, { headers: CORS });
@@ -62,6 +68,7 @@ Deno.serve(async (req: Request) => {
   // ── Validação do token ──────────────────────────────────────────────────
   const webhookToken  = req.headers.get("asaas-access-token");
   const tokenEsperado = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
+  errorContext.token_presente = Boolean(webhookToken);
 
   if (!tokenEsperado || webhookToken !== tokenEsperado) {
     console.warn("Webhook token inválido");
@@ -77,10 +84,13 @@ Deno.serve(async (req: Request) => {
   }
 
   const evento  = payload.event as string;
+  errorContext.evento = evento;
   const payment = payload.payment;
   // subscription pode vir como objeto ou como string ID dentro de payment
   const sub     = payload.subscription ?? payment?.subscription;
   const subId   = typeof sub === "string" ? sub : sub?.id;
+  errorContext.asaas_payment_id = payment?.id ?? null;
+  errorContext.asaas_sub_id = subId ?? null;
 
   console.log(`Webhook Asaas: ${evento}`, { paymentId: payment?.id, subId });
 
@@ -137,7 +147,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Registra no histórico de pagamentos ────────────────────────────────
-  const { error: erroPagamento } = await supabase.from("pagamentos").insert({
+  const { error: erroPagamento } = await supabase.from("pagamentos").upsert({
     prestador_id:     prestador.id,
     asaas_payment_id: payment?.id ?? null,
     evento,
@@ -145,6 +155,8 @@ Deno.serve(async (req: Request) => {
     billing_type:     payment?.billingType ?? null,
     data_evento:      new Date().toISOString(),
     payload:          payload,
+  }, {
+    onConflict: "asaas_payment_id,evento",
   });
 
   if (erroPagamento) {
@@ -205,7 +217,7 @@ Deno.serve(async (req: Request) => {
   if (SENTRY_DSN) {
     Sentry.captureException(err, {
       tags: { function: "webhook-asaas" },
-      extra: { evento: payload?.event },
+      extra: errorContext,
     });
   }
   

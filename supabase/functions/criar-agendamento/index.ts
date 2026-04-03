@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
       // Validar token na lista de espera
       const { data: reserva, error: erroReserva } = await supabase
         .from("lista_espera")
-        .select("id, prestador_id, data_preferida, hora_preferida, agendamento_original_id, cliente_nome, cliente_telefone, cliente_email")
+        .select("id, prestador_id, data_preferida, hora_preferida, agendamento_original_id, cliente_nome, cliente_telefone, cliente_email, reservado_em, timeout_minutos")
         .eq("token_reserva", token_reserva)
         .eq("status", "notificada")
         .single();
