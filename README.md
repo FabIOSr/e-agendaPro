@@ -510,11 +510,12 @@ firebase deploy --only hosting
 - [ ] `notificar-lista-espera` → testa notificação individual
 
 ### Testes automatizados
-- [ ] `npm test` passa todos (36 testes)
-- [ ] `scheduling-rules.test.js` → 24 testes de geração de slots
-- [ ] `agendamento-response.test.js` → 4 testes de normalização de resposta
-- [ ] `asaas-webhook-rules.test.js` → 8 testes de eventos Asaas
-- [ ] Cobertura: antecedência mínima, conflitos, bloqueios, cadência, grade, classificação de eventos
+- [ ] `npm test` passa todos (65 testes)
+- [ ] `npm run test:db:local` passa no Supabase local
+- [ ] `scheduling-rules.test.js` → regras de geração de slots, cadência, bloqueios e antecedência mínima
+- [ ] handlers HTTP → criação, webhook Asaas, reagendamento e cancelamento
+- [ ] migrations-contract.test.js → contratos das migrations críticas (pagamentos + RPC)
+- [ ] Cobertura: antecedência mínima, conflitos, bloqueios, cadência, grade, classificação de eventos, `token_reserva`
 
 ### Pagamentos
 - [ ] Fluxo completo testado no sandbox Asaas (Pix + Cartão)
@@ -613,8 +614,45 @@ agendapro/
 npm test
 
 # Output esperado
-# ✔ 36 tests passing
+# ✔ 65 tests passing
 # ✔ 0 failing
+```
+
+### Ambiente local Supabase
+
+```bash
+# 1. Subir o Docker Desktop
+
+# 2. Iniciar o stack local do Supabase
+supabase start
+
+# 3. Se precisar limpar estado local travado
+supabase stop --no-backup
+supabase start
+```
+
+### Smoke test de banco local
+
+```bash
+# Requer Supabase local em execução (container supabase_db_agendapro)
+npm run test:db:local
+
+# O smoke valida no Postgres local:
+# - criar_agendamento_atomic com sucesso
+# - conflito de horário retornando 409
+# - antecedência mínima no mesmo dia retornando 409
+# - histórico de pagamentos por asaas_payment_id + evento
+# - confirmação com token_reserva
+```
+
+### Fluxo recomendado de validação local
+
+```bash
+# 1. Testes rápidos de código e contratos
+npm test
+
+# 2. Validação real de banco local
+npm run test:db:local
 ```
 
 ---

@@ -33,7 +33,7 @@ DECLARE
   v_limite_free CONSTANT INT := 10;
   v_antecedencia_minima CONSTANT INT := 60;
 BEGIN
-  IF p_prestador_id IS NULL OR p_prestador_id IS NULL OR p_cliente_nome IS NULL OR p_cliente_tel IS NULL OR p_data_hora IS NULL THEN
+  IF p_prestador_id IS NULL OR p_servico_id IS NULL OR p_cliente_nome IS NULL OR p_cliente_tel IS NULL OR p_data_hora IS NULL THEN
     RETURN jsonb_build_object(
       'ok', false,
       'erro', 'Campos obrigatorios: prestador_id, servico_id, cliente_nome, cliente_tel, data_hora',
