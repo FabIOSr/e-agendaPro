@@ -9,6 +9,15 @@
 // O token é gerado no momento do agendamento e salvo na tabela agendamentos.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as Sentry from "https://esm.sh/@sentry/deno@8";
+
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: Deno.env.get("SENTRY_ENVIRONMENT") ?? "production",
+  });
+}
 
 function corsHeaders() {
   return {
@@ -38,11 +47,11 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
       }),
     });
 
-    if (!res.ok) {
-      console.error("Evolution API erro:", res.status);
+    if (!res.ok && SENTRY_DSN) {
+      Sentry.captureException(new Error(`Evolution API erro: ${res.status}`), { tags: { function: "cancelar-agendamento-cliente", step: "whatsapp" } });
     }
   } catch (e) {
-    console.error("Erro ao enviar WhatsApp:", e);
+    if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "whatsapp" } });
   }
 }
 
@@ -64,13 +73,13 @@ async function enviarEmail(to: string, subject: string, html: string) {
         content: [{ type: "text/html", value: html }],
       }),
     });
-    
+
     if (!res.ok) {
       const erro = await res.text();
-      console.error("SendGrid erro:", res.status, erro);
+      if (SENTRY_DSN) Sentry.captureException(new Error(`SendGrid erro ${res.status}: ${erro}`), { tags: { function: "cancelar-agendamento-cliente", step: "email" } });
     }
   } catch (e) {
-    console.error("Erro ao enviar email:", e);
+    if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "email" } });
   }
 }
 
@@ -227,8 +236,6 @@ Deno.serve(async (req: Request) => {
     const { token } = await req.json();
     if (!token) return Response.json({ erro: "Token ausente" }, { status: 400, headers: corsHeaders() });
 
-    console.log("Tentando cancelar com token:", token);
-
     // Busca e cancela atomicamente
     const { data: ag, error } = await supabase
       .from("agendamentos")
@@ -238,10 +245,26 @@ Deno.serve(async (req: Request) => {
       .select("*, prestador_id, servicos(nome), prestadores(nome, whatsapp, email), cliente_email, cliente_tel")
       .single();
 
-    console.log("Resultado cancelamento:", { ag, error });
-
     if (error || !ag) {
       return Response.json({ erro: "Agendamento não encontrado ou já cancelado" }, { status: 404, headers: corsHeaders() });
+    }
+
+    // ── Sincronizar cancelamento com Google Calendar (não crítico) ────────
+    try {
+      const gcalUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/google-calendar-sync`;
+      await fetch(gcalUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          action: "cancelar",
+          agendamento_id: ag.id,
+        }),
+      });
+    } catch (e) {
+      if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "google-calendar" } });
     }
 
     // Busca preferências de notificação do prestador
@@ -271,7 +294,7 @@ Deno.serve(async (req: Request) => {
           `O horário foi liberado automaticamente.`
         );
       } catch (e) {
-        console.error("Erro ao notificar prestador:", e);
+        if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "notificar-prestador-whatsapp" } });
       }
     }
 
@@ -290,7 +313,7 @@ Deno.serve(async (req: Request) => {
           </div>`
         );
       } catch (e) {
-        console.error("Erro ao enviar email para prestador:", e);
+        if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "notificar-prestador-email" } });
       }
     }
 
@@ -306,7 +329,7 @@ Deno.serve(async (req: Request) => {
           `Se desejar remarcar, entre em contato com o profissional.`
         );
       } catch (e) {
-        console.error("Erro ao notificar cliente via WhatsApp:", e);
+        if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "notificar-cliente-whatsapp" } });
       }
     }
 
@@ -326,7 +349,7 @@ Deno.serve(async (req: Request) => {
           </div>`
         );
       } catch (e) {
-        console.error("Erro ao enviar email para cliente:", e);
+        if (SENTRY_DSN) Sentry.captureException(e, { tags: { function: "cancelar-agendamento-cliente", step: "notificar-cliente-email" } });
       }
     }
 
