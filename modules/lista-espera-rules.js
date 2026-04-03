@@ -41,20 +41,20 @@ export function horaParaMinutos(hora) {
   return h * 60 + m;
 }
 
-export function possuiJanelaUtilHoje({
+export function podeEntrarNaListaEspera({
   dataPreferida,
   tipoPreferencia,
   horaPreferida,
+  periodoPreferido,
   disponibilidades,
   now = new Date(),
 }) {
   if (!dataPreferida) return false;
 
   const hojeBrt = getDataAtualBRT(now);
-  if (dataPreferida > hojeBrt) return true;
   if (dataPreferida < hojeBrt) return false;
+  if (dataPreferida === hojeBrt) return false;
 
-  const agoraMin = getMinutosAtualBRT(now);
   const periodos = Array.isArray(disponibilidades) ? disponibilidades : [];
 
   if (periodos.length === 0) return false;
@@ -64,12 +64,26 @@ export function possuiJanelaUtilHoje({
     return periodos.some((disp) => {
       const inicio = horaParaMinutos(disp.hora_inicio);
       const fim = horaParaMinutos(disp.hora_fim);
-      return horaMin != null && inicio != null && fim != null && horaMin >= inicio && horaMin < fim && horaMin > agoraMin;
+      return horaMin != null && inicio != null && fim != null && horaMin >= inicio && horaMin < fim;
+    });
+  }
+
+  if (tipoPreferencia === 'periodo' && periodoPreferido) {
+    return periodos.some((disp) => {
+      const inicio = horaParaMinutos(disp.hora_inicio);
+      const fim = horaParaMinutos(disp.hora_fim);
+      if (inicio == null || fim == null) return false;
+
+      if (periodoPreferido === 'manha') return inicio < 780 && fim > 480;
+      if (periodoPreferido === 'tarde') return inicio < 1140 && fim > 780;
+      if (periodoPreferido === 'noite') return inicio < 1320 && fim > 1140;
+      return false;
     });
   }
 
   return periodos.some((disp) => {
+    const inicio = horaParaMinutos(disp.hora_inicio);
     const fim = horaParaMinutos(disp.hora_fim);
-    return fim != null && fim > agoraMin;
+    return inicio != null && fim != null && fim > inicio;
   });
 }

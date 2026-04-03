@@ -13,7 +13,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
-import { getDataAtualBRT, possuiJanelaUtilHoje } from "../../../modules/lista-espera-rules.js";
+import { getDataAtualBRT, podeEntrarNaListaEspera } from "../../../modules/lista-espera-rules.js";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -142,7 +142,11 @@ async function entrarListaEspera(body: any, supabase: any) {
 
   const hojeBrt = getDataAtualBRT();
   if (data_preferida < hojeBrt) {
-    return { status: 400, body: { erro: "NÃ£o Ã© possÃ­vel entrar na lista de espera para uma data passada" } };
+    return { status: 400, body: { erro: "Não é possí­vel entrar na lista de espera para uma data passada" } };
+  }
+
+  if (data_preferida === hojeBrt) {
+    return { status: 400, body: { erro: "Não é possí­vel entrar na lista de espera para o dia de hoje" } };
   }
 
   if (!prestador_id || !cliente_nome || !cliente_telefone || !data_preferida) {
@@ -163,16 +167,17 @@ async function entrarListaEspera(body: any, supabase: any) {
     .eq("prestador_id", prestador_id)
     .eq("dia_semana", diaSemana);
 
-  if (!possuiJanelaUtilHoje({
+  if (!podeEntrarNaListaEspera({
     dataPreferida: data_preferida,
     tipoPreferencia: tipo_preferencia,
     horaPreferida: hora_preferida,
+    periodoPreferido: periodo_preferido,
     disponibilidades: disponibilidades ?? [],
   })) {
     return {
       status: 400,
       body: {
-        erro: "NÃ£o Ã© possÃ­vel entrar na lista de espera para hoje apÃ³s o fim do expediente ou para um horÃ¡rio que jÃ¡ passou",
+        erro: "Não é possí­vel entrar na lista de espera fora do horário de atendimento do profissional",
       },
     };
   }
@@ -666,7 +671,7 @@ Deno.serve(async (req: Request) => {
         });
 
       default:
-        return new Response(JSON.stringify({ erro: "Ação inválida" }), {
+        return new Response(JSON.stringify({ erro: "Açío inválida" }), {
           status: 400,
           headers: { ...corsHeaders(), "Content-Type": "application/json" },
         });
@@ -679,3 +684,5 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
+
+

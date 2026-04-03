@@ -1426,25 +1426,25 @@
         state.data.getMonth() === agora.getMonth() &&
         state.data.getDate() === agora.getDate();
 
-      if (!mesmaData) return true;
-      if (!PRESTADOR?.id) return false;
+      if (mesmaData) return false;
+      return true;
 
-      try {
-        const { data: disponibilidades } = await supabase
-          .from('disponibilidade')
-          .select('hora_inicio, hora_fim')
-          .eq('prestador_id', PRESTADOR.id)
-          .eq('dia_semana', state.data.getDay());
 
-        const agoraMin = agora.getHours() * 60 + agora.getMinutes();
-        return Array.isArray(disponibilidades) && disponibilidades.some((disp) => {
-          const fim = horaParaMinutosListaEspera(disp.hora_fim);
-          return fim != null && fim > agoraMin;
-        });
-      } catch (e) {
-        console.warn('Nao foi possivel validar lista de espera para hoje:', e);
-        return false;
-      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 
     async function renderSlots() {
@@ -1509,7 +1509,7 @@
           <div class="slots-empty" style="grid-column:1/-1;text-align:center;padding:32px 16px">
             <div style="font-size:32px;margin-bottom:8px">😔</div>
             <div style="font-weight:600;margin-bottom:4px">Sem horários disponíveis</div>
-            <div style="font-size:13px;color:var(--muted);margin-bottom:${listaEsperaDisponivel ? '16px' : '4px'}">${listaEsperaDisponivel ? 'Que tal entrar na lista de espera?' : 'O expediente de hoje já terminou.'}</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:${listaEsperaDisponivel ? '16px' : '4px'}">${listaEsperaDisponivel ? 'Que tal entrar na lista de espera?' : 'A lista de espera não está disponível para hoje.'}</div>
             <button class="btn-lista-espera" onclick="abrirListaEspera()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
               🔔 Entrar na lista de espera
             </button>
@@ -1519,7 +1519,7 @@
           if (btnListaEspera) btnListaEspera.remove();
           const box = grid.querySelector('.slots-empty');
           if (box) {
-            box.insertAdjacentHTML('beforeend', '<div style="font-size:12px;color:var(--faint)">Selecione outra data para verificar novos horários.</div>');
+            box.insertAdjacentHTML('beforeend', '<div style="font-size:12px;color:var(--faint)">Selecione uma data futura para entrar na lista de espera.</div>');
           }
         }
         return;
