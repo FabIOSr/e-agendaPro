@@ -22,6 +22,7 @@ if (SENTRY_DSN) {
 }
 
 const TIMEZONE_BRT = 'America/Sao_Paulo';
+const ANTECEDENCIA_MINIMA_MIN = 60;
 
 /**
  * Retorna hora atual no fuso BRT como Date.
@@ -135,6 +136,7 @@ function gerarSlots(
   bloqueiosRecorrentes: BloqueioRecorrente[] = []
 ): Slot[] {
   const agora = getAgoraBRT(); // Hora atual em BRT (considera regras oficiais de timezone)
+  const antecedenciaMinima = new Date(agora.getTime() + ANTECEDENCIA_MINIMA_MIN * 60_000);
   const slots: Slot[] = [];
 
   // O cursor avança pela cadência dos slots (intervaloSlot), não pelo buffer.
@@ -163,8 +165,8 @@ function gerarSlots(
         continue;
       }
 
-      // Regra 2 — não exibir horários passados
-      if (inicioSlot <= agora) {
+      // Regra 2 — não exibir horários passados nem horários muito em cima da hora
+      if (inicioSlot <= agora || inicioSlot < antecedenciaMinima) {
         cursor = new Date(cursor.getTime() + cadencia * 60_000);
         continue;
       }
