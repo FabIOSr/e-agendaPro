@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+import { normalizarResultadoCriacaoAgendamento } from "../../../modules/agendamento-response.js";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -107,20 +108,15 @@ Deno.serve(async (req: Request) => {
       return Response.json({ erro: "Erro ao criar agendamento" }, { status: 500, headers: CORS });
     }
 
-    if (!resultadoCriacao?.ok) {
-      const httpStatus = Number(resultadoCriacao?.http_status) || 400;
-      const payload: Record<string, unknown> = {
-        erro: resultadoCriacao?.erro || "Erro ao criar agendamento",
-      };
-
-      if (resultadoCriacao?.count != null) payload.count = resultadoCriacao.count;
-      if (resultadoCriacao?.limite != null) payload.limite = resultadoCriacao.limite;
-      if (resultadoCriacao?.whatsapp != null) payload.whatsapp = resultadoCriacao.whatsapp;
-
-      return Response.json(payload, { status: httpStatus, headers: CORS });
+    const resultadoNormalizado = normalizarResultadoCriacaoAgendamento(resultadoCriacao);
+    if (!resultadoNormalizado.ok) {
+      return Response.json(resultadoNormalizado.body, {
+        status: resultadoNormalizado.status,
+        headers: CORS,
+      });
     }
 
-    const agendamentoId = resultadoCriacao.agendamento_id as string;
+    const agendamentoId = resultadoNormalizado.body.agendamento_id as string;
 
     const { error: errCliente } = await supabase
       .from("clientes")

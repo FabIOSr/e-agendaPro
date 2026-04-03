@@ -6,6 +6,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+import {
+  calcularValidadeAte,
+  classificarEventoAsaas,
+  extrairAssinaturaAsaas,
+} from "../../../modules/asaas-webhook-rules.js";
 
 // Inicializa Sentry (se DSN configurado)
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
@@ -21,33 +26,6 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, asaas-access-token",
 };
-
-// Eventos que ATIVAM o plano Pro
-const EVENTOS_ATIVAR = new Set([
-  "PAYMENT_RECEIVED",
-  "PAYMENT_CONFIRMED",
-]);
-
-// Eventos que DESATIVAM (volta ao free imediatamente)
-const EVENTOS_DESATIVAR = new Set([
-  "SUBSCRIPTION_DELETED",
-  "PAYMENT_DELETED",
-  "PAYMENT_REFUNDED",
-  "PAYMENT_CHARGEBACK_REQUESTED",
-  "PAYMENT_CHARGEBACK_DISPUTE",
-]);
-
-// Eventos de inadimplência (grace period — cron cuida do downgrade)
-const EVENTOS_INADIMPLENTE = new Set([
-  "PAYMENT_OVERDUE",
-]);
-
-function calcularValidadeAte(ciclo: string): Date {
-  const d = new Date();
-  if (ciclo === "YEARLY") d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1); // MONTHLY e padrão
-  return d;
-}
 
 Deno.serve(async (req: Request) => {
   const errorContext: Record<string, unknown> = {
@@ -83,24 +61,16 @@ Deno.serve(async (req: Request) => {
     return new Response("Bad Request", { status: 400, headers: CORS });
   }
 
-  const evento  = payload.event as string;
+  const { evento, payment, subscription: sub, subId } = extrairAssinaturaAsaas(payload);
   errorContext.evento = evento;
-  const payment = payload.payment;
-  // subscription pode vir como objeto ou como string ID dentro de payment
-  const sub     = payload.subscription ?? payment?.subscription;
-  const subId   = typeof sub === "string" ? sub : sub?.id;
   errorContext.asaas_payment_id = payment?.id ?? null;
   errorContext.asaas_sub_id = subId ?? null;
 
   console.log(`Webhook Asaas: ${evento}`, { paymentId: payment?.id, subId });
 
   // Ignora eventos não mapeados
-  const importa =
-    EVENTOS_ATIVAR.has(evento) ||
-    EVENTOS_DESATIVAR.has(evento) ||
-    EVENTOS_INADIMPLENTE.has(evento);
-
-  if (!importa) {
+  const acaoEvento = classificarEventoAsaas(evento);
+  if (acaoEvento === "ignorar") {
     return Response.json({ ok: true, ignorado: true, evento }, { headers: CORS });
   }
 
@@ -167,7 +137,7 @@ Deno.serve(async (req: Request) => {
 
   // ── Ação por evento ────────────────────────────────────────────────────
 
-  if (EVENTOS_ATIVAR.has(evento)) {
+  if (acaoEvento === "ativar") {
     const ciclo     = payment?.subscription?.cycle ?? sub?.cycle ?? "MONTHLY";
     const validoAte = calcularValidadeAte(ciclo);
 
@@ -190,13 +160,13 @@ Deno.serve(async (req: Request) => {
     return Response.json({ ok: true, acao: "plano_ativado", valido_ate: validoAte }, { headers: CORS });
   }
 
-  if (EVENTOS_INADIMPLENTE.has(evento)) {
+  if (acaoEvento === "inadimplente") {
     // Não desativa agora — cron verifica plano_valido_ate com grace period de 3 dias
     console.log(`⚠️ Inadimplente: ${prestador.id} — aguarda cron`);
     return Response.json({ ok: true, acao: "grace_period_iniciado" }, { headers: CORS });
   }
 
-  if (EVENTOS_DESATIVAR.has(evento)) {
+  if (acaoEvento === "desativar") {
     // Usa função RPC para aplicar downgrade + limites Free
     const { error, data } = await supabase.rpc("downgrade_pro", {
       p_prestador_id: prestador.id,

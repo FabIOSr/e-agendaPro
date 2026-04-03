@@ -10,6 +10,9 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+import {
+  generateSlots,
+} from "../../../modules/scheduling-rules.js";
 
 // Inicializa Sentry (se DSN configurado)
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
@@ -19,36 +22,6 @@ if (SENTRY_DSN) {
     environment: Deno.env.get("SENTRY_ENVIRONMENT") || "production",
     tracesSampleRate: 0.1,
   });
-}
-
-const TIMEZONE_BRT = 'America/Sao_Paulo';
-const ANTECEDENCIA_MINIMA_MIN = 60;
-
-/**
- * Retorna hora atual no fuso BRT como Date.
- * Usa Intl.DateTimeFormat para considerar regras oficiais de timezone
- * (incluindo histórico de horário de verão).
- */
-function getAgoraBRT(): Date {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('pt-BR', {
-    timeZone: TIMEZONE_BRT,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false
-  });
-  
-  const parts = formatter.formatToParts(now);
-  const get = (type: string) => parts.find(p => p.type === type)?.value;
-  
-  const year = get('year');
-  const month = get('month');
-  const day = get('day');
-  const hour = get('hour');
-  const minute = get('minute');
-  const second = get('second');
-  
-  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}-03:00`);
 }
 
 // ---------------------------------------------------------------------------
@@ -83,167 +56,6 @@ interface Slot {
   hora: string;             // "10:00"
   disponivel: boolean;
   motivo_bloqueio?: string; // preenchido quando disponivel = false (útil para debug)
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Converte "data + hora local BRT" para Date em UTC.
- * Usa offset fixo -03:00 para garantir consistência com o banco,
- * que salva tudo em UTC com offset BRT explícito.
- */
-function horaParaDate(data: string, hora: string): Date {
-  // Remove segundos se presentes (banco retorna "09:00:00")
-  const horaLimpa = hora.slice(0, 5);
-  return new Date(`${data}T${horaLimpa}:00-03:00`);
-}
-
-/**
- * Converte Date UTC para string "HH:MM" no fuso BRT (UTC-3).
- */
-function dateParaHora(d: Date): string {
-  // Subtrai 3h para converter UTC → BRT
-  const brt = new Date(d.getTime() - 3 * 60 * 60 * 1000);
-  return brt.toISOString().slice(11, 16);
-}
-
-/**
- * Conflito entre dois intervalos semi-abertos [a, b) e [c, d):
- * existe sobreposição quando a < d E b > c.
- * Todas as datas devem estar em UTC para a comparação ser correta.
- */
-function conflita(
-  inicioSlot: Date, fimSlot: Date,
-  inicioOcup: Date, fimOcup: Date
-): boolean {
-  return inicioSlot < fimOcup && fimSlot > inicioOcup;
-}
-
-// ---------------------------------------------------------------------------
-// Gerador de slots
-// ---------------------------------------------------------------------------
-
-function gerarSlots(
-  data: string,
-  disponibilidades: Disponibilidade[],
-  duracaoServico: number,
-  agendamentos: Agendamento[],
-  bloqueios: Bloqueio[],
-  intervaloSlot = 30,
-  intervaloMin = 0,
-  bloqueiosRecorrentes: BloqueioRecorrente[] = []
-): Slot[] {
-  const agora = getAgoraBRT(); // Hora atual em BRT (considera regras oficiais de timezone)
-  const antecedenciaMinima = new Date(agora.getTime() + ANTECEDENCIA_MINIMA_MIN * 60_000);
-  const slots: Slot[] = [];
-
-  // O cursor avança pela cadência dos slots (intervaloSlot), não pelo buffer.
-  // O buffer (intervaloMin) é somado à duração do serviço para calcular
-  // o espaço ocupado — mas não muda de onde o próximo slot começa na grade.
-  const cadencia = intervaloSlot; // minutos entre início de cada slot exibido
-
-  // Duração real ocupada por um agendamento deste serviço (serviço + buffer)
-  const duracaoOcupada = duracaoServico + intervaloMin;
-
-  for (const disp of disponibilidades) {
-    const expedienteInicio = horaParaDate(data, disp.hora_inicio);
-    const expedienteFim    = horaParaDate(data, disp.hora_fim);
-
-    let cursor = new Date(expedienteInicio);
-
-    while (cursor < expedienteFim) {
-      const inicioSlot = new Date(cursor);
-      // fimSlot = fim real do serviço + buffer — o que precisa caber no expediente
-      // e o que não pode conflitar com bloqueios/agendamentos
-      const fimSlot = new Date(cursor.getTime() + duracaoOcupada * 60_000);
-
-      // Regra 1 — serviço + buffer precisa caber inteiro no expediente
-      if (fimSlot > expedienteFim) {
-        cursor = new Date(cursor.getTime() + cadencia * 60_000);
-        continue;
-      }
-
-      // Regra 2 — não exibir horários passados nem horários muito em cima da hora
-      if (inicioSlot <= agora || inicioSlot < antecedenciaMinima) {
-        cursor = new Date(cursor.getTime() + cadencia * 60_000);
-        continue;
-      }
-
-      let disponivel = true;
-      let motivoBloqueio: string | undefined;
-
-      // Regra 3 — conflito com agendamentos confirmados
-      // O agendamento existente ocupa: sua duração + buffer do prestador
-      for (const ag of agendamentos) {
-        const inicioAg = new Date(ag.data_hora);
-        const fimAg    = new Date(
-          inicioAg.getTime() + (ag.duracao_min + (ag.intervalo_min ?? 0)) * 60_000
-        );
-
-        if (conflita(inicioSlot, fimSlot, inicioAg, fimAg)) {
-          disponivel = false;
-          motivoBloqueio = "horário ocupado";
-          break;
-        }
-      }
-
-      // Regra 4 — conflito com bloqueios pontuais
-      // bloqueios chegam do banco em UTC — comparação correta pois fimSlot também é UTC
-      if (disponivel) {
-        for (const bl of bloqueios) {
-          const inicioBl = new Date(bl.inicio);
-          const fimBl    = new Date(bl.fim);
-
-          if (conflita(inicioSlot, fimSlot, inicioBl, fimBl)) {
-            disponivel = false;
-            motivoBloqueio = bl.motivo ?? "bloqueado";
-            break;
-          }
-        }
-      }
-
-      // Regra 5 — conflito com bloqueios recorrentes (dia da semana + horário)
-      // Convertendo slot UTC para BRT para comparar com hora_inicio/hora_fim do banco
-      if (disponivel && bloqueiosRecorrentes.length > 0) {
-        const slotBRT = new Date(inicioSlot.getTime() - 3 * 60 * 60 * 1000);
-        const diaSemanaSlot = slotBRT.getUTCDay();
-        const hIniSlot = slotBRT.getUTCHours() * 60 + slotBRT.getUTCMinutes();
-        const hFimSlot = (hIniSlot + duracaoOcupada);
-
-        for (const br of bloqueiosRecorrentes) {
-          if (br.dia_semana !== diaSemanaSlot) continue;
-          // Remove segundos se presentes (banco retorna "12:00:00")
-          const [hBrIni, mBrIni] = br.hora_inicio.slice(0, 5).split(":").map(Number);
-          const [hBrFim, mBrFim] = br.hora_fim.slice(0, 5).split(":").map(Number);
-          const minBrIni = hBrIni * 60 + mBrIni;
-          const minBrFim = hBrFim * 60 + mBrFim;
-
-          // Conflito: slot começa antes do fim do bloqueio E slot termina depois do início
-          if (hIniSlot < minBrFim && hFimSlot > minBrIni) {
-            disponivel = false;
-            motivoBloqueio = br.motivo ?? "bloqueado";
-            break;
-          }
-        }
-      }
-
-      slots.push({
-        hora: dateParaHora(inicioSlot),
-        disponivel,
-        ...(motivoBloqueio && { motivo_bloqueio: motivoBloqueio }),
-      });
-
-      // Cursor avança pela cadência — não pela duração ocupada
-      cursor = new Date(cursor.getTime() + cadencia * 60_000);
-    }
-  }
-
-  // Garante ordem cronológica (caso haja múltiplos turnos no dia)
-  slots.sort((a, b) => a.hora.localeCompare(b.hora));
-
-  return slots;
 }
 
 // ---------------------------------------------------------------------------
@@ -403,16 +215,16 @@ Deno.serve(async (req: Request) => {
     // Cadência: usa intervaloSlot (Pro) ou duração do serviço + buffer (Free)
     const cadenciaSlots = intervaloSlotConfig || (servico.duracao_min + intervaloMin);
 
-    const slots = gerarSlots(
+    const slots = generateSlots({
       data,
       disponibilidades,
-      servico.duracao_min,
-      agendamentosNorm,
-      bloqueios ?? [],
-      cadenciaSlots,
+      duracaoServico: servico.duracao_min,
+      agendamentos: agendamentosNorm,
+      bloqueios: bloqueios ?? [],
+      intervaloSlot: cadenciaSlots,
       intervaloMin,
-      bloqueiosRecorrentes ?? []
-    );
+      bloqueiosRecorrentes: bloqueiosRecorrentes ?? [],
+    });
 
     return Response.json(
       {
