@@ -912,9 +912,11 @@
         </div>
       </div>
       <!-- PRO: próximo slot disponível -->
-      <div class="hero-next-slot" id="hero-next-slot" style="display:none" onclick="irParaAgendamento()">
-        <div class="hero-next-slot-dot"></div>
-        <span id="hero-next-slot-text">Ver horários</span>
+      <div style="display:flex;justify-content:center;margin-top:0">
+        <div class="hero-next-slot" id="hero-next-slot" style="display:none" onclick="irParaAgendamento()">
+          <div class="hero-next-slot-dot"></div>
+          <span id="hero-next-slot-text">Ver horários</span>
+        </div>
       </div>
       <div class="hero-tags" id="hero-tags" style="display:none"></div>
     </div>
@@ -2052,9 +2054,12 @@
     }
 
     window.irParaAgendamento = function() {
-      // Scroll suave até a seleção de serviços
-      const el = document.getElementById('step-1');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Volta ao step 1 (serviços) e faz scroll
+      if (typeof window.irPara === 'function') window.irPara(1);
+      setTimeout(() => {
+        const el = document.getElementById('step-1');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
     };
 
     // ── INIT ──────────────────────────────────────────────────────────────────
