@@ -1,6 +1,11 @@
-# 📋 Lista de Espera Inteligente 2.5 — Documentação Completa
+# 📋 Lista de Espera Inteligente 2.6 — Documentação Completa
 
-**Versão:** 2.5 (Atualizado em 2026-04-02)
+**Versão:** 2.6 (Atualizado em 2026-04-03)
+
+**Mudanças na 2.6:**
+- ❌ Bloqueio de entrada para o dia atual (não permite lista de espera para hoje)
+- ✅ Validação de período na entrada (`podeEntrarNaListaEspera` com `periodoPreferido`)
+- ✅ Módulo compartilhado `lista-espera-rules.js` centraliza todas as regras
 
 **Mudanças na 2.5:**
 - ✅ Sistema de reserva com timeout (30 min)
@@ -177,11 +182,13 @@ CREATE POLICY "Prestador vê sua lista de espera"
 | `cliente_nome` | Sim | - |
 | `cliente_telefone` | Sim | Formato WhatsApp (DD + número) |
 | `cliente_email` | Não | Formato email válido |
-| `data_preferida` | Sim | Data futura ou hoje |
+| `data_preferida` | Sim | **Apenas data futura** (bloqueado para hoje) |
 | `hora_preferida` | Depende | Obrigatório se `tipo='exato'` |
 | `servico_id` | Sim | Deve existir em `servicos` |
 | `tipo_preferencia` | Sim | `'exato'` (padrão), `'periodo'`, `'qualquer'` |
 | `periodo_preferido` | Depende | Obrigatório se `tipo='periodo'` |
+
+> **⚠️ Regra v2.6 — Bloqueio do dia atual:** Não é permitido entrar na lista de espera para o dia de hoje (`dataPreferida === hojeBrt → false`). Isso evita notificações em cima da hora e garante antecedência mínima.
 
 **Validação de Duplicidade:**
 ```sql
@@ -632,6 +639,15 @@ Oi {Nome}! Uma vaga surgiu que pode te interessar:
 5. ✅ Cliente É notificado
 ```
 
+### Cenário 6: Bloqueio do Dia Atual (v2.6)
+
+```
+1. Cliente tenta entrar na lista para hoje (25/04)
+2. Hoje é 25/04
+3. ❌ Entrada bloqueada — não permite lista de espera para o dia atual
+4. Mensagem: "Não é possível entrar na lista de espera para hoje."
+```
+
 ---
 
 ## 📊 Métricas e Conversão
@@ -709,6 +725,78 @@ const metrics = await supabase
 
 // Resultado:
 // { ativa: 15, notificada: 8, agendada: 23, desistiu: 5, expirada: 2 }
+```
+
+---
+
+## 📦 Módulo `lista-espera-rules.js`
+
+Todas as validações de entrada na lista de espera foram centralizadas no módulo compartilhado `modules/lista-espera-rules.js`.
+
+### Funções Exportadas
+
+| Função | Descrição | Retorna |
+|--------|-----------|---------|
+| `getDataAtualBRT(now)` | Data atual no fuso BRT (`America/Sao_Paulo`) | `"2026-04-03"` |
+| `getMinutosAtualBRT(now)` | Minutos desde meia-noite em BRT | `1020` (17:00) |
+| `horaParaMinutos(hora)` | Converte `"HH:MM"` para minutos | `840` (14:00) |
+| `podeEntrarNaListaEspera({...})` | Valida entrada na lista de espera | `true` / `false` |
+
+### Parâmetros de `podeEntrarNaListaEspera`
+
+```javascript
+const resultado = podeEntrarNaListaEspera({
+  dataPreferida,        // "2026-04-05"
+  tipoPreferencia,      // "exato" | "periodo" | "qualquer"
+  horaPreferida,        // "14:00" (obrigatório se tipo="exato")
+  periodoPreferido,     // "manha" | "tarde" | "noite" (obrigatório se tipo="periodo")
+  disponibilidades,     // [{ hora_inicio: "08:00", hora_fim: "18:00" }]
+  now,                  // Date() opcional para testes
+});
+```
+
+### Regras de Validação (v2.6)
+
+| Regra | Condição | Resultado |
+|-------|----------|-----------|
+| Data ausente | `!dataPreferida` | ❌ `false` |
+| **Dia atual** | `dataPreferida === hojeBrt` | ❌ `false` (bloqueado) |
+| Data passada | `dataPreferida < hojeBrt` | ❌ `false` |
+| Dia futuro | `dataPreferida > hojeBrt` | ✅ `true` |
+| **Exato hoje** | `tipo="exato"` + hoje + hora dentro da disponibilidade e > agora | ❌ `false` (bloqueado pelo dia) |
+| **Período hoje** | `tipo="periodo"` + hoje | ❌ `false` (bloqueado pelo dia) |
+| **Qualquer hoje** | `tipo="qualquer"` + hoje | ❌ `false` (bloqueado pelo dia) |
+| Período futuro sem disponibilidade | `tipo="periodo"` + futuro + sem cobertura | ❌ `false` |
+| Período futuro com disponibilidade | `tipo="periodo"` + futuro + com cobertura | ✅ `true` |
+
+### Períodos e Faixas Horárias
+
+| Período | Faixa | Minutos |
+|---------|-------|---------|
+| `manha` | 08:00–12:59 | 480–779 |
+| `tarde` | 13:00–18:59 | 780–1139 |
+| `noite` | 19:00–21:59 | 1140–1319 |
+
+### Exemplo de Uso
+
+```javascript
+import { podeEntrarNaListaEspera, getDataAtualBRT } from './modules/lista-espera-rules.js';
+
+// Futuro com período válido → ✅
+podeEntrarNaListaEspera({
+  dataPreferida: '2026-04-05',
+  tipoPreferencia: 'tarde',
+  periodoPreferido: 'tarde',
+  disponibilidades: [{ hora_inicio: '08:00', hora_fim: '18:00' }],
+}); // true
+
+// Hoje → ❌ (bloqueado)
+podeEntrarNaListaEspera({
+  dataPreferida: getDataAtualBRT(),
+  tipoPreferencia: 'exato',
+  horaPreferida: '14:00',
+  disponibilidades: [{ hora_inicio: '08:00', hora_fim: '18:00' }],
+}); // false
 ```
 
 ---

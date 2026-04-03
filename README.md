@@ -187,18 +187,19 @@ google_calendar_tokens (
 ### Migrations (ordem de execução)
 
 ```
-1. auth-migration.sql           → tabela prestadores + trigger + RLS
-2. migration.sql                → tabela pagamentos + colunas Asaas
-3. cron-downgrade.sql           → cron + função verifica_plano_ativo
-4. cancel-token-migration.sql   → cancel_token em agendamentos
-5. nice-migration.sql           → avaliacoes + google_calendar_tokens
-13. bloqueios_recorrentes.sql   → tabela bloqueios_recorrentes
-16. trial_ends_at.sql           → trial de 7 dias, expirar_trials(), ativar_trial()
-17. ativar_trial_auto.sql       → auto-ativa trial no cadastro
-18. downgrade_limits.sql        → aplicar_limites_free(), downgrade_pro()
-22. periodicidade_assinatura.sql → coluna assinatura_periodicidade (MONTHLY/YEARLY)
-23. lista_espera.sql            → tabela lista_espera com preferências de horário
-24. cancelamentos_recentes.sql  → função agendamentos_cancelados_recentes()
+1.  auth-migration.sql            → tabela prestadores + trigger + RLS
+2.  migration.sql                 → tabela pagamentos + colunas Asaas
+3.  cron-downgrade.sql            → cron + função verifica_plano_ativo
+4.  cancel-token-migration.sql    → cancel_token em agendamentos
+5.  nice-migration.sql            → avaliacoes + google_calendar_tokens
+13. bloqueios_recorrentes.sql     → tabela bloqueios_recorrentes
+16. trial_ends_at.sql             → trial de 7 dias, expirar_trials(), ativar_trial()
+17. ativar_trial_auto.sql         → auto-ativa trial no cadastro
+18. downgrade_limits.sql          → aplicar_limites_free(), downgrade_pro()
+22. periodicidade_assinatura.sql  → coluna assinatura_periodicidade (MONTHLY/YEARLY)
+23. lista_espera.sql              → tabela lista_espera com preferências de horário
+24. cancelamentos_recentes.sql    → função agendamentos_cancelados_recentes()
+31. fix_criar_agendamento_atomic_intervalo_slot.sql → corrige carga de intervalo_slot na RPC
 ```
 
 ---
@@ -510,12 +511,17 @@ firebase deploy --only hosting
 - [ ] `notificar-lista-espera` → testa notificação individual
 
 ### Testes automatizados
-- [ ] `npm test` passa todos (65 testes)
-- [ ] `npm run test:db:local` passa no Supabase local
-- [ ] `scheduling-rules.test.js` → regras de geração de slots, cadência, bloqueios e antecedência mínima
-- [ ] handlers HTTP → criação, webhook Asaas, reagendamento e cancelamento
-- [ ] migrations-contract.test.js → contratos das migrations críticas (pagamentos + RPC)
-- [ ] Cobertura: antecedência mínima, conflitos, bloqueios, cadência, grade, classificação de eventos, `token_reserva`
+- [ ] `npm test` passa todos (74 testes)
+- [ ] `npm run test:db:local` passa no Supabase local (smoke test)
+- [ ] `scheduling-rules.test.js` → 24 testes: regras de geração de slots, cadência, bloqueios e antecedência mínima
+- [ ] `lista-espera-rules.test.js` → 10 testes: validação de entrada, bloqueio de hoje, janela útil por período
+- [ ] `criar-agendamento-handler.test.js` → 8 testes: criação de agendamento, conflitos, limite free, token_reserva
+- [ ] `webhook-asaas-handler.test.js` → 8 testes: eventos Asaas, ativação/desativação plano, assinatura
+- [ ] `reagendar-cliente-handler.test.js` → 7 testes: reagendamento, conflito de horário, WhatsApp
+- [ ] `cancelar-agendamento-cliente-handler.test.js` → 7 testes: cancelamento por token, WhatsApp, Google Calendar
+- [ ] `agendamento-response.test.js` → 4 testes: normalização de resposta da stored procedure
+- [ ] `asaas-webhook-rules.test.js` → 8 testes: classificação de eventos, extração de payload, validade
+- [ ] `migrations-contract.test.js` → 8 testes: contratos das migrations críticas (pagamentos + RPC criar_agendamento_atomic)
 
 ### Pagamentos
 - [ ] Fluxo completo testado no sandbox Asaas (Pix + Cartão)
@@ -556,24 +562,33 @@ agendapro/
 │   └── auth-migration.sql     ← Trigger de perfil + RLS
 │
 ├── modules/                    ← Módulos compartilhados (frontend + testes)
-│   ├── scheduling-rules.js    ← Geração de slots (espelha SQL criar_agendamento_atomic)
-│   ├── agendamento-response.js ← Normalização de resposta da SP
-│   ├── asaas-webhook-rules.js ← Regras de eventos do Asaas
-│   ├── auth-session.js        ← Sessão e autenticação
-│   ├── sentry.js              ← Monitoramento de erros
-│   └── ui-helpers.js          ← Toast, modais, helpers de UI
+│   ├── scheduling-rules.js             ← Geração de slots (espelha SQL criar_agendamento_atomic)
+│   ├── agendamento-response.js         ← Normalização de resposta da SP
+│   ├── asaas-webhook-rules.js          ← Regras de eventos do Asaas
+│   ├── criar-agendamento-handler.js    ← Handler completo da edge function criar-agendamento
+│   ├── webhook-asaas-handler.js        ← Handler completo do webhook Asaas
+│   ├── cancelar-agendamento-cliente-handler.js ← Handler de cancelamento por token
+│   ├── reagendar-cliente-handler.js    ← Handler de reagendamento por token
+│   ├── lista-espera-rules.js           ← Regras de validação da lista de espera
+│   ├── auth-session.js                 ← Sessão e autenticação
+│   ├── sentry.js                       ← Monitoramento de erros
+│   └── ui-helpers.js                   ← Toast, modais, helpers de UI
 │
 ├── supabase/functions/
-│   ├── horarios-disponiveis/index.ts      ← Usa generateSlots do módulo compartilhado
+│   ├── horarios-disponiveis/index.ts       ← Usa generateSlots do módulo compartilhado
 │   ├── lembretes-whatsapp/index.ts
 │   ├── ativar-trial/index.ts
 │   ├── criar-assinatura/index.ts
-│   ├── webhook-asaas/index.ts             ← Usa classificarEventoAsaas do módulo
+│   ├── webhook-asaas/index.ts              ← Usa classificarEventoAsaas + handler compartilhado
 │   ├── cancelar-assinatura/index.ts
-│   ├── cancelar-agendamento-cliente/index.ts
-│   ├── reagendar-cliente/index.ts
+│   ├── cancelar-agendamento-cliente/index.ts ← Usa handler compartilhado (de ~270 para ~30 linhas)
+│   ├── reagendar-cliente/index.ts          ← Usa handler compartilhado (de ~270 para ~30 linhas)
+│   ├── criar-agendamento/index.ts          ← Usa handler compartilhado
 │   ├── avaliacoes/index.ts
-│   └── google-calendar-sync/index.ts
+│   ├── google-calendar-sync/index.ts
+│   ├── entrada-lista-espera/index.ts
+│   ├── notificar-lista-espera/index.ts
+│   └── cron-notificar-lista-espera/index.ts
 │
 ├── migrations/
 │   ├── auth-migration.sql
@@ -587,10 +602,17 @@ agendapro/
 │   └── downgrade_limits.sql
 │
 ├── tests/                          ← Testes automatizados (Node.js native)
-│   ├── run-tests.js               ← Runner que importa todos os testes
-│   ├── scheduling-rules.test.js   ← 24 testes de geração de slots
-│   ├── agendamento-response.test.js ← 4 testes de normalização
-│   └── asaas-webhook-rules.test.js ← 8 testes de eventos Asaas
+│   ├── run-tests.js                       ← Runner que importa todos os testes
+│   ├── run-db-smoke.js                    ← Smoke test de banco local (PostgreSQL)
+│   ├── scheduling-rules.test.js           ← 24 testes de geração de slots
+│   ├── lista-espera-rules.test.js         ← 10 testes de validação da lista de espera
+│   ├── criar-agendamento-handler.test.js  ← 8 testes de criação de agendamento
+│   ├── webhook-asaas-handler.test.js      ← 8 testes de eventos Asaas
+│   ├── reagendar-cliente-handler.test.js  ← 7 testes de reagendamento
+│   ├── cancelar-agendamento-cliente-handler.test.js ← 7 testes de cancelamento
+│   ├── agendamento-response.test.js       ← 4 testes de normalização
+│   ├── asaas-webhook-rules.test.js        ← 8 testes de classificação de eventos
+│   └── migrations-contract.test.js        ← 8 testes de contratos SQL
 │
 ├── pages/
 │   ├── landing-page/index.html
@@ -614,7 +636,7 @@ agendapro/
 npm test
 
 # Output esperado
-# ✔ 65 tests passing
+# ✔ 74 tests passing
 # ✔ 0 failing
 ```
 

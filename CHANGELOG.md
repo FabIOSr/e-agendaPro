@@ -1,5 +1,99 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-03] — Refatoração Completa: Handlers, Testes (74), Migration 31 e Lista de Espera
+
+### 🔥 Refatoração de Edge Functions em Handlers Compartilhados
+
+**4 edge functions tiveram a lógica de negócio extraída para módulos compartilhados**, reduzindo cada função de ~270 linhas para ~30 linhas de dispatch:
+
+| Handler | Origem | Linhas antes → depois | Testes |
+|---------|--------|----------------------|--------|
+| `criar-agendamento-handler.js` | `criar-agendamento/index.ts` | 170 → 30 | 8 |
+| `webhook-asaas-handler.js` | `webhook-asaas/index.ts` | 190 → 30 | 8 |
+| `cancelar-agendamento-cliente-handler.js` | `cancelar-agendamento-cliente/index.ts` | 271 → 30 | 7 |
+| `reagendar-cliente-handler.js` | `reagendar-cliente/index.ts` | 279 → 30 | 7 |
+
+**Benefício:** lógica testável sem HTTP mocking, código reutilizável, edge functions como thin wrappers.
+
+### 🧪 Testes Automatizados (74 testes passando!)
+
+**Evolução ao longo do dia:** 4 → 36 → 48 → 56 → 64 → **74 testes**
+
+| Arquivo | Testes | Cobertura |
+|---------|--------|-----------|
+| `scheduling-rules.test.js` | 24 | Slots, antecedência, conflitos, bloqueios, cadência, grade |
+| `lista-espera-rules.test.js` | 10 | Validação de entrada, bloqueio de hoje, janela útil por período |
+| `criar-agendamento-handler.test.js` | 8 | Criação, conflitos, limite free, token_reserva |
+| `webhook-asaas-handler.test.js` | 8 | Eventos Asaas, ativação/desativação, assinatura |
+| `reagendar-cliente-handler.test.js` | 7 | Reagendamento, conflito de horário, WhatsApp |
+| `cancelar-agendamento-cliente-handler.test.js` | 7 | Cancelamento por token, WhatsApp, Google Calendar |
+| `migrations-contract.test.js` | 8 | Contratos SQL (pagamentos + RPC criar_agendamento_atomic) |
+| `asaas-webhook-rules.test.js` | 8 | Classificação de eventos, extração de payload, validade |
+| `agendamento-response.test.js` | 4 | Normalização de resposta da stored procedure |
+
+**Novos testes adicionados nesta sessão:**
+- ✅ Contrato da migration 31 (intervalo_slot na RPC criar_agendamento_atomic)
+- ✅ Smoke test de banco local (criar_agendamento_atomic, conflitos, antecedência, pagamentos)
+- ✅ Handlers completos: criação, webhook Asaas, reagendamento, cancelamento
+- ✅ Validação de lista de espera: bloqueio de hoje, janela útil por período
+
+### 🗄️ Migration 31 — Fix Critical
+
+**Problema:** RPC `criar_agendamento_atomic` não carregava o campo `intervalo_slot` do perfil do prestador, ignorando o intervalo entre slots no cálculo.
+
+**Solução:** Migration 31 (`fix_criar_agendamento_atomic_intervalo_slot.sql`) corrige o SELECT para incluir `intervalo_slot` no cálculo de slots disponíveis.
+
+**Smoke test de banco:** `tests/run-db-smoke.js` valida a RPC em Supabase local:
+- ✅ Criação com sucesso
+- ✅ Conflito de horário retorna 409
+- ✅ Antecedência mínima no mesmo dia retorna 409
+- ✅ Histórico de pagamentos por asaas_payment_id + evento
+- ✅ Confirmação com token_reserva
+
+### 📋 Lista de Espera — Módulo de Regras + Bloqueio de Hoje
+
+**Novo módulo:** `modules/lista-espera-rules.js` — centraliza validações de entrada na lista de espera:
+
+| Função | Descrição |
+|--------|-----------|
+| `getDataAtualBRT(now)` | Data atual em BRT (America/Sao_Paulo) |
+| `getMinutosAtualBRT(now)` | Minutos desde meia-noite em BRT |
+| `horaParaMinutos(hora)` | Converte "HH:MM" para minutos |
+| `podeEntrarNaListaEspera({...})` | Valida se cliente pode entrar na lista |
+
+**Mudanças na validação de entrada:**
+- ❌ **Bloqueia hoje:** `dataPreferida === hojeBrt → false` — não permite entrar na lista para o dia atual
+- ✅ **Permite futuro:** `dataPreferida > hojeBrt → true` — dias futuros sempre OK
+- ✅ **Valida período:** para `tipoPreferencia === 'periodo'`, verifica se o período preferido (manhã/tarde/noite) tem cobertura nas disponibilidades do prestador
+
+**Front-end:** Troca de `alert()` por `toast()` em `pagina-cliente.html` para feedback consistente.
+
+### 📁 Arquivos Criados/Modificados
+
+| Arquivo | Tipo | Descrição |
+|---------|------|-----------|
+| `modules/criar-agendamento-handler.js` | Novo | Handler completo de criação |
+| `modules/webhook-asaas-handler.js` | Novo | Handler completo do webhook Asaas |
+| `modules/cancelar-agendamento-cliente-handler.js` | Novo | Handler de cancelamento por token |
+| `modules/reagendar-cliente-handler.js` | Novo | Handler de reagendamento por token |
+| `modules/lista-espera-rules.js` | Novo | Regras de validação da lista de espera |
+| `tests/criar-agendamento-handler.test.js` | Novo | 8 testes de criação |
+| `tests/webhook-asaas-handler.test.js` | Novo | 8 testes de webhook |
+| `tests/reagendar-cliente-handler.test.js` | Novo | 7 testes de reagendamento |
+| `tests/cancelar-agendamento-cliente-handler.test.js` | Novo | 7 testes de cancelamento |
+| `tests/lista-espera-rules.test.js` | Novo | 10 testes de validação |
+| `tests/migrations-contract.test.js` | Novo | 8 testes de contratos SQL |
+| `tests/run-db-smoke.js` | Novo | Smoke test de banco local |
+| `tests/sql/db-smoke.sql` | Novo | SQL do smoke test |
+| `migrations/fix_criar_agendamento_atomic_intervalo_slot.sql` | Novo | Migration 31 |
+| `supabase/functions/criar-agendamento/index.ts` | Modificado | Usa handler compartilhado (~30 linhas) |
+| `supabase/functions/webhook-asaas/index.ts` | Modificado | Usa handler compartilhado (~30 linhas) |
+| `supabase/functions/cancelar-agendamento-cliente/index.ts` | Modificado | Usa handler compartilhado (~30 linhas) |
+| `supabase/functions/reagendar-cliente/index.ts` | Modificado | Usa handler compartilhado (~30 linhas) |
+| `pages/pagina-cliente.html` | Modificado | Toast no lugar de alert + bloqueio de hoje |
+
+---
+
 ## [2026-04-03] — Refatoração de Testes + Módulos Compartilhados
 
 ### 🧪 Testes Automatizados (36 testes passando!)
