@@ -29,6 +29,6 @@ Para o CI/CD funcionar, você precisa configurar os secrets no GitHub:
 ## Resultado
 
 Com isso configurado:
-- Todo push na master → roda testes
+- Todo push na main → roda testes
 - Se testes passarem → faz build
 - Se build passar → faz deploy automático no Firebase Hosting
