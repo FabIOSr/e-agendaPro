@@ -472,28 +472,65 @@ supabase link --project-ref SEU_PROJECT_ID</pre>
         </div>
       </div>
 
-      <div class="step" id="s3-3">
+      <div class="step open" id="s3-3">
         <div class="step-header" onclick="toggleStep(this)">
           <div class="step-n">3</div>
           <div>
-            <div class="step-title">Deploy de todas as Edge Functions</div>
-            <div class="step-desc">Um comando só faz o deploy das 10 funções.</div>
+            <div class="step-title">Funções públicas / cron / internas</div>
+            <div class="step-desc">Deploy com <span class="inline-code">--no-verify-jwt</span></div>
           </div>
           <span class="step-chevron">▼</span>
         </div>
         <div class="step-body">
-          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Na raiz do projeto (pasta <span class="inline-code">agendapro/</span>):</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6">Na raiz do projeto:</p>
           <div class="code-wrap">
-            <pre>for fn in horarios-disponiveis lembretes-whatsapp \
-          criar-assinatura webhook-asaas cancelar-assinatura \
-          cancelar-agendamento-cliente reagendar-cliente \
-          avaliacoes solicitar-avaliacao-batch google-calendar-sync
-do
-  supabase functions deploy $fn
+            <pre>for fn in horarios-disponiveis avaliacoes webhook-asaas lista-espera \
+          cron-notificar-lista-espera check-inadimplencia \
+          google-calendar-sync solicitar-avaliacao-batch lembretes-whatsapp; do
+  supabase functions deploy $fn --no-verify-jwt \
+    --project-ref kevqgxmcoxmzbypdjhru
 done</pre>
             <button class="btn-copy" onclick="copiar(this,'supabase functions deploy horarios-disponiveis')">copiar</button>
           </div>
-          <div class="tip" style="margin-top:10px"><span>💡</span><span>Para atualizar uma função específica depois: <code>supabase functions deploy nome-da-funcao</code></span></div>
+        </div>
+      </div>
+
+      <div class="step" id="s3-3b">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">4</div>
+          <div>
+            <div class="step-title">Funções autenticadas (validam JWT)</div>
+            <div class="step-desc">Verificação JWT padrão do Supabase</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre>for fn in criar-agendamento cancelar-agendamento-cliente reagendar-cliente \
+          criar-assinatura cancelar-assinatura ativar-trial excluir-conta; do
+  supabase functions deploy $fn \
+    --project-ref kevqgxmcoxmzbypdjhru
+done</pre>
+            <button class="btn-copy" onclick="copiar(this,'supabase functions deploy criar-agendamento')">copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" id="s3-3c">
+        <div class="step-header" onclick="toggleStep(this)">
+          <div class="step-n">5</div>
+          <div>
+            <div class="step-title">Deploy de uma função específica</div>
+            <div class="step-desc">Para atualizações pontuais</div>
+          </div>
+          <span class="step-chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <div class="code-wrap">
+            <pre>supabase functions deploy nome-da-funcao --project-ref kevqgxmcoxmzbypdjhru</pre>
+            <button class="btn-copy" onclick="copiar(this,'supabase functions deploy')">copiar</button>
+          </div>
+          <div class="tip" style="margin-top:10px"><span>💡</span><span>Adicione <code>--no-verify-jwt</code> se a função for pública ou cron.</span></div>
         </div>
       </div>
     </div>

@@ -426,7 +426,7 @@ WHERE prestador_id = OLD.prestador_id
 
 **Deploy:**
 ```bash
-supabase functions deploy cron-notificar-lista-espera --project-ref kevqgxmcoxmzbypdjhru
+supabase functions deploy cron-notificar-lista-espera --no-verify-jwt --project-ref kevqgxmcoxmzbypdjhru
 ```
 
 **Configurar no Supabase:**
@@ -455,7 +455,7 @@ WHERE data_preferida < CURRENT_DATE - INTERVAL '30 days'
 **Executar via cron:**
 ```bash
 # Usar a função unificada lista-espera com action: cleanup
-supabase functions deploy lista-espera --project-ref kevqgxmcoxmzbypdjhru
+supabase functions deploy lista-espera --no-verify-jwt --project-ref kevqgxmcoxmzbypdjhru
 
 # Agendar no Supabase:
 # Edge Function: lista-espera

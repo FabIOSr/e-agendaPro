@@ -251,11 +251,16 @@ google_calendar_tokens (
 ### Deploy de todas as funções
 
 ```bash
-for fn in horarios-disponiveis lembretes-whatsapp ativar-trial \
-          criar-assinatura webhook-asaas cancelar-assinatura \
-          cancelar-agendamento-cliente reagendar-cliente \
-          avaliacoes google-calendar-sync entrada-lista-espera \
-          notificar-lista-espera cron-notificar-lista-espera; do
+# Funções públicas / cron / internas (sem verificação JWT)
+for fn in horarios-disponiveis avaliacoes webhook-asaas lista-espera \
+          cron-notificar-lista-espera check-inadimplencia \
+          google-calendar-sync solicitar-avaliacao-batch lembretes-whatsapp; do
+  supabase functions deploy $fn --no-verify-jwt --project-ref kevqgxmcoxmzbypdjhru
+done
+
+# Funções que validam JWT manualmente (usuário autenticado)
+for fn in criar-agendamento cancelar-agendamento-cliente reagendar-cliente \
+          criar-assinatura cancelar-assinatura ativar-trial excluir-conta; do
   supabase functions deploy $fn --project-ref kevqgxmcoxmzbypdjhru
 done
 ```

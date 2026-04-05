@@ -302,8 +302,8 @@ firebase deploy --only hosting
 
 # 3. Deploy Edge Functions
 supabase functions deploy criar-agendamento --project-ref kevqgxmcoxmzbypdjhru
-supabase functions deploy cron-notificar-lista-espera --project-ref kevqgxmcoxmzbypdjhru
-supabase functions deploy horarios-disponiveis --project-ref kevqgxmcoxmzbypdjhru
+supabase functions deploy cron-notificar-lista-espera --no-verify-jwt --project-ref kevqgxmcoxmzbypdjhru
+supabase functions deploy horarios-disponiveis --no-verify-jwt --project-ref kevqgxmcoxmzbypdjhru
 ```
 
 ---
