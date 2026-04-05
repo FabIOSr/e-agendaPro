@@ -31,6 +31,22 @@ Deno.serve(async (req: Request) => {
     now: () => new Date(),
     onUnexpectedError: (err: unknown, errorContext: Record<string, unknown>) => {
       if (SENTRY_DSN) {
+        // Busca plano do prestador para contexto do erro
+        if (errorContext.prestador_id) {
+          const supabase = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          );
+          supabase
+            .from("prestadores")
+            .select("plano")
+            .eq("id", errorContext.prestador_id)
+            .maybeSingle()
+            .then(({ data }) => {
+              Sentry.setTag("plano", data?.plano ?? "unknown");
+            })
+            .catch(() => {});
+        }
         Sentry.captureException(err, {
           tags: { function: "criar-agendamento" },
           extra: errorContext,

@@ -30,6 +30,7 @@ Deno.serve(async (req: Request) => {
     now: () => new Date(),
     onUnexpectedError: (err: unknown, errorContext: Record<string, unknown>) => {
       if (SENTRY_DSN) {
+        Sentry.setTag("plano", (errorContext.plano as string) ?? "unknown");
         Sentry.captureException(err, {
           tags: { function: "webhook-asaas" },
           extra: errorContext,

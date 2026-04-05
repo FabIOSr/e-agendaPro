@@ -128,7 +128,7 @@ Deno.serve(async (req: Request) => {
     onUnexpectedError: (err: unknown, errorContext: Record<string, unknown>) => {
       if (SENTRY_DSN) {
         Sentry.captureException(err, {
-          tags: { function: "cancelar-agendamento-cliente" },
+          tags: { function: "cancelar-agendamento-cliente", plano: (errorContext.plano as string) ?? "unknown" },
           extra: errorContext,
         });
       }

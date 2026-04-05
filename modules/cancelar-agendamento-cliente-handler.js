@@ -35,9 +35,11 @@ export async function handleCancelarAgendamentoClienteRequest(req, deps) {
 
       const { data: ag, error } = await supabase
         .from('agendamentos')
-        .select('*, servicos(nome, duracao_min), prestadores(nome, whatsapp)')
+        .select('*, servicos(nome, duracao_min), prestadores(nome, whatsapp, plano)')
         .eq('cancel_token', token)
         .single();
+
+      if (ag?.prestadores?.plano) errorContext.plano = ag.prestadores.plano;
 
       if (error || !ag) {
         return new Response('<html><body>Link invalido ou expirado</body></html>', {
@@ -67,12 +69,15 @@ export async function handleCancelarAgendamentoClienteRequest(req, deps) {
         .update({ status: 'cancelado' })
         .eq('cancel_token', token)
         .neq('status', 'cancelado')
-        .select('*, prestador_id, servicos(nome), prestadores(nome, whatsapp, email), cliente_email, cliente_tel')
+        .select('*, servicos(nome), prestadores(nome, whatsapp, email, plano), cliente_email, cliente_tel')
         .single();
+
+      if (ag?.prestadores?.plano) errorContext.plano = ag.prestadores.plano;
 
       if (error || !ag) {
         return Response.json({ erro: 'Agendamento nao encontrado ou ja cancelado' }, { status: 404, headers });
       }
+      if (ag.prestadores?.plano) errorContext.plano = ag.prestadores.plano;
 
       try {
         await fetchImpl(`${getEnv('SUPABASE_URL')}/functions/v1/google-calendar-sync`, {

@@ -36,7 +36,7 @@ export async function handleReagendarClienteRequest(req, deps) {
 
       const { data: ag } = await supabase
         .from('agendamentos')
-        .select('*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp)')
+        .select('*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, plano)')
         .eq('cancel_token', token)
         .single();
 
@@ -82,11 +82,12 @@ export async function handleReagendarClienteRequest(req, deps) {
 
       const { data: ag } = await supabase
         .from('agendamentos')
-        .select('*, prestador_id, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email), cliente_email')
+        .select('*, prestador_id, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email, plano), cliente_email')
         .eq('cancel_token', token)
         .single();
 
       if (!ag) return Response.json({ erro: 'Agendamento nao encontrado' }, { status: 404, headers: corsHeaders });
+      if (ag.prestadores?.plano) errorContext.plano = ag.prestadores.plano;
 
       const novaDataHora = new Date(`${data}T${hora}:00`).toISOString();
       const inicio = new Date(`${data}T${hora}:00`);
@@ -126,7 +127,7 @@ export async function handleReagendarClienteRequest(req, deps) {
 
       const { data: agAtualizado } = await supabase
         .from('agendamentos')
-        .select('*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email)')
+        .select('*, servicos(nome, duracao_min), prestadores(nome, slug, whatsapp, email, plano)')
         .eq('id', ag.id)
         .single();
 

@@ -1,0 +1,49 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.js     text eol=lf
+*.ts     text eol=lf
+*.html   text eol=lf
+*.css    text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+*.sql    text eol=lf
+*.xml    text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.toml   text eol=lf
+
+# Shell scripts should use LF on all platforms
+*.sh     text eol=lf
+*.bash   text eol=lf
+
+# Windows batch files should use CRLF
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+
+# Images and other binary files should not be modified
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.svg    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+
+# Deno/Supabase functions
+supabase/functions/**/*.ts   text eol=lf
+
+# Test files
+tests/**/*.js   text eol=lf
+tests/**/*.ts   text eol=lf
+
+# Config files
+.gitattributes text eol=lf
+.gitignore     text eol=lf
+.eslintrc*     text eol=lf
+.prettierrc    text eol=lf
+.editorconfig  text eol=lf
