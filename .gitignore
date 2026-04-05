@@ -79,3 +79,11 @@ supabase/.temp/
 supabase/.branches/
 
 .claude/
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
+# Playwright test env (optional)
+.env.test
