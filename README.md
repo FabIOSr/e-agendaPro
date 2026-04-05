@@ -684,4 +684,25 @@ npm run test:db:local
 
 ---
 
+## 📋 Documentação Adicional
+
+### 🆕 Administração do SaaS
+| Documento | Descrição |
+|-----------|-----------|
+| [docs/admin/RESUMO-EXECUTIVO.md](docs/admin/RESUMO-EXECUTIVO.md) | **COMECE AQUI** — Resumo para dono do SaaS |
+| [docs/admin/PAINEL-ADMIN-DOC.md](docs/admin/PAINEL-ADMIN-DOC.md) | Diagnóstico completo + requisitos do admin |
+| [docs/admin/STACK-MODERNIZACAO.md](docs/admin/STACK-MODERNIZACAO.md) | Análise: Alpine.js + TypeScript + Tailwind |
+| [docs/admin/IMPLEMENTACAO-ADMIN.md](docs/admin/IMPLEMENTACAO-ADMIN.md) | Plano passo-a-passo executável |
+
+### 📖 Documentação Existente
+| Documento | Descrição |
+|-----------|-----------|
+| [AUDITORIA-TECNICA.md](AUDITORIA-TECNICA.md) | Relatório de segurança + testes E2E + Sentry |
+| [ROADMAP-OPORTUNIDADES.md](ROADMAP-OPORTUNIDADES.md) | 12 oportunidades de melhoria identificadas |
+| [SENTRY-CONFIG.md](SENTRY-CONFIG.md) | Setup do monitoramento de erros |
+| [SETUP-EVOLUTION-API-ORACLE.md](SETUP-EVOLUTION-API-ORACLE.md) | Guia de instalação da Evolution API |
+| [ROLLBACK-PROCEDURES.md](ROLLBACK-PROCEDURES.md) | Procedimentos de emergência |
+
+---
+
 *Projeto completo desenvolvido com Stitch / Firebase Studio (front) + Supabase (back) + Asaas (pagamentos) + Evolution API (WhatsApp self-hosted).*
