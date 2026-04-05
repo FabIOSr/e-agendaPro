@@ -1085,7 +1085,7 @@
 
   <!-- Rodapé AgendaPro (sempre visível, sutil) -->
   <div class="agendapro-footer">
-    Agendamento por <a href="https://agendapro.com.br" target="_blank" rel="noopener">AgendaPro</a>
+    Agendamento por <a href="https://e-agendapro.web.app" target="_blank" rel="noopener">AgendaPro</a>
   </div>
 
   <div class="sticky-footer" id="sticky-footer">
@@ -1980,69 +1980,62 @@
       }
 
       // Busca avaliações em paralelo com próximo slot
-      const [avaliacoes] = await Promise.all([
-        carregarAvaliacoesPro(prestador.id),
+      await Promise.all([
+        carregarAvaliacoesPro(prestador.slug),
         carregarProximoSlot(prestador),
       ]);
-
-      // Galeria de fotos
-      if (prestador.galeria_urls?.length) {
-        carregarGaleria(prestador.galeria_urls);
-      }
     }
 
-    async function carregarAvaliacoesPro(prestadorId) {
-      const { data: avs } = await supabase
-        .from('avaliacoes')
-        .select('nota, comentario, cliente_nome, created_at')
-        .eq('prestador_id', prestadorId)
-        .order('created_at', { ascending: false })
-        .limit(5);
+    async function carregarAvaliacoesPro(slug) {
+      try {
+        const resp = await fetch(
+          `${window.SUPABASE_URL}/functions/v1/avaliacoes?prestador_slug=${encodeURIComponent(slug)}`,
+          { headers: { 'apikey': window.SUPABASE_ANON } }
+        );
+        if (!resp.ok) return;
+        const json = await resp.json();
 
-      if (!avs || avs.length === 0) return;
+        const { media, total, avaliacoes: avs } = json;
+        if (!total) return;
 
-      const media = (avs.reduce((s, a) => s + a.nota, 0) / avs.length).toFixed(1);
-      const total = avs.length;
+        // Rating no hero
+        const ratingEl  = document.getElementById('hero-rating');
+        const ratingTxt = document.getElementById('hero-rating-text');
+        if (ratingEl)  ratingEl.style.display = 'flex';
+        if (ratingTxt) ratingTxt.textContent   = `${Number(media).toFixed(1)} · ${total} avaliação${total > 1 ? 'ões' : ''}`;
 
-      // Mostra rating no hero
-      const ratingEl  = document.getElementById('hero-rating');
-      const ratingTxt = document.getElementById('hero-rating-text');
-      if (ratingEl)  ratingEl.style.display  = 'flex';
-      if (ratingTxt) ratingTxt.textContent = `${media} · ${total} avaliação${total > 1 ? 'ões' : ''}`;
+        // Seção de avaliações
+        const section = document.getElementById('avaliacoes-section');
+        const mediaEl = document.getElementById('avaliacoes-media');
+        const listaEl = document.getElementById('avaliacoes-lista');
+        if (!section) return;
 
-      // Seção de avaliações abaixo dos serviços
-      const section  = document.getElementById('avaliacoes-section');
-      const mediaEl  = document.getElementById('avaliacoes-media');
-      const listaEl  = document.getElementById('avaliacoes-lista');
-      if (!section) return;
+        section.style.display = 'block';
+        if (mediaEl) mediaEl.innerHTML =
+          `<span class="av-star">★</span> ${Number(media).toFixed(1)} <span style="font-weight:400;color:var(--muted)">(${total})</span>`;
 
-      section.style.display = 'block';
-      if (mediaEl) mediaEl.innerHTML =
-        `<span class="av-star">★</span> ${media} <span style="font-weight:400;color:var(--muted)">(${total})</span>`;
-
-      if (listaEl) {
-        listaEl.innerHTML = avs
-          .filter(a => a.comentario)
-          .slice(0, 3)
-          .map(a => {
-            const inicial = (a.cliente_nome || '?')[0].toUpperCase();
+        if (listaEl) {
+          const comComentario = avs.filter(a => a.comentario).slice(0, 3);
+          listaEl.innerHTML = comComentario.map(a => {
+            const inicial  = (a.cliente_nome || '?')[0].toUpperCase();
             const primeiro = (a.cliente_nome || '').split(' ')[0];
-            const data = new Date(a.created_at).toLocaleDateString('pt-BR', {
-              day: '2-digit', month: 'short'
-            });
+            const dataFmt  = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
             const estrelas = '★'.repeat(a.nota) + '☆'.repeat(5 - a.nota);
             return `<div class="av-card">
               <div class="av-card-header">
                 <div class="av-avatar">${inicial}</div>
                 <div>
                   <div class="av-nome">${primeiro}</div>
-                  <div class="av-data">${data}</div>
+                  <div class="av-data">${dataFmt}</div>
                 </div>
                 <div class="av-stars" style="margin-left:auto">${estrelas}</div>
               </div>
-              ${a.comentario ? `<div class="av-comentario">"${a.comentario}"</div>` : ''}
+              <div class="av-comentario">"${a.comentario}"</div>
             </div>`;
           }).join('');
+        }
+      } catch(e) {
+        // Silencioso — não é crítico
       }
     }
 
@@ -2210,7 +2203,3 @@
 </body>
 
 </html>
-
-
-
-

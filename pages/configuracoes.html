@@ -1892,7 +1892,7 @@
     async function carregarPerfil() {
       const { data, error } = await supabase
         .from('prestadores')
-        .select('nome, slug, bio, whatsapp, email, foto_url, cidade, endereco, intervalo_min, intervalo_slot')
+        .select('nome, slug, bio, whatsapp, email, foto_url, cidade, endereco, intervalo_min, intervalo_slot, local_exibicao, categoria, cor_tema')
         .eq('id', userId)
         .single();
       if (error || !data) return;
@@ -1930,12 +1930,10 @@
         if (p) p.value = hex;
       }
     };
-    // Color picker → input hex
-    document.addEventListener('DOMContentLoaded', () => {
-      const picker = document.getElementById('p-cor-tema');
-      const hexInp = document.getElementById('p-cor-tema-hex');
-      if (picker && hexInp) picker.addEventListener('input', () => { hexInp.value = picker.value; });
-    });
+    // Color picker → input hex (DOM já pronto em module)
+    const _picker = document.getElementById('p-cor-tema');
+    const _hexInp = document.getElementById('p-cor-tema-hex');
+    if (_picker && _hexInp) _picker.addEventListener('input', () => { _hexInp.value = _picker.value; });
 
     window.salvar = async function (secao) {
       if (secao === 'perfil') await salvarPerfil();

@@ -14,6 +14,11 @@ import {
   generateSlots,
 } from "../../../modules/scheduling-rules.js";
 
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 // Inicializa Sentry (se DSN configurado)
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -64,13 +69,7 @@ interface Slot {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers":
-          "authorization, x-client-info, apikey, content-type",
-      },
-    });
+    return new Response(null, { headers: CORS_HEADERS });
   }
 
   const errorContext: Record<string, unknown> = {
@@ -94,14 +93,14 @@ Deno.serve(async (req: Request) => {
     if (!prestador_slug || !servico_id || !data) {
       return Response.json(
         { erro: "Campos obrigatórios: prestador_slug, servico_id, data" },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
       return Response.json(
         { erro: "Formato de data inválido. Use YYYY-MM-DD" },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -118,7 +117,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (errP || !prestador) {
-      return Response.json({ erro: "Prestador não encontrado" }, { status: 404 });
+      return Response.json({ erro: "Prestador não encontrado" }, { status: 404, headers: CORS_HEADERS });
     }
 
     const prestadorId = prestador.id;
@@ -144,7 +143,7 @@ Deno.serve(async (req: Request) => {
     if (errS || !servico) {
       return Response.json(
         { erro: "Serviço não encontrado ou inativo" },
-        { status: 404 }
+        { status: 404, headers: CORS_HEADERS }
       );
     }
 
@@ -165,7 +164,7 @@ Deno.serve(async (req: Request) => {
         servico: servico.nome,
         slots: [],
         mensagem: "Prestador não atende neste dia da semana",
-      });
+      }, { headers: CORS_HEADERS });
     }
 
     // 4. Agendamentos confirmados ou reservados no dia (reservado = bloqueado para lista de espera)
@@ -236,10 +235,7 @@ Deno.serve(async (req: Request) => {
         slots,
       },
       {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       }
     );
   } catch (err) {
@@ -254,7 +250,7 @@ Deno.serve(async (req: Request) => {
     console.error("Erro:", err);
     return Response.json(
       { erro: "Erro interno", detalhe: String(err) },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 });
