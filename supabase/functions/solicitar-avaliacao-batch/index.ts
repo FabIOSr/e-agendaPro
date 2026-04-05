@@ -14,6 +14,7 @@
 //   EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE_NAME
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 async function enviarWhatsApp(telefone: string, mensagem: string): Promise<boolean> {
   const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
@@ -42,14 +43,27 @@ async function enviarWhatsApp(telefone: string, mensagem: string): Promise<boole
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
+  // CORS local antigo (substituído pelo módulo _shared/cors.ts)
+  // if (req.method === "OPTIONS") {
+  //   return new Response(null, {
+  //     headers: {
+  //       "Access-Control-Allow-Origin": "*",
+  //       "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  //     },
+  //   });
+  // }
+
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

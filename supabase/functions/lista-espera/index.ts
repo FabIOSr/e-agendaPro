@@ -14,6 +14,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
 import { getDataAtualBRT, podeEntrarNaListaEspera } from "../../../modules/lista-espera-rules.js";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -26,13 +27,14 @@ if (SENTRY_DSN) {
 
 const TIMEOUT_MINUTOS_DEFAULT = 30;
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-}
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// function corsHeaders_local() {
+//   return {
+//     "Access-Control-Allow-Origin": "*",
+//     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+//     "Access-Control-Allow-Methods": "POST, OPTIONS",
+//   };
+// }
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
   const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
@@ -607,9 +609,17 @@ async function cleanupListaEspera(supabase: any) {
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders() });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   try {
     const supabase = createClient(
@@ -625,62 +635,62 @@ Deno.serve(async (req: Request) => {
         const resultadoEntrar = await entrarListaEspera(body, supabase);
         return new Response(JSON.stringify(resultadoEntrar.body), {
           status: resultadoEntrar.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       case "sair":
         const resultadoSair = await sairListaEspera(body, supabase);
         return new Response(JSON.stringify(resultadoSair.body), {
           status: resultadoSair.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       case "notificar":
         const resultadoNotificar = await notificarListaEspera(body, supabase);
         return new Response(JSON.stringify(resultadoNotificar.body), {
           status: resultadoNotificar.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       case "verificar-timeouts":
         const resultadoTimeouts = await verificarTimeouts(supabase);
         return new Response(JSON.stringify(resultadoTimeouts.body), {
           status: resultadoTimeouts.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       case "validar-reserva":
         const resultadoValidar = await validarReserva(body, supabase);
         return new Response(JSON.stringify(resultadoValidar.body), {
           status: resultadoValidar.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       case "confirmar-reserva":
         const resultadoConfirmar = await confirmarReserva(body, supabase);
         return new Response(JSON.stringify(resultadoConfirmar.body), {
           status: resultadoConfirmar.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       case "cleanup":
         const resultadoCleanup = await cleanupListaEspera(supabase);
         return new Response(JSON.stringify(resultadoCleanup.body), {
           status: resultadoCleanup.status,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
 
       default:
         return new Response(JSON.stringify({ erro: "Açío inválida" }), {
           status: 400,
-          headers: { ...corsHeaders(), "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         });
     }
   } catch (e) {
     Sentry.captureException(e);
     return new Response(JSON.stringify({ erro: "Erro interno" }), {
       status: 500,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   }
 });

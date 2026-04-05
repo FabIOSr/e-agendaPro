@@ -10,11 +10,13 @@
 // 2h após o horário do agendamento.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const cors = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// };
 
 // ---------------------------------------------------------------------------
 // HTML da página de avaliação
@@ -120,10 +122,17 @@ async function enviarAvaliacao() {
 // Handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
-  // OPTIONS para CORS
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   const url = new URL(req.url);
 
@@ -203,7 +212,7 @@ Deno.serve(async (req: Request) => {
     const { token, nota, comentario } = await req.json();
 
     if (!token || !nota || nota < 1 || nota > 5) {
-      return Response.json({ erro: "token e nota (1–5) são obrigatórios" }, { status: 400, headers: CORS_HEADERS });
+      return Response.json({ erro: "token e nota (1–5) são obrigatórios" }, { status: 400, headers: cors });
     }
 
     const { data: ag } = await supabase
@@ -213,7 +222,7 @@ Deno.serve(async (req: Request) => {
       .eq("status", "concluido")
       .single();
 
-    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: CORS_HEADERS });
+    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: cors });
 
     const { error } = await supabase.from("avaliacoes").insert({
       agendamento_id: ag.id,
@@ -224,12 +233,12 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error?.code === "23505") {
-      return Response.json({ erro: "Já avaliado" }, { status: 409, headers: CORS_HEADERS });
+      return Response.json({ erro: "Já avaliado" }, { status: 409, headers: cors });
     }
     if (error) throw error;
 
-    return Response.json({ ok: true }, { headers: CORS_HEADERS });
+    return Response.json({ ok: true }, { headers: cors });
   }
 
-  return new Response("Not found", { status: 404, headers: CORS_HEADERS });
+  return new Response("Not found", { status: 404, headers: cors });
 });

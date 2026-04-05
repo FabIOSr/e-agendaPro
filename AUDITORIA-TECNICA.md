@@ -227,8 +227,8 @@ Playwright configurado e testado. 3 testes básicos passando. Pronto para expans
 1. ✅ **FEITO:** Auditoria de variáveis sensíveis
 2. ✅ **FEITO:** Configuração do Sentry validada
 3. ✅ **FEITO:** Testes E2E com Playwright criados
-4. **RESTRINGIR CORS no Supabase** para domínio do app (5 min)
-5. **Adicionar `Sentry.setTag('plano', plano)`** nos handlers principais (1h)
+4. ✅ **FEITO:** Segurança validada — RLS + API keys protegidas (não há CORS para configurar no Supabase)
+5. **Adicionar `Sentry.setTag('plano', plano)`** nos handlers principais → ✅ FEITO
 
 ### Curto prazo (próximas 2 semanas)
 

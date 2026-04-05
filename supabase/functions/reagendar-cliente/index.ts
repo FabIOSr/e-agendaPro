@@ -5,6 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8";
 import { handleReagendarClienteRequest } from "../../../modules/reagendar-cliente-handler.js";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -16,10 +17,11 @@ if (SENTRY_DSN) {
 
 const APP_URL = Deno.env.get("APP_URL") ?? "https://e-agendapro.web.app";
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const CORS_HEADERS = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// };
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
   const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
@@ -196,9 +198,21 @@ if (SLOTS_INICIAIS.length) renderSlots(SLOTS_INICIAIS);
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
+  if (req.method === "OPTIONS") {
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
+  }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
+
   return handleReagendarClienteRequest(req, {
     appUrl: APP_URL,
-    corsHeaders: CORS_HEADERS,
+    corsHeaders: () => cors,
     createSupabaseClient: createClient,
     getEnv: (key: string) => Deno.env.get(key),
     fetchImpl: fetch,

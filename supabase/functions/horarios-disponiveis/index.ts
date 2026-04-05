@@ -10,15 +10,16 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
-import {
-  generateSlots,
-} from "../../../modules/scheduling-rules.js";
+import { generateSlots } from "../../../modules/scheduling-rules.js";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const cors = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// };
+
 // Inicializa Sentry (se DSN configurado)
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -68,8 +69,20 @@ interface Slot {
 // ---------------------------------------------------------------------------
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
+  }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: cors });
   }
 
   const errorContext: Record<string, unknown> = {
@@ -93,14 +106,14 @@ Deno.serve(async (req: Request) => {
     if (!prestador_slug || !servico_id || !data) {
       return Response.json(
         { erro: "Campos obrigatórios: prestador_slug, servico_id, data" },
-        { status: 400, headers: CORS_HEADERS }
+        { status: 400, headers: cors }
       );
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
       return Response.json(
         { erro: "Formato de data inválido. Use YYYY-MM-DD" },
-        { status: 400, headers: CORS_HEADERS }
+        { status: 400, headers: cors }
       );
     }
 
@@ -117,7 +130,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (errP || !prestador) {
-      return Response.json({ erro: "Prestador não encontrado" }, { status: 404, headers: CORS_HEADERS });
+      return Response.json({ erro: "Prestador não encontrado" }, { status: 404, headers: cors });
     }
 
     const prestadorId = prestador.id;
@@ -143,7 +156,7 @@ Deno.serve(async (req: Request) => {
     if (errS || !servico) {
       return Response.json(
         { erro: "Serviço não encontrado ou inativo" },
-        { status: 404, headers: CORS_HEADERS }
+        { status: 404, headers: cors }
       );
     }
 
@@ -164,7 +177,7 @@ Deno.serve(async (req: Request) => {
         servico: servico.nome,
         slots: [],
         mensagem: "Prestador não atende neste dia da semana",
-      }, { headers: CORS_HEADERS });
+      }, { headers: cors });
     }
 
     // 4. Agendamentos confirmados ou reservados no dia (reservado = bloqueado para lista de espera)
@@ -235,7 +248,7 @@ Deno.serve(async (req: Request) => {
         slots,
       },
       {
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   } catch (err) {
@@ -250,7 +263,7 @@ Deno.serve(async (req: Request) => {
     console.error("Erro:", err);
     return Response.json(
       { erro: "Erro interno", detalhe: String(err) },
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500, headers: cors }
     );
   }
 });

@@ -12,6 +12,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 // Inicializa Sentry (se DSN configurado)
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
@@ -23,10 +24,11 @@ if (SENTRY_DSN) {
   });
 }
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const cors = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// };
 
 // URL alternada pelo secret ASAAS_SANDBOX — nunca hardcode
 const ASAAS_URL = Deno.env.get("ASAAS_SANDBOX") === "true"
@@ -89,9 +91,17 @@ async function garantirCliente(prestador: any): Promise<string> {
 // Handler HTTP
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   const errorContext: Record<string, unknown> = {
     method: req.method,
@@ -107,18 +117,18 @@ Deno.serve(async (req: Request) => {
 
     // Valida plano
     if (!PLANOS[plano as keyof typeof PLANOS]) {
-      return Response.json({ erro: "Plano inválido" }, { status: 400, headers: CORS_HEADERS });
+      return Response.json({ erro: "Plano inválido" }, { status: 400, headers: cors });
     }
 
     // Valida ciclo
     const cicloValido = ["MONTHLY", "YEARLY"].includes(ciclo);
     if (!cicloValido) {
-      return Response.json({ erro: "Ciclo inválido. Use MONTHLY ou YEARLY" }, { status: 400, headers: CORS_HEADERS });
+      return Response.json({ erro: "Ciclo inválido. Use MONTHLY ou YEARLY" }, { status: 400, headers: cors });
     }
 
     // Autentica o prestador pelo JWT do Supabase
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401, headers: CORS_HEADERS });
+    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401, headers: cors });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -128,7 +138,7 @@ Deno.serve(async (req: Request) => {
     // Decodifica o JWT para pegar o user_id
     const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
     if (authErr || !user) {
-      return Response.json({ erro: "Token inválido" }, { status: 401, headers: CORS_HEADERS });
+      return Response.json({ erro: "Token inválido" }, { status: 401, headers: cors });
     }
 
     // Busca dados do prestador
@@ -139,7 +149,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (pErr || !prestador) {
-      return Response.json({ erro: "Prestador não encontrado" }, { status: 404, headers: CORS_HEADERS });
+      return Response.json({ erro: "Prestador não encontrado" }, { status: 404, headers: cors });
     }
 
     // Já tem assinatura ativa?
@@ -147,7 +157,7 @@ Deno.serve(async (req: Request) => {
       return Response.json({
         aviso: "Você já tem uma assinatura Pro ativa.",
         asaas_sub_id: prestador.asaas_sub_id,
-      }, { headers: CORS_HEADERS });
+      }, { headers: cors });
     }
 
     // Garante cliente no Asaas
@@ -212,7 +222,7 @@ Deno.serve(async (req: Request) => {
           ? "Assinatura criada. Redirecione o usuário para inserir o cartão."
           : `Assinatura criada. Pague via ${billing_type} para ativar o plano Pro.`,
       },
-      { headers: CORS_HEADERS }
+      { headers: cors }
     );
   } catch (err) {
     // Captura erro no Sentry
@@ -226,7 +236,7 @@ Deno.serve(async (req: Request) => {
     console.error("Erro criar-assinatura:", err);
     return Response.json(
       { erro: "Erro interno", detalhe: String(err) },
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500, headers: cors }
     );
   }
 });

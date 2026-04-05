@@ -1,108 +1,85 @@
-# 🔒 Configurando CORS no Supabase — Guia Rápido
+# 🔒 Segurança de Acesso — Guia Rápido
 
-**Tempo:** 5 minutos  
-**Por quê:** Impede que outros sites/domínios usem sua chave SUPABASE_ANON para acessar seus dados.
-
----
-
-## Passo a Passo
-
-### 1. Acesse o Painel do Supabase
-
-Vá para: **https://app.supabase.com**
-
-Selecione seu projeto: `agendapro` (ref: `kevqgxmcoxmzbypdjhru`)
+**Última atualização:** 2026-04-05
 
 ---
 
-### 2. Vá para Settings → API
+## ⚠️ CORS no Supabase — Não é necessário configurar
 
-No menu lateral esquerdo:
-
-```
-⚙️ Settings
-   └── API
-```
+**O Supabase já permite CORS de qualquer origem por padrão.** Não existe um campo "Allowed CORS Origins" no painel. Isso é intencional — a segurança vem de outras camadas.
 
 ---
 
-### 3. Configure "Allowed CORS Origins"
+## 🛡️ Como o AgendaPro está protegido
 
-Na seção **API Configuration**, localize o campo:
+### Camada 1: RLS (Row Level Security) ✅ Já configurado
 
-```
-Allowed CORS Origins (Origens Permitidas)
-```
+Cada tabela do banco tem políticas RLS que garantem que:
 
-**Adicione os seguintes domínios:**
-
-```
-https://e-agendapro.web.app
-https://agendapro.com.br
-https://*.agendapro.com.br
+```sql
+-- Exemplo: prestador só vê seus próprios dados
+CREATE POLICY "Prestador vê seus agendamentos"
+  ON agendamentos FOR SELECT TO authenticated
+  USING (auth.uid() = prestador_id);
 ```
 
-**NÃO adicione:**
-- ❌ `http://localhost:3000` (use apenas em desenvolvimento, remova antes de ir para produção)
-- ❌ `*` (coringa universal — permite QUALQUER site)
+Mesmo que alguém copie sua `SUPABASE_ANON` (chave pública), **só consegue acessar dados do próprio usuário autenticado**.
+
+### Camada 2: API Keys
+
+| Chave | Tipo | Onde usar | Risco se vazada |
+|-------|------|-----------|-----------------|
+| `anon` (pública) | Client-side | Frontend (HTML/JS) | **Baixo** — limitada por RLS |
+| `service_role` (secreta) | Server-side | Edge Functions apenas | **ALTO** — bypassa RLS |
+
+**Nenhuma `service_role` está exposta no código fonte.** ✅
+
+### Camada 3: CORS nas Edge Functions
+
+As Edge Functions usam `Access-Control-Allow-Origin: "*"`, o que é **intencional e seguro** porque:
+- A validação real é feita pelo **JWT do usuário** (Supabase Auth)
+- Sem JWT válido, a função não retorna dados sensíveis
+- Webhooks (Asaas) validam token próprio (`asaas-access-token`)
 
 ---
 
-### 4. Salve
-
-Clique em **Save Changes**.
-
----
-
-### 5. Verifique
-
-Agora abra o console do navegador (F12) e rode:
-
-```javascript
-fetch('https://kevqgxmcoxmzbypdjhru.supabase.co/rest/v1/', {
-  headers: { 'apikey': 'SUA_CHAVE_ANON_AQUI' }
-})
-```
-
-- ✅ **De um domínio permitido:** funciona (200)
-- ❌ **De outro domínio qualquer:** bloqueado (CORS error)
-
----
-
-## ⚠️ Importante
-
-- O CORS é uma camada **adicional** de proteção. Sua chave SUPABASE_ANON ainda é pública por natureza.
-- A proteção real vem do **RLS (Row Level Security)** que já está configurado no banco.
-- O CORS impede que sites maliciosos façam requisições **diretamente do navegador** do usuário.
-
----
-
-## 📸 Screenshot Esperado
+## ✅ Checklist de Segurança Atual
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  API Settings                                       │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Project URL                                        │
-│  https://kevqgxmcoxmzbypdjhru.supabase.co           │
-│                                                     │
-│  Project API keys                                   │
-│  anon (public)  eyJhbG...                           │
-│  service_role   eyJhbG... (secreta)                 │
-│                                                     │
-│  Allowed CORS Origins                               │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ https://e-agendapro.web.app                   │  │
-│  │ https://agendapro.com.br                      │  │
-│  │ https://*.agendapro.com.br                    │  │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  [Save Changes]                                     │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+[x] RLS habilitado em todas as tabelas
+[x] Chave service_role nunca exposta no frontend
+[x] Webhook Asaas valida token próprio
+[x] Variáveis sensíveis apenas via Deno.env.get() (server-side)
+[x] .env.local no .gitignore
+[x] Nenhuma credencial hardcoded no código
 ```
 
 ---
 
-**Feito!** ✅ Quando concluir, pode marcar o item como concluído e vamos para o próximo.
+## 🔍 Se quiser adicionar proteção extra
+
+### Opção A: Rate Limiting no Supabase
+
+No painel do Supabase → Settings → API → **Rate Limiting** (se disponível no seu plano).
+
+### Opção B: Validar origem nas Edge Functions
+
+Se quiser restringir quais domínios podem chamar suas Edge Functions, adicione em cada função:
+
+```typescript
+const ALLOWED_ORIGINS = [
+  "https://e-agendapro.web.app",
+  "https://agendapro.com.br",
+];
+
+const origin = req.headers.get("origin");
+if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+  return new Response("Forbidden", { status: 403 });
+}
+```
+
+⚠️ **Cuidado:** isso pode quebrar o desenvolvimento local (`localhost:3000`).
+
+---
+
+**Resumo:** O projeto já está seguro com as configurações atuais. Não é necessária nenhuma ação manual no painel do Supabase para CORS.

@@ -8,6 +8,7 @@
 // Header: Authorization: Bearer <supabase-jwt>
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const ASAAS_URL = "https://api.asaas.com/v3";
 
@@ -23,19 +24,28 @@ async function asaas(method: string, path: string): Promise<any> {
   return res.status !== 204 ? res.json() : null;
 }
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const cors = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// };
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   try {
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
-    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401, headers: CORS_HEADERS });
+    if (!jwt) return Response.json({ erro: "Não autenticado" }, { status: 401, headers: cors });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -43,7 +53,7 @@ Deno.serve(async (req: Request) => {
     );
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser(jwt);
-    if (authErr || !user) return Response.json({ erro: "Token inválido" }, { status: 401, headers: CORS_HEADERS });
+    if (authErr || !user) return Response.json({ erro: "Token inválido" }, { status: 401, headers: cors });
 
     const { data: prestador } = await supabase
       .from("prestadores")
@@ -52,7 +62,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (!prestador?.asaas_sub_id) {
-      return Response.json({ erro: "Nenhuma assinatura ativa encontrada." }, { status: 400, headers: CORS_HEADERS });
+      return Response.json({ erro: "Nenhuma assinatura ativa encontrada." }, { status: 400, headers: cors });
     }
 
     // Cancela no Asaas (DELETE = cancela ao fim do período)
@@ -83,10 +93,10 @@ Deno.serve(async (req: Request) => {
         mensagem: `Assinatura cancelada. Seu plano Pro permanece ativo até ${validoAte}.`,
         plano_valido_ate: prestador.plano_valido_ate,
       },
-      { headers: CORS_HEADERS }
+      { headers: cors }
     );
   } catch (err) {
     console.error("Erro cancelar-assinatura:", err);
-    return Response.json({ erro: "Erro interno", detalhe: String(err) }, { status: 500, headers: CORS_HEADERS });
+    return Response.json({ erro: "Erro interno", detalhe: String(err) }, { status: 500, headers: cors });
   }
 });

@@ -17,6 +17,7 @@
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const GOOGLE_CLIENT_ID     = Deno.env.get("GOOGLE_CLIENT_ID")!;
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
@@ -138,17 +139,25 @@ async function deletarEvento(accessToken: string, eventoId: string) {
 // ---------------------------------------------------------------------------
 // Handler HTTP
 // ---------------------------------------------------------------------------
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const cors = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+//   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+// };
 
 Deno.serve(async (req: Request) => {
-  // CORS preflight
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS_HEADERS });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   const url    = new URL(req.url);
   const action = url.searchParams.get("action") ?? "";
@@ -219,13 +228,13 @@ Deno.serve(async (req: Request) => {
         .eq("prestador_id", prestadorId)
         .single();
       
-      return Response.json({ conectado: !!tokenRow }, { headers: CORS_HEADERS });
+      return Response.json({ conectado: !!tokenRow }, { headers: cors });
     }
 
     const agendamento_id = body.agendamento_id;
 
     if (!op || !agendamento_id) {
-      return Response.json({ erro: "action e agendamento_id obrigatórios" }, { status: 400, headers: CORS_HEADERS });
+      return Response.json({ erro: "action e agendamento_id obrigatórios" }, { status: 400, headers: cors });
     }
 
     const { data: ag } = await supabase
@@ -234,7 +243,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", agendamento_id)
       .single();
 
-    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: CORS_HEADERS });
+    if (!ag) return Response.json({ erro: "Agendamento não encontrado" }, { status: 404, headers: cors });
 
     // Prestador tem Calendar conectado?
     const { data: tokenRow } = await supabase
@@ -245,7 +254,7 @@ Deno.serve(async (req: Request) => {
 
     if (!tokenRow) {
       // Silenciosamente ignora — Calendar não conectado
-      return Response.json({ ok: true, sincronizado: false, motivo: "Calendar não conectado" }, { headers: CORS_HEADERS });
+      return Response.json({ ok: true, sincronizado: false, motivo: "Calendar não conectado" }, { headers: cors });
     }
 
     const accessToken = await getAccessToken(supabase, ag.prestador_id);
@@ -256,26 +265,26 @@ Deno.serve(async (req: Request) => {
       await supabase.from("agendamentos")
         .update({ google_event_id: eventoId })
         .eq("id", agendamento_id);
-      return Response.json({ ok: true, sincronizado: true, evento_id: eventoId }, { headers: CORS_HEADERS });
+      return Response.json({ ok: true, sincronizado: true, evento_id: eventoId }, { headers: cors });
     }
 
     if (op === "reagendar") {
       if (!ag.google_event_id) {
-        return Response.json({ erro: "Evento não encontrado no Calendar" }, { status: 404, headers: CORS_HEADERS });
+        return Response.json({ erro: "Evento não encontrado no Calendar" }, { status: 404, headers: cors });
       }
       await atualizarEvento(accessToken, ag.google_event_id, ag);
-      return Response.json({ ok: true, sincronizado: true }, { headers: CORS_HEADERS });
+      return Response.json({ ok: true, sincronizado: true }, { headers: cors });
     }
 
     if (op === "cancelar") {
       if (ag.google_event_id) {
         await deletarEvento(accessToken, ag.google_event_id);
       }
-      return Response.json({ ok: true, sincronizado: true }, { headers: CORS_HEADERS });
+      return Response.json({ ok: true, sincronizado: true }, { headers: cors });
     }
 
-    return Response.json({ erro: "action inválida" }, { status: 400, headers: CORS_HEADERS });
+    return Response.json({ erro: "action inválida" }, { status: 400, headers: cors });
   }
 
-  return new Response("Not found", { status: 404, headers: CORS_HEADERS });
+  return new Response("Not found", { status: 404, headers: cors });
 });

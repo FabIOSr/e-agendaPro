@@ -10,6 +10,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -23,13 +24,14 @@ if (SENTRY_DSN) {
 const TIMEOUT_MINUTOS_DEFAULT = 30;
 const TIMEZONE_BRT = 'America/Sao_Paulo';
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-}
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// function corsHeaders_local() {
+//   return {
+//     "Access-Control-Allow-Origin": "*",
+//     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+//     "Access-Control-Allow-Methods": "POST, OPTIONS",
+//   };
+// }
 
 /**
  * Retorna data atual no fuso BRT como string YYYY-MM-DD
@@ -155,9 +157,17 @@ function gerarToken(): string {
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders() });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -340,7 +350,7 @@ Deno.serve(async (req: Request) => {
       Sentry.captureException(erroBusca);
       return new Response(JSON.stringify({ erro: "Erro ao buscar lista de espera" }), {
         status: 500,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -352,7 +362,7 @@ Deno.serve(async (req: Request) => {
         proximos_notificados: proximosNotificados
       }), {
         status: 200,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -366,7 +376,7 @@ Deno.serve(async (req: Request) => {
         proximos_notificados: proximosNotificados
       }), {
         status: 200,
-        headers: { ...corsHeaders(), "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -559,14 +569,14 @@ Deno.serve(async (req: Request) => {
       timestamp: agora.toISOString(),
     }), {
       status: 200,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (e) {
     Sentry.captureException(e);
     console.error("Erro geral:", e);
     return new Response(JSON.stringify({ erro: "Erro interno" }), {
       status: 500,
-      headers: { ...corsHeaders(), "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   }
 });

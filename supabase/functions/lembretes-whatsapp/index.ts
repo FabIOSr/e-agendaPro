@@ -20,6 +20,7 @@
 //   SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 interface Agendamento {
   id: string;
@@ -328,8 +329,17 @@ async function handleLembreteD1(supabase: ReturnType<typeof createClient>) {
 }
 
 Deno.serve(async (req: Request) => {
-  const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const origin = req.headers.get("origin");
+
+  if (req.method === "OPTIONS") {
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
+  }
+
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   try {
     const body = await req.json();

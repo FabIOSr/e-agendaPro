@@ -6,6 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
 import { handleCriarAgendamentoRequest } from "../../../modules/criar-agendamento-handler.js";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -16,15 +17,28 @@ if (SENTRY_DSN) {
   });
 }
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// CORS local antigo (substituído pelo módulo _shared/cors.ts)
+// const CORS = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers":
+//     "authorization, x-client-info, apikey, content-type",
+// };
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
+  // Preflight
+  if (req.method === "OPTIONS") {
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
+  }
+
+  // Validação de origem
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   return handleCriarAgendamentoRequest(req, {
-    cors: CORS,
+    cors: corsHeaders(origin),
     createSupabaseClient: createClient,
     getEnv: (key: string) => Deno.env.get(key),
     fetchImpl: fetch,

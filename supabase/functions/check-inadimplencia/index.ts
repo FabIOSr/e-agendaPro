@@ -8,19 +8,29 @@
 //   - Rebaixar para free os planos vencidos há mais de 3 dias
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// cors local antigo (substituído pelo módulo _shared/cors.ts)
+// const cors = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// };
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: CORS });
+    return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
 
+  if (!validateOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
+
   if (req.method !== "POST" && req.method !== "GET") {
-    return new Response("Method not allowed", { status: 405, headers: CORS });
+    return new Response("Method not allowed", { status: 405, headers: cors });
   }
 
   const supabase = createClient(
@@ -40,12 +50,12 @@ Deno.serve(async (req: Request) => {
 
   if (error) {
     console.error("Erro ao buscar inadimplentes:", error);
-    return Response.json({ erro: "Erro interno" }, { status: 500, headers: CORS });
+    return Response.json({ erro: "Erro interno" }, { status: 500, headers: cors });
   }
 
   if (!prestadoresInadimplentes || prestadoresInadimplentes.length === 0) {
     console.log("Nenhum prestador inadimplente encontrado");
-    return Response.json({ ok: true, processados: 0 }, { headers: CORS });
+    return Response.json({ ok: true, processados: 0 }, { headers: cors });
   }
 
   console.log(`Encontrados ${prestadoresInadimplentes.length} prestadores inadimplentes`);
@@ -69,6 +79,6 @@ Deno.serve(async (req: Request) => {
 
   return Response.json(
     { ok: true, processados: prestadoresInadimplentes.length },
-    { headers: CORS }
+    { headers: cors }
   );
 });
