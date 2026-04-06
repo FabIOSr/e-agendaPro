@@ -1,5 +1,33 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-06] — Fix: package.json, login.html e smoke test do banco
+
+### 🔧 Correções de Manutenção
+
+#### 1. `package.json` — Script `dev` duplicado removido
+- **Problema:** Duas entradas `"dev"` no mesmo arquivo — a segunda sobrescrevia a primeira silenciosamente
+- **Antes:** `"dev": "npm run build && npx serve -l 3000 dist"` (perdido) + `"dev": "node server.js"` (ativo)
+- **Depois:** `"dev": "node server.js"` + `"dev:preview": "npm run build && npx serve -l 3000 dist"`
+
+#### 2. `pages/admin/login.html` — Brace extra removido
+- **Problema:** `}` duplicado no final da função `setLoading()` causava erro de sintaxe silencioso
+- **Correção:** Removido brace de fechamento extra
+
+#### 3. `tests/sql/db-smoke.sql` — Datas hard-coded substituídas por cálculos relativos
+- **Problema:** Datas `2026-04-04` ficaram no passado (hoje = 2026-04-06), RPC rejeitava com "Nao e possivel agendar no passado"
+- **Solução:** Todas as datas agora usam `(now() at time zone 'America/Sao_Paulo' + interval '7 days')::date`
+- Disponibilidade do dia da semana agora é calculada dinamicamente com `extract(dow from ...)`
+- **Resultado:** Smoke test roda corretamente em qualquer momento, sem precisar ajustes manuais
+
+### 📊 Testes
+
+| Tipo | Antes | Depois |
+|------|-------|--------|
+| Unitários | 74 passing | 74 passing |
+| Smoke DB | ❌ Falhava (datas passadas) | ✅ Passando |
+
+---
+
 ## [2026-04-05] — Painel Admin Completo (FASE 1-4)
 
 ### 🎯 Painel Administrativo do SaaS
