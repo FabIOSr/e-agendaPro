@@ -54,6 +54,9 @@
 │  • cancelar-assinatura       • cancelar-agendamento-cliente │
 │  • reagendar-cliente         • avaliacoes                   │
 │  • google-calendar-sync                                     │
+│  • admin-validate            • admin-dashboard              │
+│  • admin-profissionais       • admin-financeiro             │
+│  • admin-actions             • admin-configuracoes          │
 │                                                             │
 │  Cron Jobs                                                  │
 │  • 21:00 UTC → lembrete-d1                                  │
@@ -221,6 +224,12 @@ google_calendar_tokens (
 | `entrada-lista-espera` | POST | JWT | Adiciona cliente na lista de espera com preferências de horário |
 | `notificar-lista-espera` | POST | webhook | Notifica clientes quando vaga surge (cancelamento) |
 | `cron-notificar-lista-espera` | POST | cron | Job a cada 5 min que notifica clientes na lista de espera |
+| `admin-validate` | POST | público | Auth do painel admin por senha + token JWT 24h |
+| `admin-dashboard` | POST | JWT admin | KPIs agregados (totais, novos, trials, alertas) |
+| `admin-profissionais` | POST | JWT admin | Listagem com busca, filtro por plano, paginação |
+| `admin-financeiro` | POST | JWT admin | KPIs financeiros, distribuição por plano, pagamentos recentes |
+| `admin-actions` | POST | JWT admin | Suspender, ativar, estender trial, detalhes do prestador |
+| `admin-configuracoes` | POST | JWT admin | Status do sistema, segredos, listar tabelas/funções |
 
 ### Lista Espera Inteligente 2.0
 
@@ -263,6 +272,12 @@ for fn in criar-agendamento cancelar-agendamento-cliente reagendar-cliente \
           criar-assinatura cancelar-assinatura ativar-trial excluir-conta; do
   supabase functions deploy $fn --project-ref kevqgxmcoxmzbypdjhru
 done
+
+# Painel Admin (JWT emitido por admin-validate)
+for fn in admin-validate admin-dashboard admin-profissionais \
+          admin-financeiro admin-actions admin-configuracoes; do
+  supabase functions deploy $fn --project-ref kevqgxmcoxmzbypdjhru
+done
 ```
 
 ---
@@ -279,6 +294,17 @@ done
 | `assinaturas/tela-planos/index.html` | `/planos` | JWT |
 | `cancelamento-config/configuracoes/index.html` | `/configuracoes` | JWT |
 | `pagina-cliente/index.html` | `/:slug` | público |
+
+### Painel Admin (SaaS)
+
+| Arquivo | Rota | Acesso |
+|---|---|---|
+| `pages/admin/login.html` | `/admin/login` | senha admin |
+| `pages/admin/dashboard.html` | `/admin/dashboard` | JWT admin |
+| `pages/admin/profissionais.html` | `/admin/profissionais` | JWT admin |
+| `pages/admin/financeiro.html` | `/admin/financeiro` | JWT admin |
+| `pages/admin/acoes.html` | `/admin/acoes` | JWT admin |
+| `pages/admin/configuracoes.html` | `/admin/configuracoes` | JWT admin |
 
 ### Proteção de rotas
 
@@ -479,6 +505,7 @@ firebase deploy --only hosting
 | `SUPABASE_URL` | Edge Functions (auto) | URL do projeto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Edge Functions (auto) | Chave de serviço (nunca expor no front) |
 | `SUPABASE_ANON_KEY` | Front-end (público) | Chave anônima para o JS client |
+| `ADMIN_PASSWORD` | Edge Functions (admin) | Senha do painel admin |
 | `EVOLUTION_API_URL` | Edge Functions | URL da Evolution API (VPS self-hosted) |
 | `EVOLUTION_API_KEY` | Edge Functions | API Key de autenticação da Evolution API |
 | `EVOLUTION_INSTANCE_NAME` | Edge Functions | Nome da instância na Evolution API |
@@ -553,6 +580,16 @@ firebase deploy --only hosting
 - [ ] Criar 5 contas de teste com diferentes cenários
 - [ ] Definir SLA de suporte (WhatsApp de suporte, tempo de resposta)
 
+### Painel Admin
+- [ ] `ADMIN_PASSWORD` configurada no Supabase
+- [ ] 6 Edge Functions admin deployadas
+- [ ] Login admin funcionando (senha + token 24h)
+- [ ] Dashboard com KPIs corretos
+- [ ] Profissionais: busca, filtros, paginação
+- [ ] Financeiro: MRR, receita, churn
+- [ ] Ações: suspender, ativar, estender trial
+- [ ] Configurações: status do sistema, segredos
+
 ---
 
 ## Estrutura de arquivos entregues
@@ -577,7 +614,8 @@ agendapro/
 │   ├── lista-espera-rules.js           ← Regras de validação da lista de espera
 │   ├── auth-session.js                 ← Sessão e autenticação
 │   ├── sentry.js                       ← Monitoramento de erros
-│   └── ui-helpers.js                   ← Toast, modais, helpers de UI
+│   ├── ui-helpers.js                   ← Toast, modais, helpers de UI
+│   └── admin-auth.js                   ← Auth do painel admin (requireAdminAuth, adminHeaders)
 │
 ├── supabase/functions/
 │   ├── horarios-disponiveis/index.ts       ← Usa generateSlots do módulo compartilhado
@@ -593,7 +631,13 @@ agendapro/
 │   ├── google-calendar-sync/index.ts
 │   ├── entrada-lista-espera/index.ts
 │   ├── notificar-lista-espera/index.ts
-│   └── cron-notificar-lista-espera/index.ts
+│   ├── cron-notificar-lista-espera/index.ts
+│   ├── admin-validate/index.ts             ← Auth do painel admin
+│   ├── admin-dashboard/index.ts            ← KPIs agregados
+│   ├── admin-profissionais/index.ts        ← Busca + filtro + paginação
+│   ├── admin-financeiro/index.ts           ← KPIs financeiros
+│   ├── admin-actions/index.ts              ← Suspender, ativar, estender
+│   └── admin-configuracoes/index.ts        ← Status, segredos, tabelas
 │
 ├── migrations/
 │   ├── auth-migration.sql
@@ -626,7 +670,14 @@ agendapro/
 │   ├── pagina-cliente/index.html
 │   ├── relatorio-clientes/index.html
 │   ├── configuracoes/index.html
-│   └── assinaturas/tela-planos/index.html
+│   ├── assinaturas/tela-planos/index.html
+│   └── admin/
+│       ├── login.html                 ← /admin/login
+│       ├── dashboard.html             ← /admin/dashboard
+│       ├── profissionais.html         ← /admin/profissionais
+│       ├── financeiro.html            ← /admin/financeiro
+│       ├── acoes.html                 ← /admin/acoes
+│       └── configuracoes.html         ← /admin/configuracoes
 │
 ├── package.json                   ← Scripts: test, build, dev
 ├── build.js                       ← Build com placeholders

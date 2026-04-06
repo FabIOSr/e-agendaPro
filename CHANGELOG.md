@@ -1,5 +1,57 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-05] — Painel Admin Completo (FASE 1-4)
+
+### 🎯 Painel Administrativo do SaaS
+
+**6 páginas + 6 Edge Functions + módulo de auth** para gerenciamento completo do SaaS.
+
+#### Páginas Criadas
+
+| Página | Rota | Funcionalidade |
+|--------|------|----------------|
+| `pages/admin/login.html` | `/admin/login` | Login por senha com token JWT 24h |
+| `pages/admin/dashboard.html` | `/admin/dashboard` | 4 KPIs + alertas + tabela prestadores |
+| `pages/admin/profissionais.html` | `/admin/profissionais` | Grid com busca, filtros de plano, paginação |
+| `pages/admin/financeiro.html` | `/admin/financeiro` | MRR, receita 30d, churn, distribuição de planos, pagamentos recentes |
+| `pages/admin/acoes.html` | `/admin/acoes` | Suspender, ativar, estender trial, detalhes do prestador |
+| `pages/admin/configuracoes.html` | `/admin/configuracoes` | Status do sistema, segredos, comandos de deploy, tabelas |
+
+#### Edge Functions Criadas
+
+| Função | Descrição |
+|--------|-----------|
+| `admin-validate` | Auth por senha + token JWT 24h |
+| `admin-dashboard` | KPIs agregados (totais, novos, trials, alertas) |
+| `admin-profissionais` | Busca + filtro plano + paginação |
+| `admin-financeiro` | KPIs financeiros, pagamentos recentes, distribuição por plano |
+| `admin-actions` | Listar, suspender, ativar, estender trial, detalhes |
+| `admin-configuracoes` | Status do sistema, listar tabelas/funções, segredos |
+
+#### Módulo Compartilhado
+
+| Arquivo | Funções |
+|---------|---------|
+| `modules/admin-auth.js` | `requireAdminAuth`, `logoutAdmin`, `adminHeaders` |
+
+#### Detalhes Técnicos
+
+- **Auth:** Senha única → Edge Function → JWT 24h → `sessionStorage`
+- **CORS:** Adicionado header `x-admin-token` ao `_shared/cors.ts`
+- **Layout:** Dark theme consistente com sidebar em todas as páginas
+- **Deploy:** Firebase Hosting + Supabase Edge Functions
+- **Segredos:** `ADMIN_PASSWORD` + `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass)
+
+#### Documentação
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `DEPLOY-ADMIN.md` | Guia completo de deploy + segredos + URLs |
+| `docs/admin/IMPLEMENTACAO-ADMIN.md` | Plano de implementação (FASE 1-4 concluídas) |
+| `docs/admin/RESUMO-EXECUTIVO.md` | Resumo executivo (atualizado: CONCLUÍDO) |
+
+---
+
 ## [2026-04-03] — Refatoração Completa: Handlers, Testes (74), Migration 31 e Lista de Espera
 
 ### 🔥 Refatoração de Edge Functions em Handlers Compartilhados
