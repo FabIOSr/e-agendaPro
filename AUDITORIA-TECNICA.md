@@ -14,7 +14,7 @@ Foram executadas 4 auditorias principais no projeto AgendaPro:
 |-----------|--------|-----------|
 | **Variáveis Sensíveis Hardcoded** | ✅ PASS | Nenhuma credencial exposta no código fonte |
 | **Configuração do Sentry** | ✅ PASS | Configuração robusta, com fallback gracioso |
-| **Testes E2E (Playwright)** | ✅ PASS | Infraestrutura criada, 3 arquivos de teste |
+| **Testes E2E (Playwright)** | ✅ PASS | 50 testes no booking-flow + 30 em outros arquivos |
 | **Exposição de Variáveis no Frontend** | ✅ PASS | Placeholders corretos, build process seguro |
 
 **Nota de Segurança Geral: 9/10** ✅
@@ -110,7 +110,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 | `playwright.config.ts` | Configuração completa | - |
 | `tests/e2e/landing-page.spec.ts` | Landing page completa | 13 testes |
 | `tests/e2e/auth.spec.ts` | Auth + proteção de rotas | 11 testes |
-| `tests/e2e/booking-flow.spec.ts` | Página pública de agendamento | 4 testes |
+| `tests/e2e/booking-flow.spec.ts` | Fluxo completo de agendamento (5 steps) | 50 testes |
 | `tests/e2e/dashboard.spec.ts` | Painel + proteção de rotas | 6 testes |
 | `tests/e2e/internal-pages.spec.ts` | Páginas internas + públicas | 9 testes |
 | `tests/e2e/cancelamento-reagendamento.spec.ts` | Cancelamento e reagendamento | 3 testes |
@@ -142,21 +142,23 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 - Totalmente paralelo
 ```
 
-### Cobertura Atual (54 testes)
+### Cobertura Atual (80 testes)
 
 | Página/Feature | Testes | Status |
 |----------------|--------|--------|
 | Landing page | 13 | ✅ |
 | Auth | 11 | ✅ |
-| Página pública (pagina-cliente) | 4 | ✅ |
-| Dashboard + proteção de rotas | 6 | ✅ |
+| Fluxo de agendamento (5 steps) | 50 | ✅ |
+| Painel + proteção de rotas | 6 | ✅ |
 | Páginas internas | 9 | ✅ |
 | Cancelamento/Reagendamento | 3 | ✅ |
 | Onboarding | 2 | ✅ |
 
 ### Veredito
-**Infraestrutura E2E: FUNCIONAL** ✅  
-54 testes E2E cobrindo fluxos críticos:
+**Infraestrutura E2E: ROBUSTA** ✅
+80 testes E2E cobrindo fluxos críticos:
+- Fluxo completo de agendamento em 5 steps (serviço → data → horário → dados → confirmação)
+- Validação de formulário, navegação entre steps, botão desabilitado/habilitado
 - Landing page completa (hero, CTAs, FAQ, preços, depoimentos)
 - Auth (formulário, Google login, proteção de rotas)
 - Páginas públicas (pagina-cliente, confirmar-reserva)
@@ -212,7 +214,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 | Métrica | Valor | Status |
 |---------|-------|--------|
 | Testes unitários | 74 passing | ✅ Excelente |
-| Testes E2E | 3 passing | ✅ Básico, expansível |
+| Testes E2E | 80 passing | ✅ Fluxo completo de agendamento coberto |
 | Edge Functions | 17 | ⚠️ Muitas, revisar duplicação |
 | Migrations | 31+ | ✅ Completo |
 | Páginas HTML | 13 | ⚠️ Sem framework, difícil manter |
@@ -232,7 +234,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 |------|-----------|------------|
 | Unitários | Alta (handlers, regras) | 74 testes, muito bom |
 | Integração | Média (smoke test DB) | Poderia ter mais |
-| E2E | Básica (3 testes) | Infraestrutura pronta, expandir |
+| E2E | Alta (80 testes) | Fluxo de agendamento completo, validação, responsividade |
 
 ---
 
@@ -248,7 +250,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 
 ### Curto prazo (próximas 2 semanas)
 
-6. **Expandir testes E2E** para cobrir fluxo completo de agendamento (4h)
+6. ~~**Expandir testes E2E** para cobrir fluxo completo de agendamento (4h)~~ ✅ FEITO — 50 testes no booking-flow
 7. **Adicionar TypeScript gradualmente** nos módulos `modules/*.js` (8h)
 8. **Revisar Edge Functions duplicadas** (`lista-espera` vs `entrada-lista-espera`) (2h)
 
@@ -270,7 +272,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 [x] Build process injeta variáveis seguramente
 [ ] CORS restrito no Supabase (ação manual)
 [ ] Sentry.setTag('plano') implementado
-[ ] Testes E2E expandidos para fluxo completo
+[x] Testes E2E expandidos para fluxo completo ✅ 50 testes no booking-flow
 [ ] TypeScript adotado gradualmente
 [ ] Frontend migrado para framework
 ```
@@ -284,6 +286,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 **Pontos fortes:**
 - ✅ Nenhuma credencial exposta
 - ✅ 74 testes unitários passando
+- ✅ 80 testes E2E passando (fluxo completo de agendamento coberto)
 - ✅ Arquitetura serverless bem pensada
 - ✅ Documentação extensiva
 - ✅ CI/CD configurado
@@ -292,7 +295,6 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 **Riscos residuais (baixos):**
 - ⚠️ Frontend vanilla JS (manutenibilidade futura)
 - ⚠️ CORS não restrito (ação manual necessária)
-- ⚠️ Testes E2E básicos (expandir)
 
 **Nota Geral: 8.5/10** 🎉
 

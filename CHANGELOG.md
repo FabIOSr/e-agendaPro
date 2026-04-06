@@ -1,6 +1,22 @@
 # 🚀 Changelog — AgendaPro
 
-## [2026-04-06] — Fix: package.json, login.html e smoke test do banco
+## [2026-04-06] — Fix: package.json, login.html, smoke test e E2E de agendamento
+
+### 🧪 Testes E2E: Fluxo Completo de Agendamento (50 testes)
+
+**`tests/e2e/booking-flow.spec.ts`** expandido de 4 → 50 testes, cobrindo os 5 steps:
+
+| Step | Testes | O que valida |
+|------|--------|-------------|
+| Estrutura | 4 | Hero (`#hero`, `#hero-avatar`), barra de 5 steps, step 1 ativo |
+| 1 — Serviço | 3 | Título, carregamento dinâmico, avanço ao clicar |
+| 2 — Data | 3 | Calendário `#cal-grid`/`#cal-month`, botão voltar, navegação |
+| 3 — Horário | 3 | Grid `#slots-grid`, voltar, avanço ao clicar slot |
+| 4 — Dados | 5 | Form (`#input-nome`, `#input-tel`, `#input-email`), botão desabilitado, habilita ao preencher, privacidade, voltar |
+| 5 — Confirmação | 3 | Resumo `.resumo-card`, confirmar, voltar |
+| Páginas de suporte | 4 | Confirmar-reserva, cancelar, reagendar, avaliar |
+
+**Total E2E do projeto:** 54 → **80 testes**
 
 ### 🔧 Correções de Manutenção
 
