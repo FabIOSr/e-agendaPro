@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ações Admin — AgendaPro Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0e0d0a; --bg2: #181714; --bg3: #222018;
+  --border: #2e2b24; --bord2: #3e3b32;
+  --text: #f0ede6; --muted: #8a8778; --faint: #4a4840;
+  --lime: #c8f060; --lime-d: #8ab830; --lime-l: #1a2a08; --lime-t: rgba(200,240,96,.12);
+  --rust: #f06048; --rust-t: rgba(240,96,72,.12);
+  --blue: #60a5fa; --blue-t: rgba(96,165,250,.12);
+  --purple: #a78bfa; --purple-t: rgba(167,139,250,.12);
+  --orange: #fb923c; --orange-t: rgba(251,146,60,.12);
+  --radius: 14px;
+}
+body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 52px 52px; pointer-events: none; z-index: 0; }
+
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: var(--bg2); border-right: 1px solid var(--border); padding: 24px 0; z-index: 100; display: flex; flex-direction: column; }
+.sidebar-logo { display: flex; align-items: center; gap: 8px; padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.logo-dot { width: 8px; height: 8px; background: var(--lime); border-radius: 50%; box-shadow: 0 0 10px rgba(200,240,96,.5); }
+.logo-text { font-family: 'Fraunces', serif; font-size: 18px; }
+.logo-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--bg); background: var(--lime); padding: 2px 6px; border-radius: 3px; text-transform: uppercase; }
+.sidebar-nav { flex: 1; padding: 0 12px; }
+.nav-item { display: block; padding: 10px 16px; color: var(--muted); text-decoration: none; font-size: 14px; border-radius: 8px; margin-bottom: 4px; transition: all 0.2s; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--lime-t); color: var(--lime); font-weight: 500; }
+.nav-divider { height: 1px; background: var(--border); margin: 12px 16px; }
+.sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); }
+.btn-logout { width: 100%; padding: 10px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.btn-logout:hover { border-color: var(--rust); color: var(--rust); background: var(--rust-t); }
+
+.main { margin-left: 240px; padding: 32px 40px; position: relative; z-index: 1; }
+.page-header { margin-bottom: 32px; }
+.page-header h1 { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 400; }
+.page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.card-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.card-header h3 { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 400; }
+
+.filters-bar { display: flex; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+.search-input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 12px; font-family: inherit; font-size: 12px; max-width: 300px; flex: 1; }
+.search-input:focus { outline: none; border-color: var(--lime); }
+select.bg-select, button.btn-search { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 12px; font-family: inherit; font-size: 12px; cursor: pointer; }
+select.bg-select option { background: var(--bg2); }
+.nav-divider { height: 1px; background: var(--border); margin: 12px 16px; }
+button.btn-search:hover { border-color: var(--lime); color: var(--lime); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .5px; padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+tbody td { padding: 12px 20px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.03); }
+tbody tr:hover { background: rgba(255,255,255,.02); }
+tbody tr:last-child td { border-bottom: none; }
+
+.badge { font-family: 'DM Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .5px; }
+.badge-lime { background: var(--lime-t); color: var(--lime); }
+.badge-rust { background: var(--rust-t); color: var(--rust); }
+.badge-faint { background: rgba(255,255,255,.05); color: var(--faint); }
+.badge-orange { background: var(--orange-t); color: var(--orange); }
+.badge-blue { background: var(--blue-t); color: var(--blue); }
+.badge-purple { background: var(--purple-t); color: var(--purple); }
+
+.btn-action { padding: 4px 8px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg3); color: var(--muted); cursor: pointer; margin-right: 4px; transition: all .15s; }
+.btn-action:hover { color: var(--text); }
+.btn-action.suspender:hover { border-color: var(--rust); color: var(--rust); }
+.btn-action.ativar:hover { border-color: var(--lime); color: var(--lime); }
+.btn-action.estender:hover { border-color: var(--blue); color: var(--blue); }
+.btn-action.detalhes:hover { border-color: var(--muted); color: var(--muted); }
+
+.pagination-admin { display: flex; gap: 8px; justify-content: center; padding: 16px 20px; }
+.pagination-admin button { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg3); color: var(--muted); font-family: inherit; font-size: 12px; cursor: pointer; }
+.pagination-admin button:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+.pagination-admin button:disabled { opacity: .3; cursor: default; }
+
+.empty-row td { text-align: center; color: var(--faint); padding: 32px; font-size: 13px; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 500px; width: 90%; }
+.modal-box h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; margin-bottom: 16px; }
+.modal-box p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.modal-input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px 12px; font-family: inherit; font-size: 13px; width: 100%; margin-bottom: 16px; }
+.modal-input:focus { outline: none; border-color: var(--lime); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-actions button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg3); color: var(--muted); cursor: pointer; font-family: inherit; font-size: 12px; }
+.modal-actions .btn-confirm { background: var(--rust); border-color: var(--rust); color: var(--bg); font-weight: 600; }
+.modal-actions .btn-confirm:hover { background: var(--rust); }
+.modal-actions .btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+
+/* MODAL DETALHES */
+.modal-det { max-width: 600px; }
+.det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.det-item { padding: 8px; background: var(--bg3); border-radius: 8px; }
+.det-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--faint); text-transform: uppercase; margin-bottom: 4px; }
+.det-value { font-size: 13px; }
+
+/* TOAST */
+.toast-box { position: fixed; bottom: 24px; right: 24px; z-index: 300; }
+.toast { background: var(--bg3); border: 1px solid var(--lime); color: var(--lime); padding: 12px 20px; border-radius: 8px; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-dot"></span>
+    <span class="logo-text">AgendaPro</span>
+    <span class="logo-badge">Admin</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="/admin/dashboard">📊 Dashboard</a>
+    <a class="nav-item" href="/admin/profissionais">👥 Profissionais</a>
+    <a class="nav-item" href="/admin/financeiro">💰 Financeiro</a>
+    <a href="/admin/acoes" class="nav-item active">🛡️ Ações Admin</a>
+    <a class="nav-item" href="/admin/configuracoes">⚙️ Configurações</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="/" target="_blank">🌐 Ver Site</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="logoutAdmin()">Sair do Painel</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-header">
+    <h1>🛡️ Ações Administrativas</h1>
+    <p>Gerenciar contas, suspender, ativar e estender planos</p>
+  </div>
+
+  <!-- PRESTADORES -->
+  <div class="card-panel">
+    <div class="card-header">
+      <h3>Prestadores</h3>
+      <span style="font-size:12px;color:var(--faint)" id="total-info">Carregando...</span>
+    </div>
+    <div class="filters-bar">
+      <input type="text" class="search-input" id="search-input" placeholder="Buscar por nome, email ou slug...">
+      <select class="bg-select" id="filtro-plano">
+        <option value="todos">Todos os planos</option>
+        <option value="pro">Pro</option>
+        <option value="free">Free</option>
+      </select>
+      <select class="bg-select" id="filtro-status">
+        <option value="todos">Todos os status</option>
+        <option value="pro">Pro ativos</option>
+        <option value="free">Free</option>
+        <option value="trial">Em trial</option>
+        <option value="vencido">Plano vencido</option>
+      </select>
+      <button class="btn-search" onclick="loadPrestadores(1)">Buscar</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Nome</th><th>Email</th><th>Plano</th><th>Validade</th><th>Criação</th><th style="text-align:right">Ações</th></tr>
+      </thead>
+      <tbody id="prestadores-tbody">
+        <tr class="empty-row"><td colspan="6">Carregando...</td></tr>
+      </tbody>
+    </table>
+    <div class="pagination-admin" id="prestadores-pagination"></div>
+  </div>
+</main>
+
+<!-- MODAL: Confirmar Ação -->
+<div class="modal-overlay" id="modalAcao">
+  <div class="modal-box">
+    <h3 id="modal-acao-titulo">Confirmar Ação</h3>
+    <p id="modal-acao-msg"></p>
+    <input type="text" class="modal-input" id="acao-motivo" placeholder="Motivo (opcional)">
+    <div id="acao-dias-wrapper" style="display:none;margin-bottom:16px">
+      <label style="font-size:12px;color:var(--muted);margin-bottom:4px;display:block">Dias para estender:</label>
+      <input type="number" class="modal-input" id="acao-dias" value="30" min="1" max="365">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-confirm" id="modal-acao-confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Detalhes -->
+<div class="modal-overlay" id="modalDetalhes">
+  <div class="modal-box modal-det">
+    <h3>Detalhes do Prestador</h3>
+    <div id="detalhes-body"></div>
+    <div class="modal-actions">
+      <button onclick="document.getElementById('modalDetalhes').classList.remove('active')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-box" id="toast-box"></div>
+
+<script type="module">
+import { requireAdminAuth, logoutAdmin, adminHeaders } from '/modules/admin-auth.js';
+
+const EDGE_FUNCTION_ACTIONS = window.SUPABASE_URL + '/functions/v1/admin-actions';
+
+window.logoutAdmin = logoutAdmin;
+
+// ── VERIFICAR AUTH ───────────────────────────────────────────────
+try {
+  await requireAdminAuth();
+} catch {
+  window.location.href = '/admin/login';
+  throw new Error('Não autenticado');
+}
+
+// ── LISTAR PRESTADORES ─────────────────────────────────────
+let prestadoresPage = 1;
+
+async function loadPrestadores(page = 1) {
+  prestadoresPage = page;
+  const search = document.getElementById('search-input').value;
+  const filtroPlano = document.getElementById('filtro-plano').value;
+  const filtroStatus = document.getElementById('filtro-status').value;
+
+  try {
+    const headers = await adminHeaders();
+    const res = await fetch(EDGE_FUNCTION_ACTIONS, {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'listar', page, limit: 20, search, filtro_plano: filtroPlano, filtro_status: filtroStatus })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const tbody = document.getElementById('prestadores-tbody');
+    document.getElementById('total-info').textContent = `${data.total} prestadores`;
+
+    if (!data.prestadores.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum prestador encontrado</td></tr>';
+    } else {
+      tbody.innerHTML = data.prestadores.map(p => {
+        const created = new Date(p.created_at).toLocaleDateString('pt-BR');
+        let validade = '—';
+        if (p.plano === 'pro' && p.plano_valido_ate) {
+          const dt = new Date(p.plano_valido_ate);
+          validade = dt < new Date()
+            ? `<span style="color:var(--rust)">${dt.toLocaleDateString('pt-BR')} (vencido)</span>`
+            : dt.toLocaleDateString('pt-BR');
+        } else if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) {
+          validade = `<span class="badge badge-orange">Trial até ${new Date(p.trial_ends_at).toLocaleDateString('pt-BR')}</span>`;
+        }
+
+        const planoBadge = p.plano === 'pro'
+          ? '<span class="badge badge-lime">Pro</span>'
+          : '<span class="badge badge-faint">Free</span>';
+
+        let acoes = '';
+        if (p.plano === 'pro') {
+          acoes += `<button class="btn-action suspender" onclick="confirmarAcao('suspender','${p.id}','${(p.nome || '').replace(/'/g, "\\'")}')">Suspender</button>`;
+          acoes += `<button class="btn-action estender" onclick="confirmarAcao('estender_plano','${p.id}','${(p.nome || '').replace(/'/g, "\\'")}')">Estender</button>`;
+        } else {
+          acoes += `<button class="btn-action ativar" onclick="confirmarAcao('ativar','${p.id}','${(p.nome || '').replace(/'/g, "\\'")}')">Ativar Pro</button>`;
+        }
+        acoes += `<button class="btn-action detalhes" onclick="verDetalhes('${p.id}')">Detalhes</button>`;
+
+        return `<tr>
+          <td><strong>${p.nome || '—'}</strong></td>
+          <td>${p.email || '—'}</td>
+          <td>${planoBadge}</td>
+          <td>${validade}</td>
+          <td>${created}</td>
+          <td style="text-align:right">${acoes}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const pagDiv = document.getElementById('prestadores-pagination');
+    pagDiv.innerHTML = `
+      <button onclick="loadPrestadores(${page - 1})" ${page <= 1 ? 'disabled' : ''}>Anterior</button>
+      <span style="font-size:12px;color:var(--faint);display:flex;align-items:center">Página ${page} de ${data.totalPages || 1}</span>
+      <button onclick="loadPrestadores(${page + 1})" ${page >= data.totalPages ? 'disabled' : ''}>Próxima</button>
+    `;
+  } catch (err) {
+    console.error('Erro prestadores:', err);
+    document.getElementById('prestadores-tbody').innerHTML = '<tr class="empty-row"><td colspan="6" style="color:var(--rust)">Erro ao carregar prestadores</td></tr>';
+  }
+}
+
+window.loadPrestadores = loadPrestadores;
+
+// ── MODAL AÇÃO ─────────────────────────────────────────────
+let acaoPrestadorId = '';
+let acaoTipo = '';
+
+window.confirmarAcao = function(tipo, id, nome) {
+  acaoPrestadorId = id;
+  acaoTipo = tipo;
+
+  const labels = {
+    suspender: { titulo: 'Suspender Conta', msg: `Suspender a conta de ${nome}? (downgrade para Free)` },
+    ativar: { titulo: 'Ativar Conta Pro', msg: `Ativar conta Pro para ${nome} por 1 ano?` },
+    estender_plano: { titulo: 'Estender Plano', msg: `Estender plano de ${nome}` },
+  };
+
+  const cfg = labels[tipo] || { titulo: 'Confirmar', msg: 'Tem certeza?' };
+
+  document.getElementById('modal-acao-titulo').textContent = cfg.titulo;
+  document.getElementById('modal-acao-msg').textContent = cfg.msg;
+  document.getElementById('acao-motivo').value = '';
+  document.getElementById('acao-dias-wrapper').style.display = tipo === 'estender_plano' ? 'block' : 'none';
+
+  const btn = document.getElementById('modal-acao-confirmar');
+  btn.style.background = tipo === 'suspender' ? 'var(--rust)' : tipo === 'ativar' ? 'var(--lime)' : 'var(--blue)';
+  btn.style.borderColor = btn.style.background;
+  btn.style.color = tipo === 'ativar' ? 'var(--bg)' : 'var(--bg)';
+
+  document.getElementById('modalAcao').classList.add('active');
+};
+
+window.fecharModal = function() {
+  document.getElementById('modalAcao').classList.remove('active');
+};
+
+document.getElementById('modal-acao-confirmar').addEventListener('click', async () => {
+  const motivo = document.getElementById('acao-motivo').value;
+  const btn = document.getElementById('modal-acao-confirmar');
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+
+  try {
+    const headers = await adminHeaders();
+    const body = { action: acaoTipo, prestador_id: acaoPrestadorId, motivo };
+
+    if (acaoTipo === 'estender_plano') {
+      body.dias = parseInt(document.getElementById('acao-dias').value) || 30;
+    }
+
+    const res = await fetch(EDGE_FUNCTION_ACTIONS, { method: 'POST', headers, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    fecharModal();
+    showToast(data.message || 'Ação realizada!');
+    await loadPrestadores(prestadoresPage);
+  } catch (err) {
+    showToast('Erro: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar';
+  }
+});
+
+// ── DETALHES ───────────────────────────────────────────────
+window.verDetalhes = async function(id) {
+  document.getElementById('detalhes-body').innerHTML = '<p style="text-align:center;color:var(--faint)">Carregando...</p>';
+  document.getElementById('modalDetalhes').classList.add('active');
+
+  try {
+    const headers = await adminHeaders();
+    const res = await fetch(EDGE_FUNCTION_ACTIONS, {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'detalhes', prestador_id: id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const p = data.prestador;
+    const fmt = (d) => d ? new Date(d).toLocaleString('pt-BR') : '—';
+
+    let html = `<div class="det-grid">
+      <div class="det-item"><div class="det-label">Nome</div><div class="det-value">${p.nome || '—'}</div></div>
+      <div class="det-item"><div class="det-label">Email</div><div class="det-value">${p.email || '—'}</div></div>
+      <div class="det-item"><div class="det-label">Plano</div><div class="det-value">${p.plano.toUpperCase()}</div></div>
+      <div class="det-item"><div class="det-label">Periodicidade</div><div class="det-value">${p.assinatura_periodicidade || '—'}</div></div>
+      <div class="det-item"><div class="det-label">Validade</div><div class="det-value">${fmt(p.plano_valido_ate)}</div></div>
+      <div class="det-item"><div class="det-label">Trial</div><div class="det-value">${fmt(p.trial_ends_at)}</div></div>
+      <div class="det-item"><div class="det-label">Asaas Customer</div><div class="det-value" style="font-family:'DM Mono',monospace;font-size:11px">${p.asaas_customer_id || '—'}</div></div>
+      <div class="det-item"><div class="det-label">Asaas Sub</div><div class="det-value" style="font-family:'DM Mono',monospace;font-size:11px">${p.asaas_sub_id || '—'}</div></div>
+      <div class="det-item"><div class="det-label">WhatsApp</div><div class="det-value">${p.whatsapp || '—'}</div></div>
+      <div class="det-item"><div class="det-label">Criado em</div><div class="det-value">${fmt(p.created_at)}</div></div>
+    </div>`;
+
+    if (data.pagamentos.length) {
+      html += '<table><thead><tr><th>Data</th><th>Evento</th><th>Valor</th></tr></thead><tbody>';
+      html += data.pagamentos.map(pg =>
+        `<tr><td>${fmt(pg.data_evento)}</td><td><span class="badge badge-faint">${pg.evento}</span></td><td>${pg.valor ? 'R$ ' + Number(pg.valor).toFixed(2) : '—'}</td></tr>`
+      ).join('');
+      html += '</tbody></table>';
+    }
+
+    document.getElementById('detalhes-body').innerHTML = html;
+  } catch (err) {
+    document.getElementById('detalhes-body').innerHTML = `<p style="color:var(--rust)">Erro: ${err.message}</p>`;
+  }
+};
+
+// ── TOAST ──────────────────────────────────────────────────
+function showToast(msg, erro = false) {
+  const box = document.getElementById('toast-box');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if (erro) { t.style.borderColor = 'var(--rust)'; t.style.color = 'var(--rust)'; }
+  t.textContent = msg;
+  box.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadPrestadores(1); });
+
+await loadPrestadores(1);
+</script>
+</body>
+</html>
