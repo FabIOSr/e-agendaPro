@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Painel Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0e0d0a;
+  --bg2:    #181714;
+  --bg3:    #222018;
+  --border: #2e2b24;
+  --bord2:  #3e3b32;
+  --text:   #f0ede6;
+  --muted:  #8a8778;
+  --faint:  #4a4840;
+  --lime:   #c8f060;
+  --lime-d: #8ab830;
+  --lime-l: #1a2a08;
+  --lime-t: rgba(200,240,96,.12);
+  --rust:   #f06048;
+  --rust-t: rgba(240,96,72,.12);
+  --radius: 14px;
+}
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── GRADE DE FUNDO ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 240px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--lime);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(200,240,96,.5);
+}
+
+.logo-text {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+}
+
+.logo-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--bg);
+  background: var(--lime);
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 0 12px;
+}
+
+.nav-item {
+  display: block;
+  padding: 10px 16px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s;
+}
+
+.nav-item:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: var(--lime-t);
+  color: var(--lime);
+  font-weight: 500;
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 16px;
+}
+
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-logout {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  border-color: var(--rust);
+  color: var(--rust);
+  background: var(--rust-t);
+}
+
+/* ── CONTEÚDO PRINCIPAL ── */
+.main {
+  margin-left: 240px;
+  padding: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.main-header {
+  margin-bottom: 32px;
+}
+
+.main-header h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+
+.main-header p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.kpi-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: all 0.2s;
+}
+
+.kpi-card:hover {
+  border-color: var(--bord2);
+  transform: translateY(-2px);
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.kpi-sub {
+  font-size: 12px;
+  color: var(--faint);
+  font-family: 'DM Mono', monospace;
+}
+
+.kpi-value.lime { color: var(--lime); }
+.kpi-value.rust { color: var(--rust); }
+
+/* ── ALERTAS ── */
+.alerts-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: var(--lime);
+  border-radius: 2px;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.alert-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.alert-content p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* ── TABELA: NOVOS USUÁRIOS ── */
+.table-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.table-btn {
+  padding: 8px 16px;
+  background: var(--lime-t);
+  border: 1px solid var(--lime-d);
+  border-radius: 6px;
+  color: var(--lime);
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.table-btn:hover {
+  background: var(--lime-l);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 12px 24px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--faint);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+
+td {
+  padding: 16px 24px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-pro {
+  background: var(--lime-t);
+  color: var(--lime);
+}
+
+.badge-free {
+  background: rgba(255,255,255,.05);
+  color: var(--muted);
+}
+
+.badge-trial {
+  background: rgba(96,160,240,.12);
+  color: #60a0f0;
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+/* ── LOADING ── */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+/* ── RESPONSIVO ── */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
+
+  .main {
+    margin-left: 0;
+    padding: 24px 16px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-dot"></span>
+    <span class="logo-text">AgendaPro</span>
+    <span class="logo-badge">Admin</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/admin/dashboard" class="nav-item active">📊 Dashboard</a>
+    <a href="/admin/profissionais" class="nav-item">👥 Profissionais</a>
+    <a href="/admin/financeiro" class="nav-item">💰 Financeiro</a>
+    <a href="/admin/configuracoes" class="nav-item">⚙️ Configurações</a>
+    <div class="nav-divider"></div>
+    <a href="/" class="nav-item">🌐 Ver Site</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button id="btn-logout" class="btn-logout">Sair do Painel</button>
+  </div>
+</aside>
+
+<!-- CONTEÚDO -->
+<main class="main">
+  <div class="main-header">
+    <h1>Dashboard</h1>
+    <p>Visão geral do SaaS AgendaPro</p>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total de Profissionais</div>
+      <div class="kpi-value lime" id="kpi-total">—</div>
+      <div class="kpi-sub" id="kpi-pro-ativos">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Receita Mensal (MRR)</div>
+      <div class="kpi-value" id="kpi-mrr">R$ —</div>
+      <div class="kpi-sub" id="kpi-mrr-sub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Novos (Últimos 7 dias)</div>
+      <div class="kpi-value" id="kpi-novos">—</div>
+      <div class="kpi-sub" id="kpi-novos-sub">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Agendamentos (Mês)</div>
+      <div class="kpi-value lime" id="kpi-agendamentos">—</div>
+      <div class="kpi-sub" id="kpi-agendamentos-sub">—</div>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="alerts-section" id="alerts-section">
+    <div class="section-title">Alertas</div>
+    <div class="alerts-list" id="alerts-list">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- TABELA: NOVOS USUÁRIOS -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3>Novos Usuários</h3>
+      <a href="/admin/profissionais" class="table-btn">Ver todos →</a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Plano</th>
+          <th>Criado em</th>
+          <th>Agendamentos</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-usuarios">
+        <!-- Preenchido via JS -->
+      </tbody>
+    </table>
+    <div id="empty-state" class="empty-state" style="display: none;">
+      Nenhum profissional encontrado
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { requireAdminAuth, logoutAdmin, adminHeaders } from '/modules/admin-auth.js';
+import { SENTRY_DSN, SENTRY_ENVIRONMENT } from '/config.js';
+
+// ── SENTRY (se configurado) ──────────────────────────────────────
+if (SENTRY_DSN && SENTRY_DSN !== '__SENTRY_DSN__') {
+  await import('https://browser.sentry-cdn.com/7.91.0/bundle.min.js');
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: SENTRY_ENVIRONMENT || 'production',
+    tracesSampleRate: 0.1,
+  });
+}
+
+// ── VERIFICAR AUTH ───────────────────────────────────────────────
+try {
+  await requireAdminAuth();
+} catch (e) {
+  // redirect happens in requireAdminAuth
+  throw e;
+}
+
+// ── LOGOUT ───────────────────────────────────────────────────────
+document.getElementById('btn-logout').addEventListener('click', logoutAdmin);
+
+// ── CARREGAR DADOS ───────────────────────────────────────────────
+const EDGE_FUNCTION_URL = `${window.SUPABASE_URL}/functions/v1/admin-dashboard`;
+
+async function loadDashboard() {
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      headers: adminHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    renderDashboard(data);
+
+  } catch (error) {
+    console.error('Erro ao carregar dashboard:', error);
+    document.getElementById('alerts-list').innerHTML = `
+      <div class="alert-item" style="border-color: var(--rust); background: var(--rust-t);">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-content">
+          <strong>Erro ao carregar dados</strong>
+          <p>Verifique se a Edge Function admin-validate está deployada.</p>
+          <p style="font-family: 'DM Mono', monospace; font-size: 11px; margin-top: 4px;">${error.message}</p>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderDashboard(data) {
+  // KPIs
+  document.getElementById('kpi-total').textContent = data.total_prestadores;
+  document.getElementById('kpi-pro-ativos').textContent =
+    `${data.plano_pro} Pro · ${data.plano_free} Free · ${data.plano_trial} Trial`;
+
+  document.getElementById('kpi-mrr').textContent =
+    `R$ ${(data.mrr || 0).toLocaleString('pt-BR')}`;
+  document.getElementById('kpi-mrr-sub').textContent =
+    `${data.plano_pro} profissionais Pro × R$ 49,90`;
+
+  document.getElementById('kpi-novos').textContent = data.novos_7_dias;
+  document.getElementById('kpi-novos-sub').textContent =
+    `Desde ${data.desde_7_dias}`;
+
+  document.getElementById('kpi-agendamentos').textContent =
+    data.agendamentos_mes || '—';
+  document.getElementById('kpi-agendamentos-sub').textContent =
+    'Confirmados no mês atual';
+
+  // Alertas
+  const alertsList = document.getElementById('alerts-list');
+  const alerts = [];
+
+  if (data.plano_trial > 0) {
+    alerts.push({
+      icon: '⏳',
+      title: `${data.plano_trial} profissional(is) em Trial`,
+      desc: 'Verificar conversão para plano Pro'
+    });
+  }
+
+  if (data.plano_free > 50) {
+    alerts.push({
+      icon: '📢',
+      title: `${data.plano_free} profissionais no plano Free`,
+      desc: 'Oportunidade de upsell para Pro'
+    });
+  }
+
+  if (!data.mrr || data.mrr === 0) {
+    alerts.push({
+      icon: '💡',
+      title: 'Nenhuma receita registrada',
+      desc: 'Verificar integração com gateway de pagamento'
+    });
+  }
+
+  if (alerts.length === 0) {
+    alerts.push({
+      icon: '✅',
+      title: 'Sem alertas críticos',
+      desc: 'SaaS operando normalmente'
+    });
+  }
+
+  alertsList.innerHTML = alerts.map(a => `
+    <div class="alert-item">
+      <span class="alert-icon">${a.icon}</span>
+      <div class="alert-content">
+        <strong>${a.title}</strong>
+        <p>${a.desc}</p>
+      </div>
+    </div>
+  `).join('');
+
+  // Tabela de novos usuários
+  const tbody = document.getElementById('tabela-usuarios');
+  const emptyState = document.getElementById('empty-state');
+
+  if (!data.novos_usuarios || data.novos_usuarios.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+  tbody.innerHTML = data.novos_usuarios.map(u => {
+    const badgeClass = u.plano === 'pro' ? 'badge-pro' :
+                       u.plano === 'trial' ? 'badge-trial' : 'badge-free';
+    const badgeText = u.plano === 'pro' ? 'Pro' :
+                      u.plano === 'trial' ? `Trial (${u.trial_dias}d)` : 'Free';
+
+    return `
+      <tr>
+        <td>
+          ${u.nome || 'Sem nome'}
+          <div class="text-muted" style="font-size: 12px;">${u.email || '—'}</div>
+        </td>
+        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td>${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
+        <td>${u.agendamentos || 0}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Carrega dados
+loadDashboard();
+</script>
+
+</body>
+</html>

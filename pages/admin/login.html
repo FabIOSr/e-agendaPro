@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0e0d0a;
+  --bg2:    #181714;
+  --bg3:    #222018;
+  --border: #2e2b24;
+  --bord2:  #3e3b32;
+  --text:   #f0ede6;
+  --muted:  #8a8778;
+  --faint:  #4a4840;
+  --lime:   #c8f060;
+  --lime-d: #8ab830;
+  --lime-l: #1a2a08;
+  --lime-t: rgba(200,240,96,.12);
+  --rust:   #f06048;
+  --rust-t: rgba(240,96,72,.12);
+  --radius: 14px;
+}
+html, body { height: 100%; }
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── GRADE DE FUNDO ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 300px;
+  background: radial-gradient(ellipse, rgba(200,240,96,.07) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── CONTAINER LOGIN ── */
+.login-container {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 420px;
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-logo {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 16px;
+}
+
+.logo-dot {
+  width: 10px; height: 10px;
+  background: var(--lime);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(200,240,96,.6);
+}
+
+.logo-text {
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.logo-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--bg);
+  background: var(--lime);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── FORMULÁRIO ── */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px var(--lime-t);
+}
+
+.form-input::placeholder {
+  color: var(--faint);
+}
+
+/* ── BOTÃO ── */
+.btn-primary {
+  width: 100%;
+  padding: 14px 24px;
+  background: var(--lime);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--lime-d);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary.loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-primary.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 18px; height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid var(--bg);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── MENSAGENS ── */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.alert-error {
+  background: var(--rust-t);
+  border: 1px solid var(--rust);
+  color: var(--rust);
+}
+
+.alert-success {
+  background: var(--lime-t);
+  border: 1px solid var(--lime);
+  color: var(--lime);
+}
+
+.alert.show {
+  display: block;
+}
+
+/* ── FOOTER ── */
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.login-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  color: var(--lime);
+}
+
+/* ── RESPONSIVO ── */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 32px 24px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <span class="logo-dot"></span>
+        <span class="logo-text">AgendaPro</span>
+        <span class="logo-badge">Admin</span>
+      </div>
+      <p class="login-subtitle">
+        Acesso restrito ao painel administrativo do SaaS
+      </p>
+    </div>
+
+    <div id="alert-error" class="alert alert-error"></div>
+    <div id="alert-success" class="alert alert-success"></div>
+
+    <form id="admin-login-form">
+      <div class="form-group">
+        <label class="form-label" for="admin-password">Senha de Administrador</label>
+        <input
+          type="password"
+          id="admin-password"
+          class="form-input"
+          placeholder="Digite a senha admin"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button type="submit" id="btn-login" class="btn-primary">
+        Entrar no Painel
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <a href="/">← Voltar ao site</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { SENTRY_DSN, SENTRY_ENVIRONMENT } from '../config.js';
+
+// ── SENTRY (se configurado) ──────────────────────────────────────
+if (SENTRY_DSN && SENTRY_DSN !== '__SENTRY_DSN__') {
+  await import('https://browser.sentry-cdn.com/7.91.0/bundle.min.js');
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: SENTRY_ENVIRONMENT || 'production',
+    tracesSampleRate: 0.1,
+  });
+}
+
+// ── ELEMENTOS ────────────────────────────────────────────────────
+const form = document.getElementById('admin-login-form');
+const passwordInput = document.getElementById('admin-password');
+const btnLogin = document.getElementById('btn-login');
+const alertError = document.getElementById('alert-error');
+const alertSuccess = document.getElementById('alert-success');
+
+const EDGE_FUNCTION_URL = `${window.SUPABASE_URL}/functions/v1/admin-validate`;
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function showError(msg) {
+  alertError.textContent = msg;
+  alertError.classList.add('show');
+  alertSuccess.classList.remove('show');
+}
+
+function showSuccess(msg) {
+  alertSuccess.textContent = msg;
+  alertSuccess.classList.add('show');
+  alertError.classList.remove('show');
+}
+
+function setLoading(loading) {
+  if (loading) {
+    btnLogin.classList.add('loading');
+    btnLogin.disabled = true;
+  } else {
+    btnLogin.classList.remove('loading');
+    btnLogin.disabled = false;
+  }
+}
+
+// ── VERIFICAR SE JÁ ESTÁ LOGADO ─────────────────────────────────
+const existingToken = localStorage.getItem('admin_token');
+const existingExpires = localStorage.getItem('admin_expires');
+
+if (existingToken && existingExpires) {
+  const expires = new Date(existingExpires).getTime();
+  if (Date.now() < expires) {
+    // Token ainda válido, redireciona direto
+    window.location.href = '/admin/dashboard';
+  } else {
+    // Expirado, limpa
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_expires');
+  }
+}
+
+// ── SUBMIT DO FORM ──────────────────────────────────────────────
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  alertError.classList.remove('show');
+  alertSuccess.classList.remove('show');
+
+  const password = passwordInput.value;
+
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'validate_password',
+        password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.valid) {
+      showError(data.error || 'Senha inválida');
+      setLoading(false);
+      return;
+    }
+
+    // Salva token
+    localStorage.setItem('admin_token', data.token);
+    localStorage.setItem('admin_expires', data.expires_at);
+
+    showSuccess('Login realizado com sucesso! Redirecionando...');
+
+    // Redireciona após 1s
+    setTimeout(() => {
+      window.location.href = '/admin/dashboard';
+    }, 1000);
+
+  } catch (error) {
+    console.error('Erro no login admin:', error);
+    showError('Erro ao conectar com servidor. Tente novamente.');
+    setLoading(false);
+  }
+});
+
+// ── ENTER PARA SUBMETER ─────────────────────────────────────────
+passwordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    form.dispatchEvent(new Event('submit'));
+  }
+});
+</script>
+
+</body>
+</html>

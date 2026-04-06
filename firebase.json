@@ -23,6 +23,8 @@
       { "source": "/reagendar",     "destination": "/pages/reagendar-cliente.html" },
       { "source": "/avaliar",       "destination": "/pages/avaliar-cliente.html" },
       { "source": "/confirmar-reserva", "destination": "/pages/confirmar-reserva.html" },
+      { "source": "/admin/login",   "destination": "/pages/admin/login.html" },
+      { "source": "/admin/dashboard", "destination": "/pages/admin/dashboard.html" },
       { "source": "/:slug",         "destination": "/pages/pagina-cliente.html" }
     ],
     "headers": [
