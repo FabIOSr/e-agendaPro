@@ -1,35 +1,37 @@
 # ⚡ PLANO DE IMPLEMENTAÇÃO — Painel Admin + Stack Modernizada
 
 **Data:** 2026-04-05
-**Status:** FASE 1-3 implementadas e testadas | FASE 4 pendente
-**Versão:** 1.2
+**Status:** FASE 1-4 implementadas e testadas
+**Versão:** 1.3
 
 ---
 
 ## ✅ Progresso Atual
 
-### FASE 1+2+3 — CONCLUÍDAS
+### FASE 1+2+3+4 — CONCLUÍDAS
 - [x] `pages/admin/login.html` → Login por senha com token 24h
 - [x] `pages/admin/dashboard.html` → 4 KPIs + alertas + tabela prestadores
 - [x] `pages/admin/profissionais.html` → Grid com busca, filtros de plano, paginação
+- [x] `pages/admin/financeiro.html` → MRR, receita 30d, churn, distribuição de planos, pagamentos recentes
+- [x] `pages/admin/acoes.html` → Listar/suspender/ativar/estender contas de prestadores
+- [x] `pages/admin/configuracoes.html` → Status do sistema, segredos, comandos de deploy
 - [x] `modules/admin-auth.js` → requireAdminAuth, logoutAdmin, adminHeaders (com Bearer anon key)
 - [x] `supabase/functions/admin-validate/index.ts` → Auth por senha + token 24h
 - [x] `supabase/functions/admin-dashboard/index.ts` → KPIs agregados
 - [x] `supabase/functions/admin-profissionais/index.ts` → Busca + filtro plano + paginação
-- [x] `firebase.json` → Rotas /admin/login, /admin/dashboard, /admin/profissionais
-- [x] `DEPLOY-ADMIN.md` → Guia completo de deploy + segurança
+- [x] `supabase/functions/admin-financeiro/index.ts` → KPIs financeiros, pagamentos recentes, distribuição por plano
+- [x] `supabase/functions/admin-actions/index.ts` → Listar, suspender, ativar, estender plano, detalhes
+- [x] `supabase/functions/admin-configuracoes/index.ts` → Status do sistema, listar tabelas/funções
+- [x] `firebase.json` → Rotas /admin/login, /admin/dashboard, /admin/profissionais, /admin/financeiro, /admin/acoes, /admin/configuracoes
+- [x] `supabase/functions/_shared/cors.ts` → Header `x-admin-token` adicionado
+- [x] `DEPLOY-ADMIN.md` → Guia completo de deploy + segurança + segredos
 
 ### Notas técnicas
 - Edge Functions exigem header `Authorization: Bearer <anon_key>` (não `apikey`)
 - Sentry usa `modules/sentry.js` auto-carregado no `<head>`, sem imports manuais
 - `config.js` expõe `window.*` globais, não ES module exports
 - `SUPABASE_SERVICE_ROLE_KEY` já existe no Supabase (usada por `criar-assinatura`)
-
-### PRÓXIMO: FASE 4
-- [ ] `pages/admin/financeiro.html` → Receitas, MRR, churn
-- [ ] `pages/admin/acoes.html` → Suspender/ativar contas, gerenciar planos
-- [ ] `supabase/functions/admin-financeiro/index.ts`
-- [ ] `supabase/functions/admin-actions/index.ts`
+- Layout dark theme com sidebar consistente em todas as páginas
 
 ---
 

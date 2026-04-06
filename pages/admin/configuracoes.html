@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurações — AgendaPro Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0e0d0a; --bg2: #181714; --bg3: #222018;
+  --border: #2e2b24; --bord2: #3e3b32;
+  --text: #f0ede6; --muted: #8a8778; --faint: #4a4840;
+  --lime: #c8f060; --lime-d: #8ab830; --lime-l: #1a2a08; --lime-t: rgba(200,240,96,.12);
+  --rust: #f06048; --rust-t: rgba(240,96,72,.12);
+  --blue: #60a5fa; --blue-t: rgba(96,165,250,.12);
+  --purple: #a78bfa; --purple-t: rgba(167,139,250,.12);
+  --orange: #fb923c; --orange-t: rgba(251,146,60,.12);
+  --radius: 14px;
+}
+body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 52px 52px; pointer-events: none; z-index: 0; }
+
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: var(--bg2); border-right: 1px solid var(--border); padding: 24px 0; z-index: 100; display: flex; flex-direction: column; }
+.sidebar-logo { display: flex; align-items: center; gap: 8px; padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.logo-dot { width: 8px; height: 8px; background: var(--lime); border-radius: 50%; box-shadow: 0 0 10px rgba(200,240,96,.5); }
+.logo-text { font-family: 'Fraunces', serif; font-size: 18px; }
+.logo-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--bg); background: var(--lime); padding: 2px 6px; border-radius: 3px; text-transform: uppercase; }
+.sidebar-nav { flex: 1; padding: 0 12px; }
+.nav-item { display: block; padding: 10px 16px; color: var(--muted); text-decoration: none; font-size: 14px; border-radius: 8px; margin-bottom: 4px; transition: all 0.2s; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--lime-t); color: var(--lime); font-weight: 500; }
+.nav-divider { height: 1px; background: var(--border); margin: 12px 16px; }
+.sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); }
+.btn-logout { width: 100%; padding: 10px 16px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.btn-logout:hover { border-color: var(--rust); color: var(--rust); background: var(--rust-t); }
+
+.main { margin-left: 240px; padding: 32px 40px; position: relative; z-index: 1; }
+.page-header { margin-bottom: 32px; }
+.page-header h1 { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 400; }
+.page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.card-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.card-header h3 { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 400; }
+.card-body { padding: 20px; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .info-grid { grid-template-columns: 1fr; } }
+
+.info-item { padding: 16px; background: var(--bg3); border-radius: 8px; }
+.info-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--faint); text-transform: uppercase; margin-bottom: 6px; }
+.info-value { font-size: 14px; }
+.info-value.ok { color: var(--lime); }
+.info-value.error { color: var(--rust); }
+
+.status-badge { font-family: 'DM Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 4px; display: inline-block; }
+.status-ok { background: var(--lime-t); color: var(--lime); }
+.status-err { background: var(--rust-t); color: var(--rust); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .5px; padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+tbody td { padding: 12px 20px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.03); }
+tbody tr:last-child td { border-bottom: none; }
+
+.btn-copy { padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; }
+.btn-copy:hover { border-color: var(--lime); color: var(--lime); }
+
+.toast-box { position: fixed; bottom: 24px; right: 24px; z-index: 300; }
+.toast { background: var(--bg3); border: 1px solid var(--lime); color: var(--lime); padding: 12px 20px; border-radius: 8px; font-size: 13px; margin-top: 8px; }
+.toast.error { border-color: var(--rust); color: var(--rust); }
+
+.code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); overflow-x: auto; white-space: pre; line-height: 1.6; }
+.code-block .cmd { color: var(--lime); }
+.code-block .flag { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-dot"></span>
+    <span class="logo-text">AgendaPro</span>
+    <span class="logo-badge">Admin</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="/admin/dashboard">📊 Dashboard</a>
+    <a class="nav-item" href="/admin/profissionais">👥 Profissionais</a>
+    <a class="nav-item" href="/admin/financeiro">💰 Financeiro</a>
+    <a class="nav-item" href="/admin/acoes">🛡️ Ações Admin</a>
+    <a class="nav-item active" href="/admin/configuracoes">⚙️ Configurações</a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="/" target="_blank">🌐 Ver Site</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="logoutAdmin()">Sair do Painel</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-header">
+    <h1>⚙️ Configurações</h1>
+    <p>Status do sistema, segredos e comandos de deploy</p>
+  </div>
+
+  <!-- STATUS DO SISTEMA -->
+  <div class="card-panel">
+    <div class="card-header"><h3>Status do Sistema</h3></div>
+    <div class="card-body">
+      <div class="info-grid" id="status-grid">
+        <div class="info-item">
+          <div class="info-label">Prestadores Pro</div>
+          <div class="info-value" id="status-pro">Carregando...</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Prestadores Free</div>
+          <div class="info-value" id="status-free">Carregando...</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Total Agendamentos</div>
+          <div class="info-value" id="status-agendamentos">Carregando...</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Última verificação</div>
+          <div class="info-value" id="status-timestamp">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEGREDOS CONFIGURADOS -->
+  <div class="card-panel">
+    <div class="card-header"><h3>Segredos (Edge Functions)</h3></div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Segredo</th><th>Status</th></tr></thead>
+        <tbody id="secrets-tbody">
+          <tr><td colspan="2" style="text-align:center;color:var(--faint)">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMANDOS DEPLOY -->
+  <div class="card-panel">
+    <div class="card-header"><h3>Comandos de Deploy</h3></div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Edge Functions:</p>
+      <div class="code-block"><span class="cmd">supabase functions deploy</span> <span class="flag">admin-validate admin-dashboard admin-profissionais admin-financeiro admin-actions admin-configuracoes</span> <span class="flag">--project-ref kevqgxmcoxmzbypdjhru</span></div>
+
+      <p style="font-size:13px;color:var(--muted);margin:16px 0 16px">Alterar senha admin:</p>
+      <div class="code-block"><span class="cmd">supabase secrets set</span> <span class="flag">ADMIN_PASSWORD="nova_senha"</span> <span class="flag">--project-ref kevqgxmcoxmzbypdjhru</span></div>
+
+      <p style="font-size:13px;color:var(--muted);margin:16px 0 16px">Deploy frontend:</p>
+      <div class="code-block"><span class="cmd">node build.js</span> <span class="flag">&amp;&amp;</span> <span class="cmd">firebase deploy</span> <span class="flag">--only hosting</span></div>
+    </div>
+  </div>
+
+  <!-- TABELAS DO BANCO -->
+  <div class="card-panel">
+    <div class="card-header"><h3>Tabelas do Banco</h3></div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Tabela</th><th>Descrição</th></tr></thead>
+        <tbody id="tabelas-tbody">
+          <tr><td colspan="2" style="text-align:center;color:var(--faint)">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- TOAST -->
+<div class="toast-box" id="toast-box"></div>
+
+<script type="module">
+import { requireAdminAuth, logoutAdmin, adminHeaders } from '/modules/admin-auth.js';
+
+const EDGE_FUNCTION_URL = window.SUPABASE_URL + '/functions/v1/admin-configuracoes';
+
+window.logoutAdmin = logoutAdmin;
+
+// ── VERIFICAR AUTH ───────────────────────────────────────────────
+try {
+  await requireAdminAuth();
+} catch {
+  window.location.href = '/admin/login';
+  throw new Error('Não autenticado');
+}
+
+// ── STATUS DO SISTEMA ─────────────────────────────────────
+async function loadStatus() {
+  try {
+    const headers = await adminHeaders();
+    const res = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'status' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    document.getElementById('status-pro').textContent = data.totalPro;
+    document.getElementById('status-free').textContent = data.totalFree;
+    document.getElementById('status-agendamentos').textContent = data.totalAgendamentos;
+    document.getElementById('status-timestamp').textContent = new Date(data.timestamp).toLocaleString('pt-BR');
+
+    // Segredos
+    const secretsTbody = document.getElementById('secrets-tbody');
+    const secrets = data.secrets;
+    secretsTbody.innerHTML = Object.entries(secrets).map(([key, val]) => {
+      const isOk = val.includes('✅');
+      return `<tr>
+        <td><code style="font-family:'DM Mono',monospace;font-size:12px">${key}</code></td>
+        <td><span class="status-badge ${isOk ? 'status-ok' : 'status-err'}">${val}</span></td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    console.error('Erro status:', err);
+    document.getElementById('status-pro').textContent = 'Erro';
+  }
+}
+
+// ── TABELAS ────────────────────────────────────────────────
+async function loadTabelas() {
+  try {
+    const headers = await adminHeaders();
+    const res = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST', headers,
+      body: JSON.stringify({ action: 'listar_tabelas' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    document.getElementById('tabelas-tbody').innerHTML = data.tabelas.map(t =>
+      `<tr><td><strong>${t.nome}</strong></td><td>${t.descricao}</td></tr>`
+    ).join('');
+  } catch (err) {
+    console.error('Erro tabelas:', err);
+  }
+}
+
+// ── TOAST ──────────────────────────────────────────────────
+function showToast(msg, erro = false) {
+  const box = document.getElementById('toast-box');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if (erro) { t.style.borderColor = 'var(--rust)'; t.style.color = 'var(--rust)'; }
+  t.textContent = msg;
+  box.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+await loadStatus();
+await loadTabelas();
+</script>
+</body>
+</html>

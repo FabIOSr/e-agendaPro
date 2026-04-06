@@ -26,6 +26,9 @@
       { "source": "/admin/login",   "destination": "/pages/admin/login.html" },
       { "source": "/admin/dashboard", "destination": "/pages/admin/dashboard.html" },
       { "source": "/admin/profissionais", "destination": "/pages/admin/profissionais.html" },
+      { "source": "/admin/financeiro", "destination": "/pages/admin/financeiro.html" },
+      { "source": "/admin/acoes",   "destination": "/pages/admin/acoes.html" },
+      { "source": "/admin/configuracoes", "destination": "/pages/admin/configuracoes.html" },
       { "source": "/:slug",         "destination": "/pages/pagina-cliente.html" }
     ],
     "headers": [
