@@ -287,14 +287,12 @@ body::after {
 </div>
 
 <script type="module">
-import { SENTRY_DSN, SENTRY_ENVIRONMENT } from '../config.js';
-
 // ── SENTRY (se configurado) ──────────────────────────────────────
-if (SENTRY_DSN && SENTRY_DSN !== '__SENTRY_DSN__') {
+if (window.SENTRY_DSN && window.SENTRY_DSN !== '__SENTRY_DSN__') {
   await import('https://browser.sentry-cdn.com/7.91.0/bundle.min.js');
   Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: SENTRY_ENVIRONMENT || 'production',
+    dsn: window.SENTRY_DSN,
+    environment: window.SENTRY_ENVIRONMENT || 'production',
     tracesSampleRate: 0.1,
   });
 }
