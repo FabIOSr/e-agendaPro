@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Profissionais</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0e0d0a;
+  --bg2:    #181714;
+  --bg3:    #222018;
+  --border: #2e2b24;
+  --bord2:  #3e3b32;
+  --text:   #f0ede6;
+  --muted:  #8a8778;
+  --faint:  #4a4840;
+  --lime:   #c8f060;
+  --lime-d: #8ab830;
+  --lime-l: #1a2a08;
+  --lime-t: rgba(200,240,96,.12);
+  --rust:   #f06048;
+  --rust-t: rgba(240,96,72,.12);
+  --blue:   #60a0f0;
+  --blue-t: rgba(96,160,240,.12);
+  --radius: 14px;
+}
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── SIDEBAR (igual dashboard) ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 240px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-logo {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 24px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--lime);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(200,240,96,.5);
+}
+
+.logo-text { font-family: 'Fraunces', serif; font-size: 18px; }
+
+.logo-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--bg);
+  background: var(--lime);
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.sidebar-nav { flex: 1; padding: 0 12px; }
+
+.nav-item {
+  display: block;
+  padding: 10px 16px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s;
+}
+
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+
+.nav-item.active {
+  background: var(--lime-t);
+  color: var(--lime);
+  font-weight: 500;
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 16px;
+}
+
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-logout {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  border-color: var(--rust);
+  color: var(--rust);
+  background: var(--rust-t);
+}
+
+/* ── CONTEÚDO ── */
+.main {
+  margin-left: 240px;
+  padding: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.main-header {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.main-header h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.main-header p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── FILTROS ── */
+.filters-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+}
+
+.search-box:focus {
+  outline: none;
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px var(--lime-t);
+}
+
+.search-box::placeholder { color: var(--faint); }
+
+.filter-select {
+  padding: 10px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--lime);
+}
+
+.filter-select option {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+/* ── CONTADOR ── */
+.results-info {
+  font-size: 13px;
+  color: var(--faint);
+  margin-bottom: 16px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── GRID DE CARDS ── */
+.professionals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.prof-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: all 0.2s;
+}
+
+.prof-card:hover {
+  border-color: var(--bord2);
+  transform: translateY(-2px);
+}
+
+.prof-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.prof-avatar {
+  width: 42px;
+  height: 42px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--lime);
+  flex-shrink: 0;
+}
+
+.prof-info { flex: 1; min-width: 0; }
+
+.prof-name {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prof-email {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prof-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.prof-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.prof-label {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.prof-value {
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-pro { background: var(--lime-t); color: var(--lime); }
+.badge-free { background: rgba(255,255,255,.05); color: var(--muted); }
+.badge-trial { background: var(--blue-t); color: var(--blue); }
+
+.stars {
+  color: var(--lime);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.prof-footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.prof-link {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.prof-link:hover {
+  border-color: var(--lime-d);
+  color: var(--lime);
+}
+
+/* ── PAGINAÇÃO ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.page-btn {
+  padding: 8px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--lime-d);
+  color: var(--lime);
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-btn.active {
+  background: var(--lime-t);
+  border-color: var(--lime-d);
+  color: var(--lime);
+  font-weight: 500;
+}
+
+.page-ellipsis {
+  color: var(--faint);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+}
+
+/* ── LOADING ── */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--faint);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  color: var(--muted);
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.empty-state p {
+  font-size: 13px;
+}
+
+/* ── RESPONSIVO ── */
+@media (max-width: 768px) {
+  .sidebar { width: 100%; position: relative; height: auto; }
+  .main { margin-left: 0; padding: 24px 16px; }
+  .professionals-grid { grid-template-columns: 1fr; }
+  .filters-bar { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-dot"></span>
+    <span class="logo-text">AgendaPro</span>
+    <span class="logo-badge">Admin</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/admin/dashboard" class="nav-item">📊 Dashboard</a>
+    <a href="/admin/profissionais" class="nav-item active">👥 Profissionais</a>
+    <a href="/admin/financeiro" class="nav-item">💰 Financeiro</a>
+    <a href="/admin/configuracoes" class="nav-item">⚙️ Configurações</a>
+    <div class="nav-divider"></div>
+    <a href="/" class="nav-item">🌐 Ver Site</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button id="btn-logout" class="btn-logout">Sair do Painel</button>
+  </div>
+</aside>
+
+<!-- CONTEÚDO -->
+<main class="main">
+  <div class="main-header">
+    <div>
+      <h1>Profissionais</h1>
+      <p>Gerencie todos os profissionais cadastrados</p>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters-bar">
+    <input
+      type="text"
+      id="search-input"
+      class="search-box"
+      placeholder="Buscar por nome, email ou slug..."
+    >
+    <select id="plano-filter" class="filter-select">
+      <option value="todos">Todos os planos</option>
+      <option value="pro">Pro</option>
+      <option value="free">Free</option>
+      <option value="trial">Trial</option>
+    </select>
+  </div>
+
+  <div id="results-info" class="results-info"></div>
+
+  <!-- LOADING -->
+  <div id="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- GRID -->
+  <div id="professionals-grid" class="professionals-grid" style="display: none;"></div>
+
+  <!-- EMPTY STATE -->
+  <div id="empty-state" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">👥</div>
+    <h3>Nenhum profissional encontrado</h3>
+    <p>Tente ajustar os filtros ou termos de busca</p>
+  </div>
+
+  <!-- PAGINAÇÃO -->
+  <div id="pagination" class="pagination" style="display: none;"></div>
+</main>
+
+<script type="module">
+import { requireAdminAuth, logoutAdmin, adminHeaders } from '/modules/admin-auth.js';
+import { SENTRY_DSN, SENTRY_ENVIRONMENT } from '/config.js';
+
+// ── SENTRY ───────────────────────────────────────────────────────
+if (SENTRY_DSN && SENTRY_DSN !== '__SENTRY_DSN__') {
+  await import('https://browser.sentry-cdn.com/7.91.0/bundle.min.js');
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: SENTRY_ENVIRONMENT || 'production',
+    tracesSampleRate: 0.1,
+  });
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────
+try {
+  await requireAdminAuth();
+} catch (e) {
+  throw e;
+}
+
+document.getElementById('btn-logout').addEventListener('click', logoutAdmin);
+
+// ── ESTADO ───────────────────────────────────────────────────────
+const EDGE_FUNCTION_URL = `${window.SUPABASE_URL}/functions/v1/admin-profissionais`;
+const LIMIT = 20;
+let currentPage = 1;
+let searchTimeout = null;
+
+// ── ELEMENTOS ────────────────────────────────────────────────────
+const searchInput = document.getElementById('search-input');
+const planoFilter = document.getElementById('plano-filter');
+const loadingEl = document.getElementById('loading');
+const gridEl = document.getElementById('professionals-grid');
+const emptyEl = document.getElementById('empty-state');
+const paginationEl = document.getElementById('pagination');
+const resultsInfoEl = document.getElementById('results-info');
+
+// ── CARREGAR DADOS ───────────────────────────────────────────────
+async function loadProfessionals(page = 1) {
+  loadingEl.style.display = 'flex';
+  gridEl.style.display = 'none';
+  emptyEl.style.display = 'none';
+  paginationEl.style.display = 'none';
+
+  const search = searchInput.value.trim();
+  const plano = planoFilter.value;
+
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(LIMIT),
+  });
+
+  if (search) params.set('search', search);
+  if (plano !== 'todos') params.set('plano', plano);
+
+  try {
+    const response = await fetch(`${EDGE_FUNCTION_URL}?${params}`, {
+      headers: adminHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    renderProfessionals(data);
+    currentPage = data.page;
+
+  } catch (error) {
+    console.error('Erro ao carregar profissionais:', error);
+    emptyEl.style.display = 'block';
+    emptyEl.querySelector('h3').textContent = 'Erro ao carregar dados';
+    emptyEl.querySelector('p').textContent = error.message;
+  } finally {
+    loadingEl.style.display = 'none';
+  }
+}
+
+function renderProfessionals(data) {
+  const { prestadores, total, page, total_pages } = data;
+
+  if (!prestadores || prestadores.length === 0) {
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  resultsInfoEl.textContent = `Mostrando ${prestadores.length} de ${total} profissionais (página ${page} de ${total_pages})`;
+  resultsInfoEl.style.display = 'block';
+
+  gridEl.innerHTML = prestadores.map(p => {
+    const initials = (p.nome || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const badgeClass = p.plano === 'pro' ? 'badge-pro' : p.plano === 'trial' ? 'badge-trial' : 'badge-free';
+    const badgeText = p.plano === 'pro' ? 'Pro' : p.plano === 'trial' ? `Trial (${p.trial_dias}d)` : 'Free';
+
+    const stars = p.avaliacao_media ? '★'.repeat(Math.round(p.avaliacao_media)) + '☆'.repeat(5 - Math.round(p.avaliacao_media)) : '—';
+    const slugUrl = p.slug ? `${window.APP_URL}/${p.slug}` : '—';
+
+    return `
+      <div class="prof-card">
+        <div class="prof-header">
+          <div class="prof-avatar">${initials}</div>
+          <div class="prof-info">
+            <div class="prof-name">${p.nome || 'Sem nome'}</div>
+            <div class="prof-email">${p.email || '—'}</div>
+          </div>
+        </div>
+
+        <div class="prof-body">
+          <div class="prof-row">
+            <span class="prof-label">Plano</span>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="prof-row">
+            <span class="prof-label">Agendamentos</span>
+            <span class="prof-value">${p.total_agendamentos}</span>
+          </div>
+          <div class="prof-row">
+            <span class="prof-label">Avaliação</span>
+            <span class="prof-value">
+              ${p.avaliacao_total > 0 ? `<span class="stars">${stars}</span> (${p.avaliacao_total})` : '—'}
+            </span>
+          </div>
+          <div class="prof-row">
+            <span class="prof-label">Criado em</span>
+            <span class="prof-value">${new Date(p.created_at).toLocaleDateString('pt-BR')}</span>
+          </div>
+        </div>
+
+        <div class="prof-footer">
+          <a href="${slugUrl}" target="_blank" class="prof-link">🌐 Página</a>
+          ${p.whatsapp ? `<a href="https://wa.me/${p.whatsapp.replace(/\D/g, '')}" target="_blank" class="prof-link">💬 WhatsApp</a>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  gridEl.style.display = 'grid';
+
+  // Paginação
+  if (total_pages > 1) {
+    renderPagination(page, total_pages);
+    paginationEl.style.display = 'flex';
+  }
+}
+
+function renderPagination(current, total) {
+  let html = '';
+
+  html += `<button class="page-btn" ${current <= 1 ? 'disabled' : ''} onclick="window.__goToPage(${current - 1})">← Anterior</button>`;
+
+  // Páginas visíveis
+  const pages = [];
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - 2 && i <= current + 2)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...');
+    }
+  }
+
+  pages.forEach(p => {
+    if (p === '...') {
+      html += `<span class="page-ellipsis">...</span>`;
+    } else {
+      html += `<button class="page-btn ${p === current ? 'active' : ''}" onclick="window.__goToPage(${p})">${p}</button>`;
+    }
+  });
+
+  html += `<button class="page-btn" ${current >= total ? 'disabled' : ''} onclick="window.__goToPage(${current + 1})">Próxima →</button>`;
+
+  paginationEl.innerHTML = html;
+}
+
+window.__goToPage = function(page) {
+  loadProfessionals(page);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ── EVENTOS DE FILTRO ────────────────────────────────────────────
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    loadProfessionals(1);
+  }, 400); // Debounce 400ms
+});
+
+planoFilter.addEventListener('change', () => {
+  loadProfessionals(1);
+});
+
+// ── INIT ─────────────────────────────────────────────────────────
+loadProfessionals(1);
+</script>
+
+</body>
+</html>

@@ -15,26 +15,32 @@ firebase.json                   → rotas atualizadas
 
 ---
 
-## Passo 1: Setar ADMIN_PASSWORD no Supabase
+## Passo 1: Setar Secrets no Supabase
 
-A Edge Function `admin-validate` precisa da variável `ADMIN_PASSWORD` como secret.
+São necessárias **2 variáveis** como secrets nas Edge Functions:
 
 ### Via CLI do Supabase:
 ```bash
-# Dentro do diretório do projeto
+# Senha de acesso ao painel admin
 supabase secrets set ADMIN_PASSWORD="sua_senha_forte_aqui" --project-ref kevqgxmcoxmzbypdjhru
+
+# Service Role Key (necessária para admin-dashboard ler todos os usuários, bypass RLS)
+# Pegar em: Supabase Dashboard → Settings → API → service_role key (secret)
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." --project-ref kevqgxmcoxmzbypdjhru
 ```
 
 ### Via Dashboard (browser):
 1. Acesse: https://supabase.com/dashboard/project/kevqgxmcoxmzbypdjhru
 2. Vá em **Edge Functions** no menu lateral
 3. Clique em **Secrets** (aba ou seção)
-4. Clique em **Add Secret**
-5. Nome: `ADMIN_PASSWORD`
-6. Valor: escolha uma senha forte (ex: `AgendaPr0#Admin$2026!Seguro`)
-7. Salve
+4. Clique em **Add Secret** para cada variável:
 
-> ⚠️ **Importante**: Use a mesma senha em `.env.local` e como secret no Supabase.
+| Nome | Valor | Obrigatório? |
+|------|-------|-------------|
+| `ADMIN_PASSWORD` | Senha forte (min 16 chars) | ✅ Sim |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave service_role (Supabase → Settings → API) | ✅ Sim |
+
+> ⚠️ **Importante**: A `SUPABASE_SERVICE_ROLE_KEY` é necessária porque a Edge Function `admin-dashboard` precisa ler **todos os prestadores**, não apenas o logado. As políticas RLS do Supabase bloqueiam isso para usuários normais, então usamos a service_role key que tem permissão total. **Nunca exponha essa chave no frontend.**
 
 ---
 
@@ -92,11 +98,38 @@ firebase deploy --only hosting
 
 ---
 
+## 🔒 Segurança — Quem pode acessar?
+
+### Cenário: Profissional logado tenta acessar `/admin/dashboard`
+
+| Situação | Resultado |
+|----------|-----------|
+| Profissional logado, **sem** token admin | ❌ **Redirecionado** para `/admin/login` |
+| Profissional logado, **com** token admin (de sessão anterior) | ✅ Acessa (token válido) |
+| Profissional logado, **sabe a senha admin** | ✅ Acessa (senha correta) |
+
+**Conclusão:** A segurança depende **apenas** da `ADMIN_PASSWORD`. Qualquer pessoa com a senha tem acesso total.
+
+### Mitigações atuais:
+- ✅ Token expira em 24h
+- ✅ Senha **nunca** é enviada para o Supabase (comparação server-side na Edge Function)
+- ✅ `SUPABASE_SERVICE_ROLE_KEY` **nunca** chega ao frontend
+
+### Mitigações futuras (Fase 2+):
+- [ ] Limitar por IP (bloquear faixas desconhecidas)
+- [ ] Adicionar 2FA (TOTP)
+- [ ] Log de acessos admin (quem, quando, de onde)
+- [ ] Trocar token simples por JWT assinado
+- [ ] Adicionar rate limit na Edge Function de login
+
+---
+
 ## Variáveis Necessárias — Resumo
 
-| Variável | Onde | Obrigatório? | Descrição |
+| Variável | Onde | Obrigatória? | Descrição |
 |----------|------|-------------|-----------|
 | `ADMIN_PASSWORD` | Supabase Secrets + .env.local | ✅ Sim | Senha de acesso ao admin |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Secrets apenas | ✅ Sim | Chave service_role (bypass RLS) |
 
 ---
 

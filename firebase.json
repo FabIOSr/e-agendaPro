@@ -25,6 +25,7 @@
       { "source": "/confirmar-reserva", "destination": "/pages/confirmar-reserva.html" },
       { "source": "/admin/login",   "destination": "/pages/admin/login.html" },
       { "source": "/admin/dashboard", "destination": "/pages/admin/dashboard.html" },
+      { "source": "/admin/profissionais", "destination": "/pages/admin/profissionais.html" },
       { "source": "/:slug",         "destination": "/pages/pagina-cliente.html" }
     ],
     "headers": [
