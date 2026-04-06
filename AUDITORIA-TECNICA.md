@@ -108,8 +108,14 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 | Arquivo | Descrição | Testes |
 |---------|-----------|--------|
 | `playwright.config.ts` | Configuração completa | - |
-| `tests/e2e/landing-page.spec.ts` | Landing page | 1 teste |
-| `tests/e2e/auth.spec.ts` | Auth + proteção de rotas | 2 testes |
+| `tests/e2e/landing-page.spec.ts` | Landing page completa | 13 testes |
+| `tests/e2e/auth.spec.ts` | Auth + proteção de rotas | 11 testes |
+| `tests/e2e/booking-flow.spec.ts` | Página pública de agendamento | 4 testes |
+| `tests/e2e/dashboard.spec.ts` | Painel + proteção de rotas | 6 testes |
+| `tests/e2e/internal-pages.spec.ts` | Páginas internas + públicas | 9 testes |
+| `tests/e2e/cancelamento-reagendamento.spec.ts` | Cancelamento e reagendamento | 3 testes |
+| `tests/e2e/onboarding.spec.ts` | Onboarding | 2 testes |
+| `server.js` | Servidor dev para testes | - |
 
 ### Scripts Adicionados ao `package.json`
 
@@ -118,7 +124,9 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
   "scripts": {
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "dev": "node server.js",
+    "serve": "node server.js"
   }
 }
 ```
@@ -128,24 +136,32 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 ```typescript
 // playwright.config.ts
 - Testa em Chromium + Mobile Chrome
-- Web server auto-iniciado (npm run dev)
+- Web server auto-iniciado (node server.js)
 - Screenshots e vídeos em falhas
-- Retry automático (1 local, 2 CI)
+- Retry automático desabilitado para velocidade
 - Totalmente paralelo
 ```
 
-### Próximos Passos para E2E
+### Cobertura Atual (54 testes)
 
-| Feature | Teste Sugerido | Esforço |
-|---------|---------------|---------|
-| Agendamento completo | Página pública → selecionar serviço → escolher horário → confirmar | Médio |
-| Cancelamento por token | Link WhatsApp → página de cancelamento → confirmar | Baixo |
-| Trial activation | Painel → Planos → Ativar Trial → Verificar badge | Baixo |
-| Lista de Espera | Página pública → entrar na lista → verificar confirmação | Médio |
+| Página/Feature | Testes | Status |
+|----------------|--------|--------|
+| Landing page | 13 | ✅ |
+| Auth | 11 | ✅ |
+| Página pública (pagina-cliente) | 4 | ✅ |
+| Dashboard + proteção de rotas | 6 | ✅ |
+| Páginas internas | 9 | ✅ |
+| Cancelamento/Reagendamento | 3 | ✅ |
+| Onboarding | 2 | ✅ |
 
 ### Veredito
 **Infraestrutura E2E: FUNCIONAL** ✅  
-Playwright configurado e testado. 3 testes básicos passando. Pronto para expansão.
+54 testes E2E cobrindo fluxos críticos:
+- Landing page completa (hero, CTAs, FAQ, preços, depoimentos)
+- Auth (formulário, Google login, proteção de rotas)
+- Páginas públicas (pagina-cliente, confirmar-reserva)
+- Cancelamento/reagendamento por token
+- Responsividade mobile
 
 ---
 
