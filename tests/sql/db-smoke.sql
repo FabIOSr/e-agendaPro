@@ -53,16 +53,23 @@ BEGIN
   VALUES (v_user_id, 'Corte Smoke', 60, 80)
   RETURNING id INTO v_servico_id;
 
+  -- Agenda para 7 dias a partir de agora, as 10h BRT
+  -- Preciso garantir disponibilidade no dia correspondente
   INSERT INTO public.disponibilidade (prestador_id, dia_semana, hora_inicio, hora_fim)
-  VALUES (v_user_id, 6, '09:00', '18:00');
+  SELECT
+    v_user_id,
+    extract(dow from (now() at time zone 'America/Sao_Paulo' + interval '7 days'))::int,
+    '08:00', '18:00';
 
+  -- Data do agendamento: 7 dias a partir de agora, as 10:00 BRT
+  -- Formato: date + time, convertido para timestamptz
   v_result := public.criar_agendamento_atomic(
     v_user_id,
     v_servico_id,
     'Maria Smoke',
     '5511888888888',
     'maria-smoke@example.com',
-    '2026-04-04T12:00:00-03:00'::timestamptz,
+    (SELECT ((now() at time zone 'America/Sao_Paulo' + interval '7 days')::date || ' 10:00:00')::timestamp at time zone 'America/Sao_Paulo'),
     NULL
   );
 
@@ -70,13 +77,14 @@ BEGIN
     RAISE EXCEPTION 'Smoke falhou: criacao valida nao retornou sucesso. Resultado=%', v_result;
   END IF;
 
+  -- Conflito: mesmo horario, mesmo dia
   v_result_conflict := public.criar_agendamento_atomic(
     v_user_id,
     v_servico_id,
     'Joao Smoke',
     '5511777777777',
     'joao-smoke@example.com',
-    '2026-04-04T12:00:00-03:00'::timestamptz,
+    (SELECT ((now() at time zone 'America/Sao_Paulo' + interval '7 days')::date || ' 10:00:00')::timestamp at time zone 'America/Sao_Paulo'),
     NULL
   );
 
@@ -84,13 +92,14 @@ BEGIN
     RAISE EXCEPTION 'Smoke falhou: conflito esperado nao retornou 409. Resultado=%', v_result_conflict;
   END IF;
 
+  -- Antecedencia minima: agendar para 30 min a partir de agora deve falhar
   v_result_same_day := public.criar_agendamento_atomic(
     v_user_id,
     v_servico_id,
     'Ana Smoke',
     '5511666666666',
     'ana-smoke@example.com',
-    ((now() at time zone 'America/Sao_Paulo') + interval '30 minutes')::timestamp at time zone 'America/Sao_Paulo',
+    (SELECT ((now() at time zone 'America/Sao_Paulo' + interval '30 minutes')::timestamp at time zone 'America/Sao_Paulo')),
     NULL
   );
 
@@ -127,7 +136,7 @@ BEGIN
   VALUES (
     v_user_id,
     v_servico_id,
-    '2026-04-04T15:00:00-03:00'::timestamptz,
+    (SELECT ((now() at time zone 'America/Sao_Paulo' + interval '7 days')::date || ' 15:00:00')::timestamp at time zone 'America/Sao_Paulo'),
     'Cliente Original',
     '5511555555555',
     'reservado'
@@ -157,7 +166,7 @@ BEGIN
     'Cliente Lista',
     '5511444444444',
     'lista@example.com',
-    '2026-04-04',
+    (SELECT (now() at time zone 'America/Sao_Paulo' + interval '7 days')::date),
     '15:00',
     v_servico_id,
     'Corte Smoke',
@@ -177,7 +186,7 @@ BEGIN
     'Cliente Lista',
     '5511444444444',
     'lista@example.com',
-    '2026-04-04T15:00:00-03:00'::timestamptz,
+    (SELECT ((now() at time zone 'America/Sao_Paulo' + interval '7 days')::date || ' 15:00:00')::timestamp at time zone 'America/Sao_Paulo'),
     v_token_reserva
   );
 
