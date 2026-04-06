@@ -508,15 +508,7 @@ tr:last-child td {
 <script type="module">
 import { requireAdminAuth, logoutAdmin, adminHeaders } from '/modules/admin-auth.js';
 
-// ── SENTRY (se configurado) ──────────────────────────────────────
-if (window.SENTRY_DSN && window.SENTRY_DSN !== '__SENTRY_DSN__') {
-  await import('https://browser.sentry-cdn.com/7.91.0/bundle.min.js');
-  Sentry.init({
-    dsn: window.SENTRY_DSN,
-    environment: window.SENTRY_ENVIRONMENT || 'production',
-    tracesSampleRate: 0.1,
-  });
-}
+// ── CARREGAR DADOS ───────────────────────────────────────────────
 
 // ── VERIFICAR AUTH ───────────────────────────────────────────────
 try {

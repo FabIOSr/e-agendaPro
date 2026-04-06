@@ -1,25 +1,35 @@
 # ⚡ PLANO DE IMPLEMENTAÇÃO — Painel Admin + Stack Modernizada
 
 **Data:** 2026-04-05
-**Status:** FASE 1+2 implementadas | FASE 3+4 pendentes
-**Versão:** 1.1
+**Status:** FASE 1-3 implementadas e testadas | FASE 4 pendente
+**Versão:** 1.2
 
 ---
 
 ## ✅ Progresso Atual
 
-### FASE 1+2 — CONCLUÍDAS (commit 4e23de4)
-- [x] `pages/admin/login.html` → Página de login com senha
-- [x] `pages/admin/dashboard.html` → Dashboard com 4 KPIs + alertas + tabela
-- [x] `modules/admin-auth.js` → Módulo JS reutilizável (requireAdminAuth, logout, adminHeaders)
+### FASE 1+2+3 — CONCLUÍDAS
+- [x] `pages/admin/login.html` → Login por senha com token 24h
+- [x] `pages/admin/dashboard.html` → 4 KPIs + alertas + tabela prestadores
+- [x] `pages/admin/profissionais.html` → Grid com busca, filtros de plano, paginação
+- [x] `modules/admin-auth.js` → requireAdminAuth, logoutAdmin, adminHeaders (com Bearer anon key)
 - [x] `supabase/functions/admin-validate/index.ts` → Auth por senha + token 24h
-- [x] `supabase/functions/admin-dashboard/index.ts` → KPIs agregados (total, MRR, novos, agendamentos)
-- [x] `firebase.json` → Rotas `/admin/login` e `/admin/dashboard` adicionadas
-- [x] `.env.example` → `ADMIN_PASSWORD` adicionada
+- [x] `supabase/functions/admin-dashboard/index.ts` → KPIs agregados
+- [x] `supabase/functions/admin-profissionais/index.ts` → Busca + filtro plano + paginação
+- [x] `firebase.json` → Rotas /admin/login, /admin/dashboard, /admin/profissionais
+- [x] `DEPLOY-ADMIN.md` → Guia completo de deploy + segurança
 
-### PRÓXIMO: FASE 3
-- [ ] `pages/admin/profissionais.html` → Listagem completa com busca/filtros
-- [ ] `supabase/functions/admin-profissionais/index.ts` → Query com paginação
+### Notas técnicas
+- Edge Functions exigem header `Authorization: Bearer <anon_key>` (não `apikey`)
+- Sentry usa `modules/sentry.js` auto-carregado no `<head>`, sem imports manuais
+- `config.js` expõe `window.*` globais, não ES module exports
+- `SUPABASE_SERVICE_ROLE_KEY` já existe no Supabase (usada por `criar-assinatura`)
+
+### PRÓXIMO: FASE 4
+- [ ] `pages/admin/financeiro.html` → Receitas, MRR, churn
+- [ ] `pages/admin/acoes.html` → Suspender/ativar contas, gerenciar planos
+- [ ] `supabase/functions/admin-financeiro/index.ts`
+- [ ] `supabase/functions/admin-actions/index.ts`
 
 ---
 

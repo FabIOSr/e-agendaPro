@@ -287,16 +287,6 @@ body::after {
 </div>
 
 <script type="module">
-// ── SENTRY (se configurado) ──────────────────────────────────────
-if (window.SENTRY_DSN && window.SENTRY_DSN !== '__SENTRY_DSN__') {
-  await import('https://browser.sentry-cdn.com/7.91.0/bundle.min.js');
-  Sentry.init({
-    dsn: window.SENTRY_DSN,
-    environment: window.SENTRY_ENVIRONMENT || 'production',
-    tracesSampleRate: 0.1,
-  });
-}
-
 // ── ELEMENTOS ────────────────────────────────────────────────────
 const form = document.getElementById('admin-login-form');
 const passwordInput = document.getElementById('admin-password');
@@ -357,7 +347,10 @@ form.addEventListener('submit', async (e) => {
   try {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${window.SUPABASE_ANON}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         action: 'validate_password',
         password

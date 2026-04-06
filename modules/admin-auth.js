@@ -37,7 +37,10 @@ export function getAdminSession() {
 export async function loginAdmin(password) {
   const response = await fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${window.SUPABASE_ANON}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       action: 'validate_password',
       password
@@ -67,8 +70,9 @@ export async function validateAdminSession() {
   const response = await fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
     headers: {
+      'Authorization': `Bearer ${window.SUPABASE_ANON}`,
       'Content-Type': 'application/json',
-      'x-admin-token': token
+      'x-admin-token': token,
     },
     body: JSON.stringify({ action: 'validate_token' })
   });
@@ -91,7 +95,10 @@ export function logoutAdmin() {
   // Opcional: notificar edge function
   fetch(EDGE_FUNCTION_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${window.SUPABASE_ANON}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ action: 'logout' })
   }).catch(() => {}); // Ignora erro
 
@@ -119,6 +126,7 @@ export function adminHeaders(extra = {}) {
 
   return {
     'Content-Type': 'application/json',
+    'Authorization': `Bearer ${window.SUPABASE_ANON}`,
     'x-admin-token': token,
     ...extra
   };
