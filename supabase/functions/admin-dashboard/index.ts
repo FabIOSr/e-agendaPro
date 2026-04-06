@@ -80,8 +80,19 @@ serve(async (req) => {
       .not('trial_ends_at', 'is', null);
 
     // ── KPI: MRR (Receita Mensal Recorrente) ──────────────────────
-    const precoPro = 49.90;
-    const mrr = (planoPro || 0) * precoPro;
+    // Busca pagamentos do mês atual para calcular valor real
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
+
+    const { data: pagamentosMes } = await supabase
+      .from('pagamentos')
+      .select('valor')
+      .gte('data_evento', inicioMes.toISOString())
+      .in('status', ['confirmed', 'paid', 'aprovado'])
+      .gte('valor', 0);
+
+    const mrr = pagamentosMes?.reduce((sum, p) => sum + (p.valor || 0), 0) || 0;
 
     // ── KPI: Novos nos últimos 7 dias ─────────────────────────────
     const seteDiasAtras = new Date();
@@ -94,10 +105,6 @@ serve(async (req) => {
       .gte('created_at', seteDiasAtras.toISOString());
 
     // ── KPI: Agendamentos do mês ──────────────────────────────────
-    const inicioMes = new Date();
-    inicioMes.setDate(1);
-    inicioMes.setHours(0, 0, 0, 0);
-
     const { count: agendamentosMes } = await supabase
       .from('agendamentos')
       .select('id', { count: 'exact', head: true })

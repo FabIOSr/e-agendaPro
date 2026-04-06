@@ -75,9 +75,47 @@ tbody tr:last-child td { border-bottom: none; }
 .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); overflow-x: auto; white-space: pre; line-height: 1.6; }
 .code-block .cmd { color: var(--lime); }
 .code-block .flag { color: var(--blue); }
+
+/* ── RESPONSIVO ── */
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; width: 260px; transition: left 0.3s ease; z-index: 200; }
+  .sidebar.open { left: 0; }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; }
+  .sidebar-overlay.show { display: block; }
+  .mobile-header { display: flex !important; }
+  .main { margin-left: 0; padding: 24px 16px; }
+  .info-grid { grid-template-columns: 1fr; }
+  table, thead, tbody, th, td, tr { display: block; }
+  thead { display: none; }
+  tr { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  td { padding: 4px 0; border: none; }
+  td::before { content: attr(data-label); font-size: 11px; color: var(--muted); text-transform: uppercase; display: block; }
+  .code-block { font-size: 10px; overflow-x: scroll; }
+}
+@media (min-width: 769px) { .mobile-header, .sidebar-overlay { display: none !important; } }
+
+/* ── MOBILE HEADER ── */
+.mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 16px; align-items: center; gap: 12px; z-index: 100; }
+.menu-toggle { background: none; border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.menu-toggle:hover { background: var(--bg3); }
+.menu-toggle svg { stroke: var(--text); }
+.mobile-title { font-size: 16px; font-weight: 500; }
 </style>
 </head>
 <body>
+
+<!-- HEADER MOBILE -->
+<header class="mobile-header">
+  <button id="btn-menu-toggle" class="menu-toggle">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <span class="mobile-title">Configurações</span>
+</header>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -192,6 +230,17 @@ try {
   throw new Error('Não autenticado');
 }
 
+// ── MENU MOBILE ─────────────────────────────────────────────────
+const sidebar = document.querySelector('.sidebar');
+const overlay = document.getElementById('sidebar-overlay');
+const btnMenuToggle = document.getElementById('btn-menu-toggle');
+
+function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('show'); }
+function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+if (btnMenuToggle) btnMenuToggle.addEventListener('click', openSidebar);
+if (overlay) overlay.addEventListener('click', closeSidebar);
+document.querySelectorAll('.nav-item').forEach(link => link.addEventListener('click', closeSidebar));
+
 // ── STATUS DO SISTEMA ─────────────────────────────────────
 async function loadStatus() {
   try {
@@ -236,7 +285,7 @@ async function loadTabelas() {
     if (!res.ok) throw new Error(data.error);
 
     document.getElementById('tabelas-tbody').innerHTML = data.tabelas.map(t =>
-      `<tr><td><strong>${t.nome}</strong></td><td>${t.descricao}</td></tr>`
+      `<tr><td data-label="Tabela"><strong>${t.nome}</strong></td><td data-label="Descrição">${t.descricao}</td></tr>`
     ).join('');
   } catch (err) {
     console.error('Erro tabelas:', err);

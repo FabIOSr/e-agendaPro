@@ -145,6 +145,40 @@ body::before {
   background: var(--rust-t);
 }
 
+/* ── MOBILE HEADER ── */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.menu-toggle:hover {
+  background: var(--bg3);
+}
+
+.mobile-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
 /* ── CONTEÚDO PRINCIPAL ── */
 .main {
   margin-left: 240px;
@@ -395,9 +429,33 @@ tr:last-child td {
 /* ── RESPONSIVO ── */
 @media (max-width: 768px) {
   .sidebar {
-    width: 100%;
-    position: relative;
-    height: auto;
+    position: fixed;
+    left: -260px;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    transition: left 0.3s ease;
+    z-index: 200;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 150;
+  }
+
+  .sidebar-overlay.show {
+    display: block;
+  }
+
+  .mobile-header {
+    display: flex !important;
   }
 
   .main {
@@ -414,10 +472,59 @@ tr:last-child td {
     gap: 12px;
     align-items: flex-start;
   }
+
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  td {
+    padding: 4px 0;
+    border: none;
+  }
+
+  td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-header, .sidebar-overlay {
+    display: none !important;
+  }
 }
 </style>
 </head>
 <body>
+
+<!-- HEADER MOBILE -->
+<header class="mobile-header">
+  <button id="btn-menu-toggle" class="menu-toggle">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+  <span class="mobile-title">AgendaPro Admin</span>
+</header>
+
+<!-- OVERLAY PARA MOBILE -->
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -522,6 +629,34 @@ try {
 // ── LOGOUT ───────────────────────────────────────────────────────
 document.getElementById('btn-logout').addEventListener('click', logoutAdmin);
 
+// ── MENU MOBILE ─────────────────────────────────────────────────
+const sidebar = document.querySelector('.sidebar');
+const overlay = document.getElementById('sidebar-overlay');
+const btnMenuToggle = document.getElementById('btn-menu-toggle');
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('show');
+}
+
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+if (btnMenuToggle) {
+  btnMenuToggle.addEventListener('click', openSidebar);
+}
+
+if (overlay) {
+  overlay.addEventListener('click', closeSidebar);
+}
+
+// Fechar sidebar ao clicar em um link (mobile)
+document.querySelectorAll('.nav-item').forEach(link => {
+  link.addEventListener('click', closeSidebar);
+});
+
 // ── CARREGAR DADOS ───────────────────────────────────────────────
 const EDGE_FUNCTION_URL = `${window.SUPABASE_URL}/functions/v1/admin-dashboard`;
 
@@ -560,9 +695,9 @@ function renderDashboard(data) {
     `${data.plano_pro} Pro · ${data.plano_free} Free · ${data.plano_trial} Trial`;
 
   document.getElementById('kpi-mrr').textContent =
-    `R$ ${(data.mrr || 0).toLocaleString('pt-BR')}`;
+    `R$ ${(data.mrr || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   document.getElementById('kpi-mrr-sub').textContent =
-    `${data.plano_pro} profissionais Pro × R$ 49,90`;
+    'Receita do mês atual';
 
   document.getElementById('kpi-novos').textContent = data.novos_7_dias;
   document.getElementById('kpi-novos-sub').textContent =
@@ -638,13 +773,13 @@ function renderDashboard(data) {
 
     return `
       <tr>
-        <td>
+        <td data-label="Nome">
           ${u.nome || 'Sem nome'}
           <div class="text-muted" style="font-size: 12px;">${u.email || '—'}</div>
         </td>
-        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-        <td>${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
-        <td>${u.agendamentos || 0}</td>
+        <td data-label="Plano"><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td data-label="Criado em">${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
+        <td data-label="Agendamentos">${u.agendamentos || 0}</td>
       </tr>
     `;
   }).join('');

@@ -194,31 +194,6 @@ body::after {
   to { transform: rotate(360deg); }
 }
 
-/* ── MENSAGENS ── */
-.alert {
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 20px;
-  display: none;
-}
-
-.alert-error {
-  background: var(--rust-t);
-  border: 1px solid var(--rust);
-  color: var(--rust);
-}
-
-.alert-success {
-  background: var(--lime-t);
-  border: 1px solid var(--lime);
-  color: var(--lime);
-}
-
-.alert.show {
-  display: block;
-}
-
 /* ── FOOTER ── */
 .login-footer {
   text-align: center;
@@ -259,9 +234,6 @@ body::after {
       </p>
     </div>
 
-    <div id="alert-error" class="alert alert-error"></div>
-    <div id="alert-success" class="alert alert-success"></div>
-
     <form id="admin-login-form">
       <div class="form-group">
         <label class="form-label" for="admin-password">Senha de Administrador</label>
@@ -287,28 +259,17 @@ body::after {
 </div>
 
 <script type="module">
+// Importa toast do ui-helpers
+import '/modules/ui-helpers.js';
+
 // ── ELEMENTOS ────────────────────────────────────────────────────
 const form = document.getElementById('admin-login-form');
 const passwordInput = document.getElementById('admin-password');
 const btnLogin = document.getElementById('btn-login');
-const alertError = document.getElementById('alert-error');
-const alertSuccess = document.getElementById('alert-success');
 
 const EDGE_FUNCTION_URL = `${window.SUPABASE_URL}/functions/v1/admin-validate`;
 
 // ── HELPERS ──────────────────────────────────────────────────────
-function showError(msg) {
-  alertError.textContent = msg;
-  alertError.classList.add('show');
-  alertSuccess.classList.remove('show');
-}
-
-function showSuccess(msg) {
-  alertSuccess.textContent = msg;
-  alertSuccess.classList.add('show');
-  alertError.classList.remove('show');
-}
-
 function setLoading(loading) {
   if (loading) {
     btnLogin.classList.add('loading');
@@ -317,21 +278,6 @@ function setLoading(loading) {
     btnLogin.classList.remove('loading');
     btnLogin.disabled = false;
   }
-}
-
-// ── VERIFICAR SE JÁ ESTÁ LOGADO ─────────────────────────────────
-const existingToken = localStorage.getItem('admin_token');
-const existingExpires = localStorage.getItem('admin_expires');
-
-if (existingToken && existingExpires) {
-  const expires = new Date(existingExpires).getTime();
-  if (Date.now() < expires) {
-    // Token ainda válido, redireciona direto
-    window.location.href = '/admin/dashboard';
-  } else {
-    // Expirado, limpa
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_expires');
   }
 }
 
@@ -339,8 +285,6 @@ if (existingToken && existingExpires) {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   setLoading(true);
-  alertError.classList.remove('show');
-  alertSuccess.classList.remove('show');
 
   const password = passwordInput.value;
 
@@ -360,7 +304,7 @@ form.addEventListener('submit', async (e) => {
     const data = await response.json();
 
     if (!response.ok || !data.valid) {
-      showError(data.error || 'Senha inválida');
+      toast(data.error || '✕ Senha inválida', 'error');
       setLoading(false);
       return;
     }
@@ -369,7 +313,7 @@ form.addEventListener('submit', async (e) => {
     localStorage.setItem('admin_token', data.token);
     localStorage.setItem('admin_expires', data.expires_at);
 
-    showSuccess('Login realizado com sucesso! Redirecionando...');
+    toast('✓ Login realizado com sucesso!', 'success');
 
     // Redireciona após 1s
     setTimeout(() => {
@@ -378,7 +322,7 @@ form.addEventListener('submit', async (e) => {
 
   } catch (error) {
     console.error('Erro no login admin:', error);
-    showError('Erro ao conectar com servidor. Tente novamente.');
+    toast('✕ Erro ao conectar com servidor', 'error');
     setLoading(false);
   }
 });
