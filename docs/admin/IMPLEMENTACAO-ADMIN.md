@@ -1,8 +1,27 @@
 # ⚡ PLANO DE IMPLEMENTAÇÃO — Painel Admin + Stack Modernizada
 
-**Data:** 2026-04-05  
-**Status:** Pronto para Execução  
-**Versão:** 1.0
+**Data:** 2026-04-05
+**Status:** FASE 1+2 implementadas | FASE 3+4 pendentes
+**Versão:** 1.1
+
+---
+
+## ✅ Progresso Atual
+
+### FASE 1+2 — CONCLUÍDAS (commit 4e23de4)
+- [x] `pages/admin/login.html` → Página de login com senha
+- [x] `pages/admin/dashboard.html` → Dashboard com 4 KPIs + alertas + tabela
+- [x] `modules/admin-auth.js` → Módulo JS reutilizável (requireAdminAuth, logout, adminHeaders)
+- [x] `supabase/functions/admin-validate/index.ts` → Auth por senha + token 24h
+- [x] `supabase/functions/admin-dashboard/index.ts` → KPIs agregados (total, MRR, novos, agendamentos)
+- [x] `firebase.json` → Rotas `/admin/login` e `/admin/dashboard` adicionadas
+- [x] `.env.example` → `ADMIN_PASSWORD` adicionada
+
+### PRÓXIMO: FASE 3
+- [ ] `pages/admin/profissionais.html` → Listagem completa com busca/filtros
+- [ ] `supabase/functions/admin-profissionais/index.ts` → Query com paginação
+
+---
 
 ---
 
