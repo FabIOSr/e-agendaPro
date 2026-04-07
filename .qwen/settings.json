@@ -4,7 +4,8 @@
       "Bash(supabase *)",
       "Bash(curl *)",
       "Bash(npm run *)",
-      "Bash(firebase *)"
+      "Bash(firebase *)",
+      "Bash(npx *)"
     ]
   },
   "$version": 3

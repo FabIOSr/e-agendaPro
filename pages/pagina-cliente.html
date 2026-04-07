@@ -115,6 +115,14 @@
       color: rgba(250, 249, 246, .7);
     }
 
+    /* ── Horário de funcionamento (Free + Pro) ── */
+    .hero-horario {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11.5px; color: rgba(250,249,246,.6);
+      margin-top: 6px; justify-content: center;
+    }
+    .hero-horario svg { opacity: .7; flex-shrink: 0; }
+
     /* ── PRO: hero expandido ── */
     .hero-meta {
       display: flex; align-items: center; justify-content: center;
@@ -402,6 +410,14 @@
       color: var(--muted);
       display: flex;
       gap: 8px;
+    }
+
+    .servico-desc {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.45;
+      max-width: 100%;
     }
 
     .servico-preco {
@@ -901,6 +917,11 @@
       <div class="avatar-wrap" id="hero-avatar">A</div>
       <h1 id="hero-nome">Carregando…</h1>
       <p class="hero-bio" id="hero-bio"></p>
+      <!-- Horário de funcionamento (Free + Pro) -->
+      <div class="hero-horario" id="hero-horario" style="display:none">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="hero-horario-text"></span>
+      </div>
       <!-- PRO: meta info (localização + avaliação) -->
       <div class="hero-meta" id="hero-meta" style="display:none">
         <div class="hero-meta-item" id="hero-local" style="display:none">
@@ -1137,20 +1158,41 @@
 
       // ── Cor de tema personalizada ──────────────────────────────────────
       if (data.cor_tema) {
-        const r = document.documentElement;
-        r.style.setProperty('--accent', data.cor_tema);
-        // Versão clara (10% opacidade) e média (30%) derivadas da cor
-        r.style.setProperty('--accent-l', data.cor_tema + '1a');
-        r.style.setProperty('--accent-m', data.cor_tema + '4d');
-        // Gradiente do hero acompanha a cor
-        const heroEl = document.getElementById('hero');
-        if (heroEl) {
-          heroEl.style.setProperty('--hero-glow', data.cor_tema);
-          // Reaplica o pseudo-element via uma classe dinâmica no style tag
-          const styleEl = document.createElement('style');
-          styleEl.textContent = `.hero::before { background: radial-gradient(ellipse 80% 60% at 50% 120%, ${data.cor_tema} 0%, transparent 70%) !important; }`;
-          document.head.appendChild(styleEl);
-        }
+        const r   = document.documentElement;
+        const cor = data.cor_tema;
+
+        r.style.setProperty('--accent',   cor);
+        r.style.setProperty('--accent-l', cor + '1a');
+        r.style.setProperty('--accent-m', cor + '4d');
+
+        // Converte hex → rgb para usar em rgba()
+        const hexToRgb = h => {
+          const n = parseInt(h.replace('#',''), 16);
+          return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        };
+        const [rr, gg, bb] = hexToRgb(cor);
+
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+          .hero::before {
+            background: radial-gradient(ellipse 90% 70% at 50% 110%, ${cor} 0%, transparent 68%) !important;
+          }
+          .hero-rating {
+            background: rgba(${rr},${gg},${bb},.18) !important;
+            border-color: rgba(${rr},${gg},${bb},.35) !important;
+          }
+          .hero-next-slot {
+            background: rgba(${rr},${gg},${bb},.15) !important;
+            border-color: rgba(${rr},${gg},${bb},.3) !important;
+          }
+          .hero-next-slot:hover {
+            background: rgba(${rr},${gg},${bb},.25) !important;
+          }
+          .av-stars { color: ${cor} !important; }
+          .av-card  { border-color: rgba(${rr},${gg},${bb},.18) !important; }
+          .section-title { color: ${cor} !important; }
+        `;
+        document.head.appendChild(styleEl);
       }
 
       // ── Preenche hero ─────────────────────────────────────────────────
@@ -1192,7 +1234,7 @@
       // Carrega serviços
       const { data: servs } = await supabase
         .from('servicos')
-        .select('id, nome, duracao_min, preco')
+        .select('id, nome, duracao_min, preco, descricao, exibir_preco')
         .eq('prestador_id', data.id)
         .eq('ativo', true)
         .order('nome');
@@ -1230,13 +1272,20 @@
       }
       container.innerHTML = SERVICOS.map((s, i) => {
         const icone = ICONES_PADRAO[i % ICONES_PADRAO.length];
-        const preco = s.preco > 0 ? `R$${Number(s.preco).toFixed(0)}` : 'Consultar';
+        const exibirPreco = s.exibir_preco !== false;
+        const preco = exibirPreco
+          ? (s.preco > 0 ? `R$${Number(s.preco).toFixed(0)}` : 'Consultar')
+          : 'Sob consulta';
+        const descHtml = s.descricao
+          ? `<div class="servico-desc">${s.descricao}</div>`
+          : '';
         return `
-      <div class="servico-card" onclick="selecionarServico(this, '${s.nome.replace(/'/g, "\\'")}', ${s.duracao_min}, ${s.preco || 0}, '${icone}', '${s.id}')">
+      <div class="servico-card" onclick="selecionarServico(this, '${s.nome.replace(/'/g, "\\'")}', ${s.duracao_min}, ${s.preco || 0}, ${s.exibir_preco !== false}, '${icone}', '${s.id}')">
         <div class="servico-icon">${icone}</div>
         <div class="servico-info">
           <div class="servico-nome">${s.nome}</div>
           <div class="servico-meta"><span>${s.duracao_min} min</span></div>
+          ${descHtml}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="servico-preco">${preco}</div>
@@ -1270,6 +1319,64 @@
         .eq('prestador_id', PRESTADOR.id);
       if (data && data.length > 0) {
         diasDisponiveis = new Set(data.map(d => d.dia_semana));
+      }
+    }
+
+    async function exibirHorarioFuncionamento() {
+      if (!PRESTADOR) return;
+      const { data } = await supabase
+        .from('disponibilidade')
+        .select('dia_semana, hora_inicio, hora_fim')
+        .eq('prestador_id', PRESTADOR.id)
+        .order('dia_semana');
+      if (!data || !data.length) return;
+
+      // Nomeia dias (0=Dom … 6=Sáb)
+      const nomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+      // Formata hora: "09:00:00" → "9h" ou "9h30"
+      function fmtHora(h) {
+        const [hh, mm] = h.split(':').map(Number);
+        return mm ? `${hh}h${String(mm).padStart(2,'0')}` : `${hh}h`;
+      }
+
+      // Agrupa dias consecutivos com mesmo horário
+      // Cada entrada: { dias: [0,1,2], inicio: "09:00", fim: "18:00" }
+      const grupos = [];
+      for (const row of data) {
+        const faixa = `${row.hora_inicio}|${row.hora_fim}`;
+        const ult = grupos[grupos.length - 1];
+        if (ult && ult.faixa === faixa && row.dia_semana === ult.dias[ult.dias.length - 1] + 1) {
+          ult.dias.push(row.dia_semana);
+        } else {
+          grupos.push({ faixa, dias: [row.dia_semana], inicio: row.hora_inicio, fim: row.hora_fim });
+        }
+      }
+
+      // Formata cada grupo
+      // Quando há horários diferentes no mesmo dia, o grupo fica com 1 dia
+      // → detectamos "colisões" e mesclamos dias vizinhos na mesma linha
+      const partes = [];
+      for (const g of grupos) {
+        const nomeDias = g.dias.length > 2
+          ? `${nomes[g.dias[0]]}–${nomes[g.dias[g.dias.length - 1]]}`
+          : g.dias.map(d => nomes[d]).join(', ');
+        partes.push(`${nomeDias} ${fmtHora(g.inicio)}–${fmtHora(g.fim)}`);
+      }
+
+      const el    = document.getElementById('hero-horario');
+      const txt   = document.getElementById('hero-horario-text');
+      if (el && txt) {
+        // Se couber numa linha (< 3 grupos), usa separador ·
+        // Senão, quebra em <br> para melhor leitura
+        const usarQuebra = partes.length > 3;
+        txt.innerHTML = partes.join(usarQuebra ? '<br>' : ' · ');
+        el.style.display = 'inline-flex';
+        el.style.flexDirection = usarQuebra ? 'column' : 'row';
+        if (usarQuebra) {
+          el.style.gap = '2px';
+          el.style.textAlign = 'center';
+        }
       }
     }
 
@@ -1337,7 +1444,7 @@
     }
 
      // ── STEP 1 — SERVIÇOS ─────────────────────────────────────────────────────
-    window.selecionarServico = function (el, nome, dur, preco, icone, servicoId) {
+    window.selecionarServico = function (el, nome, dur, preco, exibirPreco, icone, servicoId) {
       document.querySelectorAll('.servico-card').forEach(c => {
         c.classList.remove('selected');
         const ch = c.querySelector('.check-icon');
@@ -1350,6 +1457,7 @@
       state.servico = nome;
       state.duracaoMin = dur;
       state.preco = preco;
+      state.exibirPreco = exibirPreco !== false;
       state.icone = icone;
       atualizarStickyFooter();
     };
@@ -1671,7 +1779,10 @@
       set('r-hora', state.hora || '—');
       set('r-dur', (state.duracaoMin || '—') + ' minutos');
       set('r-nome', state.nome);
-      set('r-preco', state.preco > 0 ? `R$${Number(state.preco).toFixed(2)}` : 'Consultar');
+      const exibirPreco = state.exibirPreco !== false;
+      set('r-preco', exibirPreco
+        ? (state.preco > 0 ? `R$${Number(state.preco).toFixed(2)}` : 'Consultar')
+        : 'Sob consulta');
     }
 
     // ── HELPERS DE UI ─────────────────────────────────────────────────────────
@@ -1860,7 +1971,7 @@
       const dataFmt = state.data.toLocaleDateString('pt-BR');
       const horaFmt = state.hora || '--:--';
       document.getElementById('resumo-lista-espera').textContent = `${dataFmt} às ${horaFmt}`;
-      document.getElementById('resumo-servico').textContent = `${state.servico?.nome || ''} (${state.servico?.duracaoMin || 60} min)`;
+      document.getElementById('resumo-servico').textContent = `${state.servico || ''} (${state.duracaoMin || 60} min)`;
       
       // Setar hora exata com o valor selecionado (ou padrão 14:00)
       const horaInput = document.getElementById('hora-exata');
@@ -1935,9 +2046,9 @@
             cliente_email: email || null,
             data_preferida: dataFmt,
             hora_preferida: tipoPreferencia === 'exato' ? horaFmt : null,
-            servico_id: state.servico?.id || null,
-            servico_nome: state.servico?.nome || null,
-            servico_duracao_min: state.servico?.duracaoMin || 60,
+            servico_id: state.servicoId || null,
+            servico_nome: state.servico || null,
+            servico_duracao_min: state.duracaoMin || 60,
             tipo_preferencia: tipoPreferencia,
             periodo_preferido: periodoPreferido,
           }),
@@ -1984,6 +2095,11 @@
         carregarAvaliacoesPro(prestador.slug),
         carregarProximoSlot(prestador),
       ]);
+
+      // Galeria (até 9 fotos)
+      if (prestador.galeria_urls?.length) {
+        carregarGaleria(prestador.galeria_urls.slice(0, 9));
+      }
     }
 
     async function carregarAvaliacoesPro(slug) {
@@ -2096,8 +2212,8 @@
       const grid    = document.getElementById('galeria-grid');
       if (!section || !grid || !urls?.length) return;
       section.style.display = 'block';
-      grid.innerHTML = urls.slice(0, 6).map(url =>
-        `<div class="galeria-item"><img src="${url}" alt="Trabalho" loading="lazy"></div>`
+      grid.innerHTML = urls.slice(0, 9).map(url =>
+        `<div class="galeria-item"><img src="${url}" alt="Trabalho" loading="lazy" onerror="this.closest('.galeria-item').style.display='none'"></div>`
       ).join('');
     }
 
@@ -2113,7 +2229,7 @@
     // ── INIT ──────────────────────────────────────────────────────────────────
     atualizarStepsNav();
     const ok = await carregarPrestador();
-    if (ok) await carregarDisponibilidade();
+    if (ok) await Promise.all([carregarDisponibilidade(), exibirHorarioFuncionamento()]);
   </script>
 
   <!-- MODAL LISTA DE ESPERA -->

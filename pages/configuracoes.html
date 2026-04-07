@@ -486,6 +486,43 @@
       gap: 8px;
     }
 
+    .srv-desc-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .srv-desc {
+      flex: 1;
+      resize: none;
+      min-height: 34px;
+      max-height: 34px;
+      overflow: hidden;
+      line-height: 1.4;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .srv-preco-toggle {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .srv-preco-toggle input[type="checkbox"] {
+      accent-color: var(--lime-d);
+      width: 13px;
+      height: 13px;
+      cursor: pointer;
+    }
+
     .srv-i {
       background: var(--bg2);
       border: 1px solid var(--bord);
@@ -1324,6 +1361,7 @@
         <div class="nav-group-label">Perfil</div>
         <div class="nav-item active" id="ni-perfil" onclick="irSecao('perfil')"><span>👤</span> Meu perfil</div>
         <div class="nav-item" id="ni-servicos" onclick="irSecao('servicos')"><span>✂️</span> Serviços</div>
+        <div class="nav-item" id="ni-galeria" onclick="irSecao('galeria')"><span>🖼️</span> Galeria</div>
         <div class="nav-item" id="ni-agenda" onclick="irSecao('agenda')"><span>📅</span> Agenda</div>
       </div>
       <div class="nav-group">
@@ -1482,6 +1520,31 @@
           <div class="card-footer">
             <button class="btn-ghost" onclick="irSecao('servicos')">Descartar</button>
             <button class="btn-save" onclick="salvar('servicos')">Salvar serviços</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── GALERIA (Pro) ── -->
+      <div class="section" id="sec-galeria">
+        <div class="section-h">Galeria de Fotos <span style="font-size:11px;font-weight:500;color:var(--lime);background:var(--lime-bg,#1a2e1a);padding:2px 8px;border-radius:100px;margin-left:6px">Pro</span></div>
+        <p class="section-sub">Adicione links de imagens públicas (Google Fotos, etc.) para exibir na sua página. Até 9 fotos.</p>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Fotos do seu trabalho</div>
+            <div class="card-desc">Cole a URL direta de cada imagem</div>
+          </div>
+          <div class="card-body" style="padding-bottom:8px">
+            <div id="galeria-list">
+              <!-- preenchido pelo JS -->
+            </div>
+            <button class="btn-add" id="btn-add-foto" onclick="adicionarFoto()" style="display:none">+ Adicionar foto</button>
+            <div id="galeria-pro-msg" style="display:none;text-align:center;padding:24px 0;color:var(--muted);font-size:13px">
+              🔒 Galeria disponível no plano Pro
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn-ghost" onclick="irSecao('galeria')">Descartar</button>
+            <button class="btn-save" onclick="salvar('galeria')">Salvar galeria</button>
           </div>
         </div>
       </div>
@@ -1859,6 +1922,8 @@
         carregarDisponibilidade(), carregarBloqueios(), carregarBloqueiosRecorrentes(),
         carregarPlano(), carregarStatusGcal(), carregarNotif(),
       ]);
+      // Galeria depende de PRESTADOR_IS_PRO setado por carregarPlano
+      await carregarGaleria();
       const appUrl = (window.APP_URL || '').replace(/\/$/, '');
       const appDomain = appUrl.replace(/^https?:\/\//, '');
       const prefixEl = document.querySelector('.prefix-wrap .prefix');
@@ -1938,6 +2003,7 @@
     window.salvar = async function (secao) {
       if (secao === 'perfil') await salvarPerfil();
       if (secao === 'servicos') await salvarServicos();
+      if (secao === 'galeria') await salvarGaleria();
       if (secao === 'agenda') await salvarAgenda();
       if (secao === 'notif') await salvarNotif();
     };
@@ -2120,37 +2186,58 @@
     async function carregarServicos() {
       const { data, error } = await supabase
         .from('servicos')
-        .select('id, nome, duracao_min, preco, ativo')
+        .select('id, nome, duracao_min, preco, descricao, exibir_preco, ativo')
         .eq('prestador_id', userId)
         .order('id');
       if (error || !data) return;
-      servicos = data.map(s => ({ id: s.id, nome: s.nome, dur: String(s.duracao_min), preco: String(s.preco), ativo: s.ativo, _novo: false, _deletar: false }));
+      servicos = data.map(s => ({ id: s.id, nome: s.nome, dur: String(s.duracao_min), preco: String(s.preco), descricao: s.descricao || '', exibir_preco: s.exibir_preco !== false, ativo: s.ativo, _novo: false, _deletar: false }));
       renderServicos();
     }
 
     window.renderServicos = function renderServicos() {
       const rows = servicos.filter(s => !s._deletar);
       document.getElementById('servicos-list').innerHTML = rows.map(s => {
-        const nomeEsc = s.nome.replace(/"/g, '&quot;');
-        const durEsc = String(s.dur).replace(/"/g, '&quot;');
+        const nomeEsc  = s.nome.replace(/"/g, '&quot;');
+        const durEsc   = String(s.dur).replace(/"/g, '&quot;');
         const precoEsc = String(s.preco).replace(/"/g, '&quot;');
-        return `<div class="servico-row">
-      <div class="srv-inputs">
-        <input class="srv-i"      value="${nomeEsc}"  placeholder="Nome" data-id="${s.id}" data-field="nome">
-        <input class="srv-i mono" value="${durEsc}"   placeholder="min"  data-id="${s.id}" data-field="dur">
-        <input class="srv-i mono" value="${precoEsc}" placeholder="R$"   data-id="${s.id}" data-field="preco">
+        const descEsc  = (s.descricao || '').replace(/"/g, '&quot;');
+        const exibirPreco = s.exibir_preco !== false;
+        return `<div class="servico-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="srv-inputs" style="flex:1">
+          <input class="srv-i"      value="${nomeEsc}"  placeholder="Nome" data-id="${s.id}" data-field="nome">
+          <input class="srv-i mono" value="${durEsc}"   placeholder="min"  data-id="${s.id}" data-field="dur">
+          <input class="srv-i mono" value="${precoEsc}" placeholder="R$"   data-id="${s.id}" data-field="preco">
+        </div>
+        <div class="toggle-ativo ${s.ativo ? 'on' : ''}" data-sid="${s.id}" onclick="toggleServico('${s.id}',this)"></div>
+        <button class="btn-del" onclick="deletarServico('${s.id}')">✕</button>
       </div>
-      <div class="toggle-ativo ${s.ativo ? 'on' : ''}" data-sid="${s.id}" onclick="toggleServico('${s.id}',this)"></div>
-      <button class="btn-del" onclick="deletarServico('${s.id}')">✕</button>
+      <div class="srv-desc-row">
+        <textarea class="srv-i srv-desc" placeholder="Descrição curta (opcional, máx. 120 caracteres)" maxlength="120"
+          data-id="${s.id}" data-field="descricao">${descEsc}</textarea>
+        <label class="srv-preco-toggle">
+          <input type="checkbox" data-id="${s.id}" data-field="exibir_preco" ${exibirPreco ? 'checked' : ''}>
+          Exibir preço
+        </label>
+      </div>
     </div>`;
       }).join('');
-      // Adicionar listeners de input
+
+      // Listeners: inputs e textareas de texto
       document.querySelectorAll('#servicos-list .srv-i').forEach(inp => {
         inp.addEventListener('input', function () {
-          const id = this.dataset.id;
+          const id    = this.dataset.id;
           const field = this.dataset.field;
-          const s = servicos.find(x => x.id === id);
+          const s     = servicos.find(x => x.id === id);
           if (s) s[field] = this.value;
+        });
+      });
+
+      // Listeners: checkboxes
+      document.querySelectorAll('#servicos-list input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', function () {
+          const s = servicos.find(x => x.id === this.dataset.id);
+          if (s) s.exibir_preco = this.checked;
         });
       });
     };
@@ -2173,7 +2260,7 @@
 
     window.adicionarServico = function () {
       const novoId = 'novo-' + Date.now();
-      servicos.push({ id: novoId, nome: '', dur: '', preco: '', ativo: true, _novo: true, _deletar: false });
+      servicos.push({ id: novoId, nome: '', dur: '', preco: '', descricao: '', exibir_preco: true, ativo: true, _novo: true, _deletar: false });
       renderServicos();
       const inputs = document.querySelectorAll('#servicos-list .srv-i');
       if (inputs.length) inputs[inputs.length - 3].focus();
@@ -2196,7 +2283,7 @@
         const novos = servicos.filter(s => s._novo && !s._deletar && s.nome.trim());
         if (novos.length) {
           const { error } = await supabase.from('servicos').insert(
-            novos.map(s => ({ prestador_id: userId, nome: s.nome.trim(), duracao_min: Number(s.dur) || 30, preco: Number(s.preco) || 0, ativo: s.ativo }))
+            novos.map(s => ({ prestador_id: userId, nome: s.nome.trim(), duracao_min: Number(s.dur) || 30, preco: Number(s.preco) || 0, descricao: s.descricao?.trim() || null, exibir_preco: s.exibir_preco !== false, ativo: s.ativo }))
           );
           if (error) throw error;
         }
@@ -2205,7 +2292,7 @@
         const existentes = servicos.filter(s => !s._novo && !s._deletar);
         for (const s of existentes) {
           const { error } = await supabase.from('servicos')
-            .update({ nome: s.nome.trim(), duracao_min: Number(s.dur) || 30, preco: Number(s.preco) || 0, ativo: s.ativo })
+            .update({ nome: s.nome.trim(), duracao_min: Number(s.dur) || 30, preco: Number(s.preco) || 0, descricao: s.descricao?.trim() || null, exibir_preco: s.exibir_preco !== false, ativo: s.ativo })
             .eq('id', s.id);
           if (error) throw error;
         }
@@ -2932,6 +3019,89 @@
     };
 
     // ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
+    // ── GALERIA ────────────────────────────────────────────────────────────────
+    let galeriaUrls = []; // array de strings
+
+    async function carregarGaleria() {
+      const isPro = window.PRESTADOR_IS_PRO;
+      const listEl    = document.getElementById('galeria-list');
+      const btnAdd    = document.getElementById('btn-add-foto');
+      const proMsgEl  = document.getElementById('galeria-pro-msg');
+
+      if (!isPro) {
+        if (listEl)   listEl.innerHTML = '';
+        if (btnAdd)   btnAdd.style.display  = 'none';
+        if (proMsgEl) proMsgEl.style.display = 'block';
+        return;
+      }
+
+      if (proMsgEl) proMsgEl.style.display = 'none';
+
+      const { data } = await supabase
+        .from('prestadores')
+        .select('galeria_urls')
+        .eq('id', userId)
+        .single();
+
+      galeriaUrls = (data?.galeria_urls || []).filter(Boolean);
+      renderGaleria();
+      if (btnAdd) btnAdd.style.display = galeriaUrls.length < 9 ? 'inline-flex' : 'none';
+    }
+
+    function renderGaleria() {
+      const listEl = document.getElementById('galeria-list');
+      const btnAdd = document.getElementById('btn-add-foto');
+      if (!listEl) return;
+
+      listEl.innerHTML = galeriaUrls.map((url, i) => {
+        const urlEsc = url.replace(/"/g, '&quot;');
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input class="srv-i" style="flex:1;font-size:12px" value="${urlEsc}"
+            placeholder="https://…" data-galeria-idx="${i}"
+            oninput="galeriaUrls[${i}]=this.value">
+          <button class="btn-del" onclick="removerFoto(${i})">✕</button>
+        </div>`;
+      }).join('');
+
+      if (btnAdd) btnAdd.style.display = galeriaUrls.length < 9 ? 'inline-flex' : 'none';
+    }
+
+    window.adicionarFoto = function () {
+      if (galeriaUrls.length >= 9) return;
+      galeriaUrls.push('');
+      renderGaleria();
+      // foca o último input adicionado
+      const inputs = document.querySelectorAll('[data-galeria-idx]');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    };
+
+    window.removerFoto = function (idx) {
+      galeriaUrls.splice(idx, 1);
+      renderGaleria();
+    };
+
+    async function salvarGaleria() {
+      const btn  = document.querySelector('[onclick="salvar(\'galeria\')"]');
+      const orig = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Salvando…'; btn.disabled = true; }
+      try {
+        const urls = galeriaUrls.map(u => u.trim()).filter(Boolean);
+        const { error } = await supabase
+          .from('prestadores')
+          .update({ galeria_urls: urls })
+          .eq('id', userId);
+        if (error) throw error;
+        galeriaUrls = urls;
+        renderGaleria();
+        toast('✓ Galeria salva!');
+      } catch (e) {
+        console.error(e);
+        toast('Erro ao salvar galeria', false);
+      } finally {
+        if (btn) { btn.textContent = orig; btn.disabled = false; }
+      }
+    }
+
     window.irSecao = function (id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));

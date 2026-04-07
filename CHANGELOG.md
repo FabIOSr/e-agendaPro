@@ -1,5 +1,53 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-07] — Serviços: descrição, exibição de preço, galeria Pro e horários no hero
+
+### ✂️ Serviços — descrição e exibição de preço
+
+**Novos campos na tabela `servicos`:**
+- `descricao` (TEXT, máx. 120 chars) — descrição curta exibida na página pública
+- `exibir_preco` (BOOLEAN, default TRUE) — quando `false`, exibe "Sob consulta" em vez do valor
+
+**`pages/configuracoes.html`:**
+- Cada serviço agora tem `<textarea>` para descrição + checkbox "Exibir preço"
+- Layout reorganizado: inputs numa linha, descrição + checkbox abaixo
+- Save inclui os novos campos (INSERT e UPDATE)
+
+**`pages/pagina-cliente.html`:**
+- Cards de serviço exibem a descrição quando disponível
+- Preço mostra "Sob consulta" quando `exibir_preco = false`
+- Step 5 (resumo) respeita `exibir_preco` → exibe "Sob consulta"
+- Cores dinâmicas do tema aplicadas em mais elementos (rating, seção, hero-next-slot)
+
+### 🖼️ Galeria de fotos (Plano Pro)
+
+**`pages/configuracoes.html`:**
+- Nova seção "Galeria" no painel (badge Pro)
+- Adicionar/remover até 9 fotos via URL
+- Salva em `prestadores.galeria_urls` (array JSONB)
+
+**`pages/pagina-cliente.html`:**
+- Galeria exibida na página pública (até 9 fotos, era 6)
+- `onerror` oculta itens com imagem quebrada
+
+### 🕐 Horário de funcionamento no hero
+
+**`pages/pagina-cliente.html`:**
+- Exibe horários abaixo do nome/bio do prestador
+- Agrupa dias consecutivos com mesmo horário (`Seg–Sex 8h–18h`)
+- Auto-quebra em linhas quando > 3 faixas para evitar poluição visual
+
+### 🐛 Correções
+
+- **Lista de espera:** resumo do modal usava `state.servico?.nome` (era string) → corrigido para `state.servico`
+- **Lista de espera:** payload enviava `servico_id: null`, `servico_nome: null`, `servico_duracao_min: 60` → corrigido para `state.servicoId`, `state.servico`, `state.duracaoMin`
+
+### 📦 Migração
+
+- `migrations/29_descricao_servicos.sql` — adiciona colunas `descricao` e `exibir_preco`
+
+---
+
 ## [2026-04-06] — Fix: package.json, login.html, smoke test e E2E de agendamento
 
 ### 🧪 Testes E2E: Fluxo Completo de Agendamento (50 testes)
