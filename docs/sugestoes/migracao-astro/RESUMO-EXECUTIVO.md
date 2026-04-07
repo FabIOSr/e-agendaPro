@@ -254,24 +254,21 @@ docs/sugestoes/migracao-astro/
 | Futuro escalável | Astro |
 | Menor aprendizado | Alpine + Tailwind |
 
-### Recomendação do Analista
+### Recomendação do Analista (Para referência)
 
 ```
-Para o AgendaPro, considerando:
+Para o AgendaPro, considerar:
 
 ✅ Produto SaaS B2B com forte componente de SEO
 ✅ Páginas públicas precisam rankear bem
 ✅ Competição com ferramentas estabelecidas
 ✅ Planejamento de longo prazo
 
-MINHA RECOMENDAÇÃO: ASTRO FRAMEWORK
+OPÇÕES:
+- Alpine + Tailwind: Migração mais rápida (3-4 sem), menor risco
+- Astro: SEO máximo, performance extrema, prazo maior (6-8 sem)
 
-O investimento adicional de 2-3 semanas se paga
-com:
-- +30% tráfego orgânico
-- Lighthouse 100/100
-- Melhor posicionamento no mercado
-- Time mais produtivo a longo prazo
+A escolha depende de: urgência, recursos disponíveis, prioridade de SEO
 ```
 
 ---

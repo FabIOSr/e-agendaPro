@@ -10,6 +10,7 @@ Este diretório contém documentação de sugestões de melhorias e modernizaç�
 |----------|-------|--------|------------|---------|---------|
 | [Alpine.js + Tailwind + TS](./migracao-alpine-tailwind/RESUMO-EXECUTIVO.md) | Alpine + Tailwind | 📝 Proposta | Alta | Alto | 3-4 sem |
 | [Astro Framework](./migracao-astro/RESUMO-EXECUTIVO.md) | Astro + Tailwind | 📝 Proposta | Alta | Alto | 6-8 sem |
+| [Comparativo Frameworks](./COMPARATIVO-FRAMEWORKS.md) | Análise | 📝 Novo | - | - | - |
 
 ---
 
