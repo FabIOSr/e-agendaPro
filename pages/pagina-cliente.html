@@ -906,10 +906,107 @@
     .sticky-btn:hover {
       opacity: .9;
     }
+
+    /* ── CTA UPGRADE (só para o dono Free) ── */
+    .cta-upgrade-banner {
+      background: linear-gradient(135deg, #1a1a17 0%, #2d2d28 100%);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cta-upgrade-banner-text {
+      flex: 1;
+      font-size: 12.5px;
+      color: rgba(250,249,246,.75);
+      line-height: 1.45;
+    }
+    .cta-upgrade-banner-text strong {
+      color: rgba(250,249,246,.95);
+      display: block;
+      font-size: 13px;
+      margin-bottom: 1px;
+    }
+    .cta-upgrade-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity .15s;
+    }
+    .cta-upgrade-btn:hover { opacity: .85; }
+    .cta-upgrade-close {
+      background: none;
+      border: none;
+      color: rgba(250,249,246,.35);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 0 0 4px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color .15s;
+    }
+    .cta-upgrade-close:hover { color: rgba(250,249,246,.7); }
+
+    /* ── PREVIEW MODE ── */
+    .preview-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: linear-gradient(90deg, #7c3aed, #4f46e5);
+      color: white;
+      font-size: 12.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 9px 16px;
+      box-shadow: 0 2px 12px rgba(124,58,237,.4);
+    }
+    .preview-bar-label { display: flex; align-items: center; gap: 6px; opacity: .9; }
+    .preview-bar button {
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.3);
+      color: white;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .15s;
+    }
+    .preview-bar button:hover { background: rgba(255,255,255,.3); }
+    body.preview-mode { padding-top: 40px; }
   </style>
 </head>
 
 <body>
+
+  <!-- PREVIEW BAR (modo preview Pro, injetada via JS) -->
+  <div class="preview-bar" id="preview-bar" style="display:none">
+    <div class="preview-bar-label">✨ Modo preview — veja como sua página ficaria no Pro</div>
+    <button onclick="sairModoPreview()">Sair do preview</button>
+  </div>
+
+  <!-- CTA UPGRADE (só para o dono logado no plano Free) -->
+  <div class="cta-upgrade-banner" id="cta-upgrade-banner" style="display:none">
+    <div class="cta-upgrade-banner-text">
+      <strong>✨ Você está vendo sua página no plano Free</strong>
+      Ative o Pro para exibir avaliações, cor da marca e muito mais.
+    </div>
+    <button class="cta-upgrade-btn" onclick="ativarModoPreview()">Ver no Pro →</button>
+    <button class="cta-upgrade-close" onclick="document.getElementById('cta-upgrade-banner').style.display='none'" title="Fechar">×</button>
+  </div>
 
   <!-- HERO -->
   <div class="hero" id="hero">
@@ -2226,10 +2323,141 @@
       }, 80);
     };
 
+    // ── CTA UPGRADE + MODO PREVIEW ──────────────────────────────────────────
+
+    // Dados originais do prestador Free para restaurar ao sair do preview
+    let _dadosOriginaisPreview = null;
+    async function verificarDonoDaPagina() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return; // visitante comum, não faz nada
+
+        const userId = session.user.id;
+
+        // Busca slug e plano do usuário logado
+        const { data: prestador } = await supabase
+          .from('prestadores')
+          .select('slug, plano, plano_valido_ate, trial_ends_at')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!prestador) return;
+
+        // Só exibe o banner se for o dono desta página E estiver no Free
+        const GRACE = 3 * 24 * 60 * 60 * 1000;
+        const trialAtivo = prestador.trial_ends_at && new Date(prestador.trial_ends_at) > new Date();
+        const ePro = trialAtivo || (prestador.plano === 'pro'
+          && prestador.plano_valido_ate
+          && new Date(prestador.plano_valido_ate) > new Date(Date.now() - GRACE));
+
+        if (prestador.slug === SLUG && !ePro) {
+          document.getElementById('cta-upgrade-banner').style.display = 'flex';
+        }
+      } catch(e) {
+        // Silencioso — auth é opcional nesta página
+      }
+    }
+
+    window.ativarModoPreview = function() {
+      if (!PRESTADOR) return;
+
+      // Guarda estado original
+      _dadosOriginaisPreview = {
+        cor_tema: PRESTADOR.cor_tema,
+        galeria_urls: PRESTADOR.galeria_urls,
+        local_exibicao: PRESTADOR.local_exibicao,
+      };
+
+      // Esconde banner de CTA, exibe barra de preview
+      document.getElementById('cta-upgrade-banner').style.display = 'none';
+      document.getElementById('preview-bar').style.display = 'flex';
+      document.body.classList.add('preview-mode');
+
+      // Simula dados Pro
+      const dadosPro = {
+        ...PRESTADOR,
+        plano: 'pro',
+        plano_valido_ate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        cor_tema: PRESTADOR.cor_tema || '#7c3aed',
+      };
+
+      // Aplica cor de tema (usa a existente ou roxo padrão para demo)
+      if (dadosPro.cor_tema) {
+        const r = document.documentElement;
+        r.style.setProperty('--accent', dadosPro.cor_tema);
+        r.style.setProperty('--accent-l', dadosPro.cor_tema + '1a');
+        r.style.setProperty('--accent-m', dadosPro.cor_tema + '4d');
+        const hexToRgb = h => { const n = parseInt(h.replace('#',''), 16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+        const [rr, gg, bb] = hexToRgb(dadosPro.cor_tema);
+        let styleEl = document.getElementById('preview-theme-style');
+        if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'preview-theme-style'; document.head.appendChild(styleEl); }
+        styleEl.textContent = `
+          .hero::before { background: radial-gradient(ellipse 90% 70% at 50% 110%, ${dadosPro.cor_tema} 0%, transparent 68%) !important; }
+          .hero-rating { background: rgba(${rr},${gg},${bb},.18) !important; border-color: rgba(${rr},${gg},${bb},.35) !important; }
+          .hero-next-slot { background: rgba(${rr},${gg},${bb},.15) !important; border-color: rgba(${rr},${gg},${bb},.3) !important; }
+          .av-stars { color: ${dadosPro.cor_tema} !important; }
+          .av-card { border-color: rgba(${rr},${gg},${bb},.18) !important; }
+          .section-title { color: ${dadosPro.cor_tema} !important; }
+        `;
+      }
+
+      // Carrega conteúdo Pro
+      carregarConteudoPro(dadosPro);
+    };
+
+    window.sairModoPreview = function() {
+      document.getElementById('preview-bar').style.display = 'none';
+      document.body.classList.remove('preview-mode');
+
+      // Restaura cor original
+      const corOriginal = _dadosOriginaisPreview?.cor_tema;
+      const r = document.documentElement;
+      if (corOriginal) {
+        r.style.setProperty('--accent', corOriginal);
+        r.style.setProperty('--accent-l', corOriginal + '1a');
+        r.style.setProperty('--accent-m', corOriginal + '4d');
+      } else {
+        r.style.setProperty('--accent', '#2d5a27');
+        r.style.setProperty('--accent-l', '#eef4ec');
+        r.style.setProperty('--accent-m', '#c8dfc4');
+      }
+      const styleEl = document.getElementById('preview-theme-style');
+      if (styleEl) styleEl.textContent = '';
+
+      // Esconde seções Pro injetadas
+      const avalSection = document.getElementById('avaliacoes-section');
+      const galeriaSection = document.getElementById('galeria-section');
+      const heroRating = document.getElementById('hero-rating');
+      const heroMeta = document.getElementById('hero-meta');
+      const heroNextSlot = document.getElementById('hero-next-slot');
+      if (avalSection) avalSection.style.display = 'none';
+      if (galeriaSection) galeriaSection.style.display = 'none';
+      if (heroRating) heroRating.style.display = 'none';
+      if (heroNextSlot) heroNextSlot.style.display = 'none';
+
+      // Restaura localização Free se tinha
+      if (PRESTADOR) {
+        const local = PRESTADOR.local_exibicao || PRESTADOR.cidade;
+        if (local && heroMeta) {
+          heroMeta.style.display = 'flex';
+          const localEl = document.getElementById('hero-local');
+          const localTxt = document.getElementById('hero-local-text');
+          if (localEl) localEl.style.display = 'flex';
+          if (localTxt) localTxt.textContent = local;
+        } else if (heroMeta) {
+          heroMeta.style.display = 'none';
+        }
+      }
+
+      // Reexibe banner CTA
+      document.getElementById('cta-upgrade-banner').style.display = 'flex';
+      _dadosOriginaisPreview = null;
+    };
+
     // ── INIT ──────────────────────────────────────────────────────────────────
     atualizarStepsNav();
     const ok = await carregarPrestador();
-    if (ok) await Promise.all([carregarDisponibilidade(), exibirHorarioFuncionamento()]);
+    if (ok) await Promise.all([carregarDisponibilidade(), exibirHorarioFuncionamento(), verificarDonoDaPagina()]);
   </script>
 
   <!-- MODAL LISTA DE ESPERA -->
