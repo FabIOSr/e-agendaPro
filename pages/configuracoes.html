@@ -3027,15 +3027,18 @@
       const listEl    = document.getElementById('galeria-list');
       const btnAdd    = document.getElementById('btn-add-foto');
       const proMsgEl  = document.getElementById('galeria-pro-msg');
+      const footer    = document.querySelector('#sec-galeria .card-footer');
 
       if (!isPro) {
         if (listEl)   listEl.innerHTML = '';
         if (btnAdd)   btnAdd.style.display  = 'none';
         if (proMsgEl) proMsgEl.style.display = 'block';
+        if (footer)   footer.style.display  = 'none';
         return;
       }
 
       if (proMsgEl) proMsgEl.style.display = 'none';
+      if (footer)   footer.style.display  = '';
 
       const { data } = await supabase
         .from('prestadores')
@@ -3058,7 +3061,8 @@
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <input class="srv-i" style="flex:1;font-size:12px" value="${urlEsc}"
             placeholder="https://…" data-galeria-idx="${i}"
-            oninput="galeriaUrls[${i}]=this.value">
+            oninput="galeriaUrls[${i}]=this.value"
+            onchange="galeriaUrls[${i}]=this.value">
           <button class="btn-del" onclick="removerFoto(${i})">✕</button>
         </div>`;
       }).join('');
@@ -3081,7 +3085,19 @@
     };
 
     async function salvarGaleria() {
-      const btn  = document.querySelector('[onclick="salvar(\'galeria\')"]');
+      // Segurança: bloquear se não for Pro
+      if (!window.PRESTADOR_IS_PRO) {
+        toast('Galeria disponível apenas no plano Pro', false);
+        return;
+      }
+
+      // Ler valores diretamente do DOM (garante que paste/clipboard é capturado)
+      document.querySelectorAll('[data-galeria-idx]').forEach(inp => {
+        const idx = parseInt(inp.dataset.galeriaIdx, 10);
+        galeriaUrls[idx] = inp.value;
+      });
+
+      const btn  = document.querySelector('#sec-galeria .btn-save');
       const orig = btn ? btn.textContent : '';
       if (btn) { btn.textContent = 'Salvando…'; btn.disabled = true; }
       try {
