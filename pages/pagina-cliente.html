@@ -212,6 +212,48 @@
     }
     .galeria-item:hover img { transform: scale(1.05); }
 
+    /* Gallery placeholder (preview) */
+    .galeria-placeholder {
+      display: none; grid-template-columns: repeat(3, 1fr); gap: 6px;
+      margin-top: 12px;
+    }
+    .galeria-ph-item {
+      aspect-ratio: 1; border-radius: 10px;
+      background: linear-gradient(135deg, var(--bg2) 0%, rgba(255,255,255,.02) 100%);
+      border: 1.5px dashed rgba(255,255,255,.08);
+      position: relative; overflow: hidden;
+    }
+    .galeria-ph-item::after {
+      content: '📷';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px; opacity: .3;
+    }
+
+    /* Avaliações placeholder (preview) */
+    .avaliacoes-placeholder { display: none; margin-top: 12px; }
+    .av-ph-card {
+      background: var(--bg2);
+      border: 1.5px dashed rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 10px;
+    }
+    .av-ph-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .av-ph-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-l);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      flex-shrink: 0;
+    }
+    .av-ph-nome { font-size: 13px; font-weight: 500; color: var(--text); }
+    .av-ph-estrelas { font-size: 12px; color: #f59e0b; letter-spacing: 1px; margin-top: 1px; }
+    .av-ph-text {
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+      font-style: italic;
+    }
+
     /* ── Rodapé AgendaPro ── */
     .agendapro-footer {
       text-align: center; padding: 24px 16px 32px;
@@ -911,7 +953,7 @@
     .cta-upgrade-banner {
       background: linear-gradient(135deg, #1a1a17 0%, #2d2d28 100%);
       border-bottom: 1px solid rgba(255,255,255,.08);
-      padding: 12px 16px;
+      padding: 13px 16px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -920,14 +962,28 @@
       flex: 1;
       font-size: 12.5px;
       color: rgba(250,249,246,.75);
-      line-height: 1.45;
+      line-height: 1.5;
     }
     .cta-upgrade-banner-text strong {
       color: rgba(250,249,246,.95);
       display: block;
       font-size: 13px;
-      margin-bottom: 1px;
+      margin-bottom: 5px;
     }
+    .cta-upgrade-checklist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      margin-top: 5px;
+    }
+    .cta-upgrade-check-item {
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .cta-upgrade-check-item .missing { color: rgba(250,100,100,.85); }
+    .cta-upgrade-check-item .included { color: rgba(100,220,100,.7); }
     .cta-upgrade-btn {
       background: var(--accent);
       color: white;
@@ -1001,11 +1057,11 @@
   <!-- CTA UPGRADE (só para o dono logado no plano Free) -->
   <div class="cta-upgrade-banner" id="cta-upgrade-banner" style="display:none">
     <div class="cta-upgrade-banner-text">
-      <strong>✨ Você está vendo sua página no plano Free</strong>
-      Ative o Pro para exibir avaliações, cor da marca e muito mais.
+      <strong>✨ Você está no plano Free — sua página está assim:</strong>
+      <div class="cta-upgrade-checklist" id="cta-checklist"></div>
     </div>
     <button class="cta-upgrade-btn" onclick="ativarModoPreview()">Ver no Pro →</button>
-    <button class="cta-upgrade-close" onclick="document.getElementById('cta-upgrade-banner').style.display='none'" title="Fechar">×</button>
+    <button class="cta-upgrade-close" onclick="fecharBannerCta()" title="Fechar">×</button>
   </div>
 
   <!-- HERO -->
@@ -1186,10 +1242,20 @@
   </div>
 
   <!-- STICKY FOOTER -->
+
   <!-- PRO: Galeria de fotos -->
   <div class="galeria-section" id="galeria-section" style="display:none">
     <div class="section-title">Galeria</div>
     <div class="galeria-grid" id="galeria-grid"></div>
+    <!-- Placeholder preview -->
+    <div class="galeria-placeholder" id="galeria-placeholder" style="display:none">
+      <div class="galeria-ph-item"></div>
+      <div class="galeria-ph-item"></div>
+      <div class="galeria-ph-item"></div>
+      <div class="galeria-ph-item"></div>
+      <div class="galeria-ph-item"></div>
+      <div class="galeria-ph-item"></div>
+    </div>
   </div>
 
   <!-- PRO: Avaliações -->
@@ -1199,6 +1265,29 @@
       <div class="avaliacoes-media" id="avaliacoes-media"></div>
     </div>
     <div id="avaliacoes-lista"></div>
+    <!-- Placeholder preview -->
+    <div class="avaliacoes-placeholder" id="avaliacoes-placeholder" style="display:none">
+      <div class="av-ph-card">
+        <div class="av-ph-header">
+          <div class="av-ph-avatar">M</div>
+          <div>
+            <div class="av-ph-nome">Maria</div>
+            <div class="av-ph-estrelas">★★★★★</div>
+          </div>
+        </div>
+        <div class="av-ph-text">Atendimento excelente, super recomendo!</div>
+      </div>
+      <div class="av-ph-card">
+        <div class="av-ph-header">
+          <div class="av-ph-avatar">J</div>
+          <div>
+            <div class="av-ph-nome">João</div>
+            <div class="av-ph-estrelas">★★★★★</div>
+          </div>
+        </div>
+        <div class="av-ph-text">Profissional nota 10, voltou outra vez!</div>
+      </div>
+    </div>
   </div>
 
   <!-- Rodapé AgendaPro (sempre visível, sutil) -->
@@ -2219,9 +2308,11 @@
         const section = document.getElementById('avaliacoes-section');
         const mediaEl = document.getElementById('avaliacoes-media');
         const listaEl = document.getElementById('avaliacoes-lista');
+        const phEl    = document.getElementById('avaliacoes-placeholder');
         if (!section) return;
 
         section.style.display = 'block';
+        if (phEl) phEl.style.display = 'none';
         if (mediaEl) mediaEl.innerHTML =
           `<span class="av-star">★</span> ${Number(media).toFixed(1)} <span style="font-weight:400;color:var(--muted)">(${total})</span>`;
 
@@ -2305,8 +2396,10 @@
     function carregarGaleria(urls) {
       const section = document.getElementById('galeria-section');
       const grid    = document.getElementById('galeria-grid');
+      const ph      = document.getElementById('galeria-placeholder');
       if (!section || !grid || !urls?.length) return;
       section.style.display = 'block';
+      if (ph) ph.style.display = 'none';
       grid.innerHTML = urls.slice(0, 9).map(url =>
         `<div class="galeria-item"><img src="${url}" alt="Trabalho" loading="lazy" onerror="this.closest('.galeria-item').style.display='none'"></div>`
       ).join('');
@@ -2323,38 +2416,89 @@
 
     // ── CTA UPGRADE + MODO PREVIEW ──────────────────────────────────────────
 
-    // Dados originais do prestador Free para restaurar ao sair do preview
-    let _dadosOriginaisPreview = null;
-    async function verificarDonoDaPagina() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return; // visitante comum, não faz nada
+    function verificarDonoDaPaginaAsync() {
+      return new Promise(async (resolve) => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) { resolve(false); return; }
 
-        const userId = session.user.id;
+          const userId = session.user.id;
+          const { data: prestador } = await supabase
+            .from('prestadores')
+            .select('slug, plano, plano_valido_ate, trial_ends_at, galeria_urls, cor_tema')
+            .eq('id', userId)
+            .maybeSingle();
 
-        // Busca slug e plano do usuário logado
-        const { data: prestador } = await supabase
-          .from('prestadores')
-          .select('slug, plano, plano_valido_ate, trial_ends_at')
-          .eq('id', userId)
-          .maybeSingle();
+          if (!prestador) { resolve(false); return; }
 
-        if (!prestador) return;
+          const GRACE = 3 * 24 * 60 * 60 * 1000;
+          const trialAtivo = prestador.trial_ends_at && new Date(prestador.trial_ends_at) > new Date();
+          const ePro = trialAtivo || (prestador.plano === 'pro'
+            && prestador.plano_valido_ate
+            && new Date(prestador.plano_valido_ate) > new Date(Date.now() - GRACE));
 
-        // Só exibe o banner se for o dono desta página E estiver no Free
-        const GRACE = 3 * 24 * 60 * 60 * 1000;
-        const trialAtivo = prestador.trial_ends_at && new Date(prestador.trial_ends_at) > new Date();
-        const ePro = trialAtivo || (prestador.plano === 'pro'
-          && prestador.plano_valido_ate
-          && new Date(prestador.plano_valido_ate) > new Date(Date.now() - GRACE));
-
-        if (prestador.slug === SLUG && !ePro) {
-          document.getElementById('cta-upgrade-banner').style.display = 'flex';
+          resolve(prestador.slug === SLUG && !ePro ? prestador : false);
+        } catch(e) {
+          resolve(false);
         }
-      } catch(e) {
-        // Silencioso — auth é opcional nesta página
-      }
+      });
     }
+
+    let _dadosOriginaisPreview = null;
+    let _eDonoFree = false;
+
+    function renderizarChecklist(prestador) {
+      if (!prestador) return '';
+      const items = [];
+      if (!prestador.galeria_urls?.length) {
+        items.push('<span class="cta-upgrade-check-item missing">✗ Galeria de trabalhos</span>');
+      } else {
+        items.push('<span class="cta-upgrade-check-item included">✓ Galeria</span>');
+      }
+      if (!prestador.cor_tema || prestador.cor_tema === '#7c3aed') {
+        items.push('<span class="cta-upgrade-check-item missing">✗ Cor da marca</span>');
+      } else {
+        items.push('<span class="cta-upgrade-check-item included">✓ Cor da marca</span>');
+      }
+      const el = document.getElementById('cta-checklist');
+      if (el) el.innerHTML = items.join('');
+    }
+
+    async function verificarDonoDaPagina() {
+      const eDono = await verificarDonoDaPaginaAsync();
+      if (!eDono) return;
+
+      _eDonoFree = true;
+      // Atualiza apenas campos de plano/visual — não sobrescreve dados de exibição
+      PRESTADOR.plano = eDono.plano;
+      PRESTADOR.plano_valido_ate = eDono.plano_valido_ate;
+      PRESTADOR.trial_ends_at = eDono.trial_ends_at;
+      PRESTADOR.galeria_urls = eDono.galeria_urls;
+      PRESTADOR.cor_tema = eDono.cor_tema;
+
+      const chaveSessao = `cta_${SLUG}`;
+      if (sessionStorage.getItem(chaveSessao)) {
+        const compactBanner = document.getElementById('cta-upgrade-banner');
+        if (compactBanner) {
+          compactBanner.querySelector('.cta-upgrade-banner-text strong').textContent = '⬆ Sua página Free perde clientes — ative o Pro';
+          const checklist = document.getElementById('cta-checklist');
+          if (checklist) checklist.innerHTML = '';
+        }
+      }
+      sessionStorage.setItem(chaveSessao, '1');
+
+      renderizarChecklist(eDono);
+      document.getElementById('cta-upgrade-banner').style.display = 'flex';
+    }
+
+    window.fecharBannerCta = function() {
+      document.getElementById('cta-upgrade-banner').style.display = 'none';
+      sessionStorage.setItem(`cta_${SLUG}`, 'feito');
+    };
+
+    window.irParaConfig = function() {
+      window.location.href = '/configuracoes.html';
+    };
 
     window.ativarModoPreview = function() {
       if (!PRESTADOR) return;
@@ -2401,8 +2545,23 @@
         `;
       }
 
-      // Carrega conteúdo Pro
+      // Carrega conteúdo Pro (se houver dados reais)
       carregarConteudoPro(dadosPro);
+
+      // Preview: mostra placeholders se não há dados reais
+      const galeriaSection = document.getElementById('galeria-section');
+      const avalSection = document.getElementById('avaliacoes-section');
+      const galeriaGrid = document.getElementById('galeria-grid');
+      const galeriaPh = document.getElementById('galeria-placeholder');
+      const avalLista = document.getElementById('avaliacoes-lista');
+      const avalPh = document.getElementById('avaliacoes-placeholder');
+
+      if (galeriaSection) galeriaSection.style.display = 'block';
+      // Mostra grid real se tem fotos, senão placeholder
+      if (galeriaPh) galeriaPh.style.display = 'grid';
+      if (avalSection) avalSection.style.display = 'block';
+      // Mostra cards reais se tem avaliações, senão placeholder
+      if (avalPh) avalPh.style.display = 'block';
     };
 
     window.sairModoPreview = function() {
@@ -2420,14 +2579,18 @@
       const styleEl = document.getElementById('preview-theme-style');
       if (styleEl) styleEl.textContent = '';
 
-      // Esconde seções Pro injetadas
+      // Esconde seções Pro e placeholders
       const avalSection = document.getElementById('avaliacoes-section');
       const galeriaSection = document.getElementById('galeria-section');
+      const galeriaPh = document.getElementById('galeria-placeholder');
+      const avalPh = document.getElementById('avaliacoes-placeholder');
       const heroRating = document.getElementById('hero-rating');
       const heroMeta = document.getElementById('hero-meta');
       const heroNextSlot = document.getElementById('hero-next-slot');
       if (avalSection) avalSection.style.display = 'none';
       if (galeriaSection) galeriaSection.style.display = 'none';
+      if (galeriaPh) galeriaPh.style.display = 'none';
+      if (avalPh) avalPh.style.display = 'none';
       if (heroRating) heroRating.style.display = 'none';
       if (heroNextSlot) heroNextSlot.style.display = orig.heroNextSlotDisplay || 'none';
 
