@@ -1220,6 +1220,9 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
+    // Helper compartilhado: hex → rgb
+    const hexToRgb = h => { const n = parseInt(h.replace('#',''), 16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+
     // ── LÊ SLUG DA URL ────────────────────────────────────────────────────────
     // Suporta /ana-cabelos e /pagina-cliente?slug=ana-cabelos (dev local)
     const pathSlug = window.location.pathname.replace(/^\//, '').split('/')[0];
@@ -1262,11 +1265,6 @@
         r.style.setProperty('--accent-l', cor + '1a');
         r.style.setProperty('--accent-m', cor + '4d');
 
-        // Converte hex → rgb para usar em rgba()
-        const hexToRgb = h => {
-          const n = parseInt(h.replace('#',''), 16);
-          return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-        };
         const [rr, gg, bb] = hexToRgb(cor);
 
         const styleEl = document.createElement('style');
@@ -2361,11 +2359,15 @@
     window.ativarModoPreview = function() {
       if (!PRESTADOR) return;
 
-      // Guarda estado original
+      // Guarda estado real antes de sobrescrever
+      const r = document.documentElement;
       _dadosOriginaisPreview = {
-        cor_tema: PRESTADOR.cor_tema,
+        accent: r.style.getPropertyValue('--accent') || getComputedStyle(r).getPropertyValue('--accent'),
+        accentL: r.style.getPropertyValue('--accent-l'),
+        accentM: r.style.getPropertyValue('--accent-m'),
         galeria_urls: PRESTADOR.galeria_urls,
         local_exibicao: PRESTADOR.local_exibicao,
+        heroNextSlotDisplay: document.getElementById('hero-next-slot')?.style.display || 'none',
       };
 
       // Esconde banner de CTA, exibe barra de preview
@@ -2383,11 +2385,9 @@
 
       // Aplica cor de tema (usa a existente ou roxo padrão para demo)
       if (dadosPro.cor_tema) {
-        const r = document.documentElement;
         r.style.setProperty('--accent', dadosPro.cor_tema);
         r.style.setProperty('--accent-l', dadosPro.cor_tema + '1a');
         r.style.setProperty('--accent-m', dadosPro.cor_tema + '4d');
-        const hexToRgb = h => { const n = parseInt(h.replace('#',''), 16); return [(n>>16)&255,(n>>8)&255,n&255]; };
         const [rr, gg, bb] = hexToRgb(dadosPro.cor_tema);
         let styleEl = document.getElementById('preview-theme-style');
         if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'preview-theme-style'; document.head.appendChild(styleEl); }
@@ -2409,17 +2409,13 @@
       document.getElementById('preview-bar').style.display = 'none';
       document.body.classList.remove('preview-mode');
 
-      // Restaura cor original
-      const corOriginal = _dadosOriginaisPreview?.cor_tema;
+      // Restaura cores reais salvas do CSS
       const r = document.documentElement;
-      if (corOriginal) {
-        r.style.setProperty('--accent', corOriginal);
-        r.style.setProperty('--accent-l', corOriginal + '1a');
-        r.style.setProperty('--accent-m', corOriginal + '4d');
-      } else {
-        r.style.setProperty('--accent', '#2d5a27');
-        r.style.setProperty('--accent-l', '#eef4ec');
-        r.style.setProperty('--accent-m', '#c8dfc4');
+      const orig = _dadosOriginaisPreview || {};
+      if (orig.accent) {
+        r.style.setProperty('--accent', orig.accent);
+        r.style.setProperty('--accent-l', orig.accentL || '');
+        r.style.setProperty('--accent-m', orig.accentM || '');
       }
       const styleEl = document.getElementById('preview-theme-style');
       if (styleEl) styleEl.textContent = '';
@@ -2433,7 +2429,7 @@
       if (avalSection) avalSection.style.display = 'none';
       if (galeriaSection) galeriaSection.style.display = 'none';
       if (heroRating) heroRating.style.display = 'none';
-      if (heroNextSlot) heroNextSlot.style.display = 'none';
+      if (heroNextSlot) heroNextSlot.style.display = orig.heroNextSlotDisplay || 'none';
 
       // Restaura localização Free se tinha
       if (PRESTADOR) {
