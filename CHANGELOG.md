@@ -1,5 +1,59 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-08] — R-2: Cancelamento Survey com Retenção Ativa (v2 — correção de arquitetura)
+
+### 🐛 Correções Críticas
+
+**Bug de duplicação corrigido na função `criar-cupom`:**
+- Removido `insert` duplicado na tabela `cancelamentos`
+- Cada desconto agora gera **um único registro** correto
+
+**Aplicação de desconto REAL no Asaas:**
+- Antes: apenas estendia `plano_valido_ate` (gambiarra, sem efeito no valor cobrado)
+- Agora: cancela assinatura atual → cria nova com valor reduzido → agenda reversão
+- Exemplo: 20% de desconto → R$39 → R$31,20/mês por 3 meses reais
+
+### 🗄️ Migrações
+
+**`migrations/32_cancelamentos.sql` — campos novos:**
+- `desconto_asaas_sub_id TEXT` — ID da assinatura com desconto
+- `desconto_valido_ate TIMESTAMPTZ` — quando reverter para valor original
+- `assinatura_original_sub_id TEXT` — ID da assinatura original
+- Índice parcial para queries de reversão: `idx_cancelamentos_desconto_valido`
+
+**`migrations/33_reverter_descontos_cron.sql` — nova migration:**
+- Cron job diário (03:00 UTC) via `pg_cron` + `pg_net`
+- Função `get_descontos_expirados()` para script externo
+- Reverte descontos expirados automaticamente
+
+### 🔄 Nova Edge Function: `reverter-desconto`
+- Cancela assinatura com desconto e cria nova com valor original
+- Chamada automaticamente pelo cron job
+- Também pode ser chamada manualmente via HTTP
+- Registra evento `RETENTION_DISCOUNT_EXPIRED` em `pagamentos`
+
+### 🛡️ Melhoria em `registrar-cancelamento`
+- Verifica se assinatura existe no Asaas antes de deletar
+- Se já cancelada (404), prossegue sem erro
+- Evita inconsistência: cancelado no banco, ativo no Asaas
+
+### 🎨 Frontend
+- Fallback de `toast()` → `alert()` em `aceitarDesconto`
+- Garantia de feedback visual mesmo se módulo não carregou
+
+### 📊 Fluxo Completo de Retenção (agora funcional)
+```
+1. Usuário clica "Cancelar →" → abre survey
+2. Motivo "muito-caro" → oferta de 20% por 3 meses
+3. Aceita → cancelar assinatura atual (R$39)
+           → criar nova (R$31,20)
+           → registrar com desconto_valido_ate = +3 meses
+4. Cron job diário verifica descontos expirados
+5. Ao expirar → cancelar com desconto → criar nova (R$39)
+```
+
+---
+
 ## [2026-04-07] — Serviços: descrição, exibição de preço, galeria Pro e horários no hero
 
 ### ✂️ Serviços — descrição e exibição de preço

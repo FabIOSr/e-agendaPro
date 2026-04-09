@@ -1880,6 +1880,59 @@
     </div><!-- /main -->
   </div><!-- /layout -->
 
+  <!-- MODAL CANCEL SURVEY -->
+  <div class="modal-overlay" id="modal-cancel-survey" style="display:none">
+    <div class="modal" style="max-width:480px">
+      <h3 style="margin-bottom:8px">Podemos ajudar? 😔</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Conte-nos o motivo do cancelamento para que possamos melhorar:</p>
+
+      <div id="survey-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bord);border-radius:8px;cursor:pointer;transition:all .2s">
+          <input type="radio" name="cancel-reason" value="muito-caro" style="accent-color:var(--lime)">
+          <span style="font-size:14px">Muito caro para o que uso</span>
+        </label>
+        <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bord);border-radius:8px;cursor:pointer;transition:all .2s">
+          <input type="radio" name="cancel-reason" value="nao-uso" style="accent-color:var(--lime)">
+          <span style="font-size:14px">Não estou mais usando</span>
+        </label>
+        <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bord);border-radius:8px;cursor:pointer;transition:all .2s">
+          <input type="radio" name="cancel-reason" value="faltou-feature" style="accent-color:var(--lime)">
+          <span style="font-size:14px">Faltou alguma funcionalidade</span>
+        </label>
+        <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bord);border-radius:8px;cursor:pointer;transition:all .2s">
+          <input type="radio" name="cancel-reason" value="mudei-ramo" style="accent-color:var(--lime)">
+          <span style="font-size:14px">Mudei de ramo/atividade</span>
+        </label>
+        <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bord);border-radius:8px;cursor:pointer;transition:all .2s">
+          <input type="radio" name="cancel-reason" value="outro" style="accent-color:var(--lime)">
+          <span style="font-size:14px">Outro motivo</span>
+        </label>
+      </div>
+
+      <!-- Campo outro motivo -->
+      <div id="survey-outro-field" style="display:none;margin-bottom:16px">
+        <label class="label" style="font-size:12px;font-weight:600;margin-bottom:6px;display:block">Qual motivo?</label>
+        <input type="text" id="survey-outro-input" class="input" placeholder="Descreva o motivo..." style="width:100%;font-size:13px">
+      </div>
+
+      <!-- Oferta de desconto (só aparece se "muito-caro") -->
+      <div id="cancel-discount-offer" style="display:none;margin-bottom:20px;padding:20px;background:var(--lime-t);border:1.5px solid var(--lime);border-radius:12px;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🎁</div>
+        <h4 style="margin:0 0 6px;color:var(--lime)">Oferta especial</h4>
+        <p style="font-size:14px;color:var(--muted);margin:0 0 12px">Que tal <strong style="color:var(--text)">20% de desconto</strong> por 3 meses?</p>
+        <div style="font-size:22px;font-weight:700;color:var(--lime-d);margin-bottom:16px">R$31/mês em vez de R$39</div>
+        <button class="btn-accept-discount" onclick="aceitarDesconto()" style="background:var(--lime-d);color:var(--lime-ink);border:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:8px;width:100%">✓ Aceitar desconto</button>
+        <br>
+        <button class="btn-decline-discount" onclick="recusarDesconto()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline">Não, quero cancelar</button>
+      </div>
+
+      <div class="modal-btns" style="display:flex;gap:10px">
+        <button class="modal-keep" onclick="fecharCancelSurvey()" style="flex:1">Voltar</button>
+        <button class="modal-danger" id="btn-confirm-cancel" onclick="window.confirmarCancelamento()" style="flex:1" disabled>Confirmar cancelamento</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL EXCLUIR CONTA -->
   <div class="modal-overlay" id="modal-excluir">
     <div class="modal">
@@ -2628,10 +2681,13 @@
     async function carregarPlano() {
       const { data, error } = await supabase
         .from('prestadores')
-        .select('plano, plano_valido_ate, trial_ends_at')
+        .select('plano, plano_valido_ate, trial_ends_at, assinatura_periodicidade')
         .eq('id', userId)
         .single();
       if (error || !data) return;
+
+      // Expor periodicidade globalmente para o cancel survey
+      window.ASSINATURA_PERICIODICIDADE = data.assinatura_periodicidade || null;
 
       // Verifica se está em trial
       let isTrial = false;
@@ -2702,7 +2758,7 @@
           </div>
           <div class="plano-det" style="font-size:12px;color:var(--muted);margin-top:3px">Válido até: ${valido}</div>
         </div>
-        <button class="btn-upgrade" onclick="window.location.href='/planos'">Gerenciar →</button>
+        <button class="btn-upgrade" onclick="abrirCancelSurvey()">Cancelar →</button>
       </div>
       <div style="margin-top:16px;padding:12px 14px;background:var(--bg2);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.6">
         ✅ Agendamentos ilimitados &nbsp;·&nbsp; ✅ WhatsApp automático &nbsp;·&nbsp; ✅ Relatórios &nbsp;·&nbsp; ✅ Histórico de clientes
@@ -3124,6 +3180,264 @@
       document.getElementById('sec-' + id).classList.add('active');
       document.getElementById('ni-' + id).classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ── CANCEL SURVEY - Definido ANTES do init() ──────────────────────────────
+    let cancelReason = null;
+
+    window.abrirCancelSurvey = function() {
+      console.log('[Cancel Survey] abrindoCancelSurvey() chamado');
+      const modal = document.getElementById('modal-cancel-survey');
+      if (modal) {
+        modal.style.display = 'flex';
+        console.log('[Cancel Survey] Modal aberto com display:flex');
+        cancelReason = null;
+        document.querySelectorAll('input[name="cancel-reason"]').forEach(r => r.checked = false);
+        document.getElementById('survey-outro-field').style.display = 'none';
+        document.getElementById('cancel-discount-offer').style.display = 'none';
+        document.getElementById('btn-confirm-cancel').disabled = true;
+        document.getElementById('survey-outro-input').value = '';
+
+        // Aviso para plano anual
+        const ciclo = window.ASSINATURA_PERICIODICIDADE;
+        const isAnual = ciclo === 'YEARLY';
+        const surveyOptions = document.getElementById('survey-options');
+        if (isAnual) {
+          // Adicionar aviso se não existir
+          let aviso = document.getElementById('aviso-plano-anual');
+          if (!aviso) {
+            aviso = document.createElement('div');
+            aviso.id = 'aviso-plano-anual';
+            aviso.style.cssText = 'margin-bottom:16px;padding:14px;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.6';
+            surveyOptions.parentNode.insertBefore(aviso, surveyOptions);
+          }
+          aviso.innerHTML = 'ℹ️ Você está no <strong>plano anual</strong> e já paga o melhor preço (R$29/mês). Seu plano continuará ativo até o fim do ciclo pago.';
+          aviso.style.display = 'block';
+        } else {
+          const avisoExistente = document.getElementById('aviso-plano-anual');
+          if (avisoExistente) avisoExistente.style.display = 'none';
+        }
+
+        console.log('[Cancel Survey] Estado resetado');
+      } else {
+        console.error('[Cancel Survey] Modal NÃO encontrado!');
+        alert('Erro: Modal não encontrado no DOM');
+      }
+    };
+
+    window.fecharCancelSurvey = function() {
+      const modal = document.getElementById('modal-cancel-survey');
+      if (modal) modal.style.display = 'none';
+    };
+
+    function setupCancelSurveyListeners() {
+      const radios = document.querySelectorAll('input[name="cancel-reason"]');
+      if (!radios.length) {
+        setTimeout(setupCancelSurveyListeners, 100);
+        return;
+      }
+
+      // Verificar se é plano anual (sem oferta de desconto)
+      const ciclo = window.ASSINATURA_PERICIODICIDADE;
+      const isAnual = ciclo === 'YEARLY';
+
+      if (isAnual) {
+        console.log('[Cancel Survey] Plano anual — oferta de desconto desabilitada');
+      }
+
+      radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          cancelReason = e.target.value;
+          console.log('[Cancel Survey] Motivo selecionado:', cancelReason);
+
+          const outroField = document.getElementById('survey-outro-field');
+          outroField.style.display = cancelReason === 'outro' ? 'block' : 'none';
+
+          // Oferta de desconto: apenas para mensal E motivo 'muito-caro'
+          const discountOffer = document.getElementById('cancel-discount-offer');
+          if (isAnual) {
+            discountOffer.style.display = 'none'; // Anual: sem oferta
+          } else {
+            discountOffer.style.display = cancelReason === 'muito-caro' ? 'block' : 'none';
+          }
+
+          const btnConfirm = document.getElementById('btn-confirm-cancel');
+          btnConfirm.disabled = false;
+          console.log('[Cancel Survey] Botão confirmar habilitado');
+        });
+      });
+
+      console.log('[Cancel Survey] Listeners configurados com sucesso');
+    }
+
+    setupCancelSurveyListeners();
+
+    window.aceitarDesconto = async function() {
+      const btn = document.querySelector('.btn-accept-discount');
+      const originalText = btn.textContent;
+      btn.textContent = 'Aplicando...';
+      btn.disabled = true;
+
+      const showToast = typeof toast === 'function' ? toast : (msg) => alert(msg);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Não autenticado');
+
+        console.log('[Cancel Survey] Tentando aplicar desconto...');
+        console.log('[Cancel Survey] URL:', `${window.SUPABASE_URL}/functions/v1/criar-cupom`);
+
+        const response = await fetch(`${window.SUPABASE_URL}/functions/v1/criar-cupom`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            desconto_percentual: 20,
+            meses: 3,
+            motivo: 'muito-caro'
+          })
+        });
+
+        console.log('[Cancel Survey] Response status:', response.status);
+
+        if (response.status === 404) {
+          console.warn('[Cancel Survey] Edge function não encontrada. Modo simulação ativado.');
+          console.log('[Cancel Survey] Dados que seriam enviados:', {
+            desconto_percentual: 20,
+            meses: 3,
+            motivo: 'muito-caro',
+            prestador_id: userId
+          });
+          
+          showToast('✓ SIMULAÇÃO: Desconto de 20% aplicado! (Edge function não deployada)');
+          fecharCancelSurvey();
+          await carregarPlano();
+          return;
+        }
+
+        const result = await response.json();
+        console.log('[Cancel Survey] Response:', result);
+        
+        if (!response.ok) {
+          throw new Error(result.erro || 'Erro ao aplicar desconto');
+        }
+
+        showToast('✓ Desconto de 20% aplicado por 3 meses!');
+        fecharCancelSurvey();
+        await carregarPlano();
+      } catch (error) {
+        console.error('[Cancel Survey] Erro ao aplicar desconto:', error);
+        showToast('Erro ao aplicar desconto: ' + error.message);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    };
+
+    window.recusarDesconto = function() {
+      document.getElementById('cancel-discount-offer').style.display = 'none';
+      document.getElementById('btn-confirm-cancel').disabled = false;
+    };
+
+    window.confirmarCancelamento = async function() {
+      console.log('[Cancel Survey] confirmarCancelamento() foi chamada!');
+      console.log('[Cancel Survey] cancelReason =', cancelReason);
+      
+      if (!cancelReason) {
+        console.warn('[Cancel Survey] Motivo não selecionado');
+        if (typeof toast === 'function') {
+          toast('Selecione um motivo', false);
+        } else {
+          alert('Selecione um motivo');
+        }
+        return;
+      }
+
+      const outroMotivo = document.getElementById('survey-outro-input').value.trim();
+      console.log('[Cancel Survey] outroMotivo =', outroMotivo);
+      
+      if (cancelReason === 'outro' && !outroMotivo) {
+        console.warn('[Cancel Survey] Campo "outro motivo" não preenchido');
+        if (typeof toast === 'function') {
+          toast('Descreva o motivo do cancelamento', false);
+        } else {
+          alert('Descreva o motivo do cancelamento');
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btn-confirm-cancel');
+      const originalText = btn.textContent;
+      btn.textContent = 'Cancelando...';
+      btn.disabled = true;
+
+      try {
+        console.log('[Cancel Survey] Iniciando cancelamento...');
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.error('[Cancel Survey] Usuário não autenticado');
+          throw new Error('Não autenticado');
+        }
+
+        const url = `${window.SUPABASE_URL}/functions/v1/registrar-cancelamento`;
+        console.log('[Cancel Survey] URL:', url);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            motivo: cancelReason,
+            outro_motivo: cancelReason === 'outro' ? outroMotivo : null
+          })
+        });
+
+        console.log('[Cancel Survey] Response status:', response.status);
+
+        if (response.status === 404) {
+          console.warn('[Cancel Survey] Edge function não encontrada. Modo simulação ativado.');
+          console.log('[Cancel Survey] Dados que seriam enviados:', {
+            motivo: cancelReason,
+            outro_motivo: cancelReason === 'outro' ? outroMotivo : null,
+            prestador_id: userId
+          });
+          
+          const motivoNomes = {
+            'muito-caro': 'Muito caro',
+            'nao-uso': 'Não uso mais',
+            'faltou-feature': 'Faltou funcionalidade',
+            'mudei-ramo': 'Mudei de ramo',
+            'outro': 'Outro motivo'
+          };
+          
+          toast(`✓ SIMULAÇÃO: Cancelamento registrado! Motivo: ${motivoNomes[cancelReason]} (Edge function não deployada)`);
+          fecharCancelSurvey();
+          await carregarPlano();
+          return;
+        }
+
+        const result = await response.json();
+        console.log('[Cancel Survey] Response:', result);
+        
+        if (!response.ok) {
+          throw new Error(result.erro || 'Erro ao cancelar');
+        }
+
+        toast(result.mensagem || 'Assinatura cancelada com sucesso!');
+        fecharCancelSurvey();
+        await carregarPlano();
+      } catch (error) {
+        console.error('[Cancel Survey] Erro ao cancelar:', error);
+        toast('Erro ao cancelar: ' + error.message, false);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     };
 
     // ── START ─────────────────────────────────────────────────────────────────
