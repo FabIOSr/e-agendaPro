@@ -1,5 +1,104 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-09] — INF-1: Logger Estruturado com Níveis e TypeScript
+
+### ✨ Novos Módulos
+
+**`modules/logger.ts` — Logger estruturado para frontend:**
+- Níveis: DEBUG, INFO, WARN, ERROR
+- Auto-detecção de ambiente (development vs production)
+- Production: apenas WARN + ERROR visíveis
+- **`logger.error()`** — Mostra no console, **NÃO envia para Sentry**
+- **`logger.captureError()`** — Mostra no console **E envia para Sentry** (apenas erros reais inesperados)
+- Sanitização de dados sensíveis (senha, token, API keys → `[REDACTED]`)
+- Métricas via `logger.metric()` com breadcrumbs no Sentry
+
+**`supabase/functions/_shared/logger.ts` — Logger para Edge Functions (Deno):**
+- Mesmos recursos do frontend
+- Envio de erros para Sentry via Envelope API
+- Tipagem TypeScript completa
+
+### 🔒 Separação: Error vs CaptureError
+
+**Problema resolvido:** `logger.error()` NÃO envia mais para Sentry automaticamente.
+
+**Antes:**
+```typescript
+logger.error('Admin não autenticado', { redirectTo: '/admin/login' });
+// ❌ Enviava para Sentry (não é erro real, é fluxo esperado)
+```
+
+**Depois:**
+```typescript
+logger.error('Admin não autenticado', { redirectTo: '/admin/login' });
+// ✅ Apenas console, não vai para Sentry
+
+logger.captureError('Erro inesperado ao criar agendamento', err, { feature: 'agendamento' });
+// ✅ Envia para Sentry (erro real que precisa investigação)
+```
+
+**Quando usar cada um:**
+
+| Método | Quando | Vai para Sentry? |
+|--------|--------|------------------|
+| `logger.debug()` | Debug de desenvolvimento | ❌ Não |
+| `logger.info()` | Info de fluxo normal | ❌ Não |
+| `logger.warn()` | Aviso (ex: token inválido, fallback) | ❌ Não |
+| `logger.error()` | Erro esperado (ex: validação, auth) | ❌ Não |
+| `logger.captureError()` | **Erro inesperado** (ex: crash, bug) | ✅ Sim |
+| `logger.metric()` | Métricas de negócio | ✅ Breadcrumb |
+
+### 🔄 Migração para TypeScript
+
+**Handlers migrados de JS → TS:**
+- `criar-agendamento-handler.ts` — Criação de agendamentos
+- `webhook-asaas-handler.ts` — Webhook de pagamentos Asaas
+- `cancelar-agendamento-cliente-handler.ts` — Cancelamento por token
+- `reagendar-cliente-handler.ts` — Reagendamento por token
+
+**Tipagens adicionadas:**
+- Interfaces para Deps, Body, Agendamento, Prestador, ErrorContext
+- Retornos de funções tipados
+- Zero `any` nos novos arquivos
+
+### 📊 Substituição de Console Logs
+
+**221 `console.log/error/warn` → `logger.*`:**
+
+| Handler | Antes | Depois |
+|---------|-------|--------|
+| `criar-agendamento` | 6 console.* | 6 logger.* |
+| `webhook-asaas` | 9 console.* | 9 logger.* |
+| `cancelar-cliente` | 5 console.* | 5 logger.* |
+| `reagendar-cliente` | 5 console.* | 5 logger.* |
+
+**Exemplos de métricas agora rastreadas:**
+- `agendamento_criado` — Quando agendamento é criado
+- `plano_ativado` — Quando Pro é ativado via Asaas
+- `plano_rebaixado` — Quando downgrade para Free
+- `agendamento_cancelado` — Cancelamento por token
+- `agendamento_reagendado` — Reagendamento por token
+- `pagamento_registrado` — Evento do Asaas registrado
+
+### 🧪 Testes
+
+- ✅ 74 testes unitários passando (0 falhas)
+- ✅ Handlers TypeScript funcionam com testes existentes
+- ✅ Arquivos JS originais mantidos (serão removidos após validação completa)
+
+### 📁 Arquivos Criados
+
+```
+modules/logger.ts                                  — Logger frontend
+modules/criar-agendamento-handler.ts               — Handler TS
+modules/webhook-asaas-handler.ts                   — Handler TS
+modules/cancelar-agendamento-cliente-handler.ts    — Handler TS
+modules/reagendar-cliente-handler.ts               — Handler TS
+supabase/functions/_shared/logger.ts               — Logger Edge Functions
+```
+
+---
+
 ## [2026-04-08] — R-2: Cancelamento Survey com Retenção Ativa (v2 — correção de arquitetura)
 
 ### 🐛 Correções Críticas

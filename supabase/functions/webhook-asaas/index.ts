@@ -6,7 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
-import { handleWebhookAsaasRequest } from "../../../modules/webhook-asaas-handler.js";
+import { handleWebhookAsaasRequest } from "../../../modules/webhook-asaas-handler.ts";
 import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");

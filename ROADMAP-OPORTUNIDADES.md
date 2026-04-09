@@ -1702,6 +1702,206 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 
 ---
 
+---
+
+## 🛠️ Infraestrutura & Qualidade de Código
+
+---
+
+### INF-2: Rate Limiting nas Edge Functions
+
+**Problema:** Sem proteção contra abuso de APIs. Risco de brute force em admin, spam de agendamentos, abuso de WhatsApp/email.
+
+**Solução Proposta:**
+
+Middleware reutilizável `_shared/rate-limit.ts`:
+
+```typescript
+// supabase/functions/_shared/rate-limit.ts
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+export function checkRateLimit(
+  identifier: string,
+  config: { max: number; windowMs: number } = { max: 100, windowMs: 60000 }
+): { allowed: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(identifier);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(identifier, { count: 1, resetAt: now + config.windowMs });
+    return { allowed: true, remaining: config.max - 1, resetAt: now + config.windowMs };
+  }
+
+  if (entry.count >= config.max) {
+    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
+  }
+
+  entry.count++;
+  return { allowed: true, remaining: config.max - entry.count, resetAt: entry.resetAt };
+}
+```
+
+**Limites Recomendados por Função:**
+
+| Edge Function | Limite | Janela | Justificativa |
+|---------------|--------|--------|---------------|
+| `admin-validate` | 5 | 15 min | Prevenir brute force |
+| `criar-agendamento` | 10 | 1 min | Prevenir spam |
+| `horarios-disponiveis` | 30 | 1 min | Permitir browsing |
+| `lembretes-whatsapp` | 5 | 1 min | Controlar custos |
+| `criar-assinatura` | 3 | 1 hora | Prevenir abuso |
+
+**Referência:** `CORS-SETUP.md` já menciona como "Opção A: Rate Limiting no Supabase"
+
+**Impacto:** ✅ Proteção contra ataques, ✅ Controle de custos, ✅ Respostas padronizadas (429 + Retry-After)
+**Esforço:** ~8h (2h middleware + 6h aplicação em 8 funções críticas)
+**Prioridade:** 🟡 Alta
+
+---
+
+### INF-3: Validação de Origem nas Edge Functions
+
+**Problema:** CORS permite qualquer origem (`Access-Control-Allow-Origin: "*"`). Seguro por JWT, mas pode haver abuso de domínio desconhecido.
+
+**Solução Proposta:**
+
+Middleware ` _shared/validate-origin.ts`:
+
+```typescript
+// supabase/functions/_shared/validate-origin.ts
+const ALLOWED_ORIGINS = [
+  "https://e-agendapro.web.app",
+  "https://agendapro.com.br",
+  "https://www.agendapro.com.br",
+];
+const ALLOWED_IN_DEV = ["http://localhost:3000", "http://localhost:5173"];
+
+export function validateOrigin(req: Request): { valid: boolean; origin?: string } {
+  const origin = req.headers.get("origin");
+  if (!origin) return { valid: true }; // Server-to-server
+
+  const isProd = Deno.env.get("SENTRY_ENVIRONMENT") === "production";
+  const allowed = isProd ? ALLOWED_ORIGINS : [...ALLOWED_ORIGINS, ...ALLOWED_IN_DEV];
+
+  if (allowed.includes(origin)) return { valid: true, origin };
+  return { valid: false, origin };
+}
+```
+
+**Referência:** `CORS-SETUP.md` já documenta como "Opção B: Validar origem nas Edge Functions"
+
+**Impacto:** ✅ Proteção extra contra domínios não autorizados, ✅ Permite dev local
+**Esforço:** ~3h (1h middleware + 2h aplicação em 28 funções)
+**Prioridade:** 🟢 Média
+
+---
+
+### INF-4: Analytics de Produto (Plausible/Mixpanel)
+
+**Problema:** Sem tracking de eventos de negócio. Sentry captura erros, mas não comportamento do usuário. Dificuldade de medir conversão e churn.
+
+**Solução Proposta:**
+
+**Opção A: Plausible (Privacy-First, Recomendada)**
+
+```html
+<!-- Adicionar em <head> de todas as páginas -->
+<script defer data-domain="e-agendapro.web.app" src="https://plausible.io/js/script.js"></script>
+```
+
+**Eventos para Tracking:**
+
+| Evento | Quando | Propriedades |
+|--------|--------|--------------|
+| `Agendamento Criado` | Após confirmar | plano, servico, horario |
+| `Upgrade Concluído` | Após webhook ativar Pro | periodicidade, valor |
+| `Trial Iniciado` | Após ativar trial | - |
+| `Trial Expirado` | Após downgrade | dias_usados |
+| `Cancelamento Survey` | Ao abrir survey | motivo |
+| `Lista de Espera Entrada` | Ao entrar na lista | servico, preferencia |
+
+**Uso:**
+
+```javascript
+// Após criação de agendamento
+plausible('Agendamento Criado', {
+  props: { plano: 'pro', servico: 'corte', horario: '14:00' }
+});
+```
+
+**Referência:** `README.md` e `.env.example` já mencionam `PLAUSIBLE_DOMAIN`
+
+**Impacto:** ✅ Visibilidade de funil, ✅ Medição de features, ✅ Dados para decisões
+**Esforço:** ~6h (1h setup + 3h tracking + 2h dashboard)
+**Prioridade:** 🟢 Média
+
+---
+
+### INF-5: Guia de Execução de Testes
+
+**Problema:** 168 testes existem (74 unitários + 94 E2E), mas falta documentação de como rodar, interpretar resultados e expandir.
+
+**Solução Proposta:**
+
+Criar `TESTS-GUIDE.md` com:
+- Como rodar testes unitários (`npm test`)
+- Como rodar E2E (`npm run test:e2e`, `--ui`, `--headed`)
+- Como rodar smoke tests de DB (`npm run test:db:local`)
+- Como adicionar novos testes (exemplos de unitários e E2E)
+- Cobertura atual e gaps
+- CI/CD: como testes bloqueiam deploy
+
+**Referência:** `AUDITORIA-TECNICA.md` já documenta 80 testes E2E e infraestrutura
+
+**Impacto:** ✅ Onboarding de devs mais rápido, ✅ Testes não ficam esquecidos
+**Esforço:** ~2h (documentação)
+**Prioridade:** 🟢 Baixa
+
+---
+
+### INF-6: Migração Gradual para TypeScript
+
+**Problema:** Edge Functions já em TypeScript, mas módulos compartilhados (`modules/*.js`) em JavaScript. Inconsistência, risco de erros de tipo em runtime.
+
+**Solução Proposta:**
+
+Migração em 3 fases por ordem de criticidade:
+
+**Fase 1: Handlers Críticos (4h)**
+
+| Arquivo | Motivo |
+|---------|--------|
+| `criar-agendamento-handler.js` | Lógica de criação de agendamento |
+| `webhook-asaas-handler.js` | Processamento de pagamentos |
+| `cancelar-agendamento-cliente-handler.js` | Cancelamento por token |
+| `reagendar-cliente-handler.js` | Reagendamento por token |
+
+**Fase 2: Módulos de Negócio (3h)**
+
+| Arquivo | Motivo |
+|---------|--------|
+| `scheduling-rules.js` | Geração de slots (complexo) |
+| `asaas-webhook-rules.js` | Classificação de eventos Asaas |
+| `lista-espera-rules.js` | Regras de lista de espera |
+| `agendamento-response.js` | Normalização de resposta |
+
+**Fase 3: Auth e UI (3h)**
+
+| Arquivo | Motivo |
+|---------|--------|
+| `auth-session.js` | Sessão e autenticação |
+| `admin-auth.js` | Auth de admin |
+| `painel-init.js` | Proteção de rotas |
+| `ui-helpers.js` | Helpers de UI |
+
+**Referência:** `AUDITORIA-TECNICA.md` recomenda "Adicionar TypeScript gradualmente"
+
+**Impacto:** ✅ Type safety, ✅ Autocomplete, ✅ Menos bugs em runtime
+**Esforço:** ~10h (4h + 3h + 3h)
+**Prioridade:** 🟢 Baixa
+
+---
+
 ## 📈 Métricas de Sucesso
 
 ### Conversão

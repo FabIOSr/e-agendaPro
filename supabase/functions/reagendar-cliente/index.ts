@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8";
-import { handleReagendarClienteRequest } from "../../../modules/reagendar-cliente-handler.js";
+import { handleReagendarClienteRequest } from "../../../modules/reagendar-cliente-handler.ts";
 import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
