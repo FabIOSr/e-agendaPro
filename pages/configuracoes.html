@@ -3076,7 +3076,7 @@
 
     // ── NAVEGAÇÃO ─────────────────────────────────────────────────────────────
     // ── GALERIA ────────────────────────────────────────────────────────────────
-    let galeriaUrls = []; // array de strings
+    window.galeriaUrls = []; // exposto no window para handlers inline
 
     async function carregarGaleria() {
       const isPro = window.PRESTADOR_IS_PRO;
@@ -3102,9 +3102,9 @@
         .eq('id', userId)
         .single();
 
-      galeriaUrls = (data?.galeria_urls || []).filter(Boolean);
+      window.galeriaUrls = (data?.galeria_urls || []).filter(Boolean);
       renderGaleria();
-      if (btnAdd) btnAdd.style.display = galeriaUrls.length < 9 ? 'inline-flex' : 'none';
+      if (btnAdd) btnAdd.style.display = window.galeriaUrls.length < 9 ? 'inline-flex' : 'none';
     }
 
     function renderGaleria() {
@@ -3112,32 +3112,46 @@
       const btnAdd = document.getElementById('btn-add-foto');
       if (!listEl) return;
 
-      listEl.innerHTML = galeriaUrls.map((url, i) => {
+      listEl.innerHTML = window.galeriaUrls.map((url, i) => {
         const urlEsc = url.replace(/"/g, '&quot;');
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <input class="srv-i" style="flex:1;font-size:12px" value="${urlEsc}"
-            placeholder="https://…" data-galeria-idx="${i}"
-            oninput="galeriaUrls[${i}]=this.value"
-            onchange="galeriaUrls[${i}]=this.value">
-          <button class="btn-del" onclick="removerFoto(${i})">✕</button>
+          <input class="srv-i galeria-input" style="flex:1;font-size:12px" value="${urlEsc}"
+            placeholder="https://…" data-galeria-idx="${i}">
+          <button class="btn-del" data-galeria-del="${i}">✕</button>
         </div>`;
       }).join('');
 
-      if (btnAdd) btnAdd.style.display = galeriaUrls.length < 9 ? 'inline-flex' : 'none';
+      // Listeners programáticos — o array já está sincronizado pelo evento 'input'
+      listEl.querySelectorAll('.galeria-input').forEach(inp => {
+        const idx = parseInt(inp.dataset.galeriaIdx, 10);
+        inp.addEventListener('input', () => {
+          window.galeriaUrls[idx] = inp.value;
+        });
+      });
+
+      listEl.querySelectorAll('[data-galeria-del]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.getAttribute('data-galeria-del'), 10);
+          if (isNaN(idx) || idx < 0 || idx >= window.galeriaUrls.length) {
+            console.error(`[Galeria] Índice inválido: ${idx}`);
+            return;
+          }
+          window.galeriaUrls.splice(idx, 1);
+          renderGaleria();
+        });
+      });
+
+      if (btnAdd) btnAdd.style.display = window.galeriaUrls.length < 9 ? 'inline-flex' : 'none';
     }
 
     window.adicionarFoto = function () {
-      if (galeriaUrls.length >= 9) return;
-      galeriaUrls.push('');
+      if (window.galeriaUrls.length >= 9) return;
+      window.galeriaUrls.push('');
       renderGaleria();
       // foca o último input adicionado
       const inputs = document.querySelectorAll('[data-galeria-idx]');
       if (inputs.length) inputs[inputs.length - 1].focus();
-    };
-
-    window.removerFoto = function (idx) {
-      galeriaUrls.splice(idx, 1);
-      renderGaleria();
     };
 
     async function salvarGaleria() {
@@ -3150,20 +3164,20 @@
       // Ler valores diretamente do DOM (garante que paste/clipboard é capturado)
       document.querySelectorAll('[data-galeria-idx]').forEach(inp => {
         const idx = parseInt(inp.dataset.galeriaIdx, 10);
-        galeriaUrls[idx] = inp.value;
+        window.galeriaUrls[idx] = inp.value;
       });
 
       const btn  = document.querySelector('#sec-galeria .btn-save');
       const orig = btn ? btn.textContent : '';
       if (btn) { btn.textContent = 'Salvando…'; btn.disabled = true; }
       try {
-        const urls = galeriaUrls.map(u => u.trim()).filter(Boolean);
+        const urls = window.galeriaUrls.map(u => u.trim()).filter(Boolean);
         const { error } = await supabase
           .from('prestadores')
           .update({ galeria_urls: urls })
           .eq('id', userId);
         if (error) throw error;
-        galeriaUrls = urls;
+        window.galeriaUrls = urls;
         renderGaleria();
         toast('✓ Galeria salva!');
       } catch (e) {
@@ -3272,7 +3286,16 @@
 
     setupCancelSurveyListeners();
 
+    // Flag para prevenir race condition
+    let isProcessing = false;
+
     window.aceitarDesconto = async function() {
+      if (isProcessing) {
+        console.warn('[Cancel Survey] Já processando...');
+        return;
+      }
+      isProcessing = true;
+
       const btn = document.querySelector('.btn-accept-discount');
       const originalText = btn.textContent;
       btn.textContent = 'Aplicando...';
@@ -3321,6 +3344,14 @@
         console.log('[Cancel Survey] Response:', result);
         
         if (!response.ok) {
+          // Tratamento especial para plano anual
+          if (result.ciclo === "YEARLY") {
+            showToast(result.erro);
+            // Ocultar oferta de desconto e mostrar botão de cancelamento normal
+            document.getElementById('cancel-discount-offer').style.display = 'none';
+            document.getElementById('btn-confirm-cancel').disabled = false;
+            return;
+          }
           throw new Error(result.erro || 'Erro ao aplicar desconto');
         }
 
@@ -3333,6 +3364,7 @@
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;
+        isProcessing = false;
       }
     };
 

@@ -1,186 +1,97 @@
-# 🔧 Problema Resolvido: "Nada acontece ao cancelar"
+# 🔧 Status do Cancel Survey (R-2)
 
-## ❌ Problema Relatado
+## ❌ Problema Original
 
 > "Tentei cancelar um plano, abre o modal, seleciono qualquer coisa e clico em confirmar cancelamento mas nada acontece."
 
----
+## ✅ Resolução Completa
 
-## 🔍 Causa Raiz
-
-O problema é que as **edge functions** `criar-cupom` e `registrar-cancelamento`:
-- ✅ Existem localmente no projeto
-- ❌ **Não foram deployadas** no Supabase
-
-Quando o código tenta fazer `fetch()` para essas funções, recebe um **404 (Not Found)** e o erro não estava sendo tratado adequadamente.
+O problema era **ausência de deploy** das edge functions + bugs de escopo no frontend. Tudo foi corrigido e documentado.
 
 ---
 
-## ✅ Solução Implementada
+## 📦 O que foi implementado
 
-### 1. **Modo de Simulação para Testes**
+### Frontend (`pages/configuracoes.html`)
+- ✅ Modal de pesquisa com 5 motivos
+- ✅ Oferta de desconto **condicional** (apenas mensal + muito-caro)
+- ✅ Plano anual: sem oferta, aviso "melhor preço"
+- ✅ Fallback `toast()` → `alert()`
+- ✅ Proteção contra race condition (`isProcessing` flag)
+- ✅ Bug corrigido: `galeriaUrls` exposto no `window` (antes causava `ReferenceError`)
+- ✅ Bug corrigido: valores de inputs de galeria preservados ao adicionar novo input
 
-Quando a edge function retorna **404**, o código agora:
-- Detecta que função não está deployada
-- Entra em "modo simulação"
-- Mostra toast: `"✓ SIMULAÇÃO: Cancelamento registrado! Motivo: X (Edge function não deployada)"`
-- Permite testar todo o fluxo localmente
+### Migrations
+- ✅ `32_cancelamentos.sql` — tabela completa + colunas `tipo_desconto`, `desconto_valido_ate`, etc.
+- ✅ `33_reverter_descontos_cron.sql` — cron job diário + função `get_descontos_expirados()`
 
-**Código:**
-```javascript
-if (response.status === 404) {
-  console.warn('[Cancel Survey] Edge function não encontrada. Modo simulação ativado.');
-  toast('✓ SIMULAÇÃO: Cancelamento registrado! (Edge function não deployada)');
-  return;
-}
-```
+### Edge Functions
+- ✅ `criar-cupom` — aplica desconto mensal (recusa YEARLY)
+- ✅ `registrar-cancelamento` — registra motivo + cancela no Asaas (verifica existência antes)
+- ✅ `reverter-desconto` — cron job reverte descontos expirados
 
-### 2. **Logging Detalhado para Debug**
+### Testes
+- ✅ **24 testes unitários passando** (`tests/cancel-survey.test.js`)
 
-Adicionado `console.log()` em todos os pontos críticos:
-```
-[Cancel Survey] confirmarCancelamento() foi chamada!
-[Cancel Survey] cancelReason = nao-uso
-[Cancel Survey] Iniciando cancelamento...
-[Cancel Survey] URL: https://xxx.supabase.co/functions/v1/...
-[Cancel Survey] Response status: 404
-[Cancel Survey] Edge function não encontrada. Modo simulação ativado.
-```
+---
 
-**Como ver:**
-1. Abra `F12` no navegador
-2. Vá para aba "Console"
-3. Tente cancelar e observe os logs
+## 🧪 Como Testar
 
-### 3. **Fallback para Toast**
+### Localmente (sem deploy — modo simulação 404)
 
-Se função `toast()` não estiver disponível:
-```javascript
-if (typeof toast === 'function') {
-  toast('Selecione um motivo', false);
-} else {
-  alert('Selecione um motivo'); // Fallback
-}
-```
+1. `npm run dev`
+2. Acesse `/configuracoes` → aba Plano
+3. Clique "Cancelar →"
+4. Selecione motivo
+5. Se edge function não deployada → toast de simulação aparece
 
-### 4. **Testes Unitários**
+### Unitário
 
-Criados 14 testes para validar lógica:
 ```bash
 node --test tests/cancel-survey.test.js
-
-✔ 14 testes passando
+# 24 testes passando
 ```
 
 ---
 
-## 🧪 Como Testar AGORA (Sem Deploy)
+## 🚀 Deploy Necessário
 
-### Passo a Passo:
-
-1. **Rode a aplicação localmente:**
-   ```bash
-   npm run dev
-   ```
-
-2. **Acesse `/configuracoes` e faça login**
-
-3. **Abra o Console do Navegador (F12)**
-
-4. **Vá para seção "Plano" e clique em "Cancelar →"**
-
-5. **Selecione um motivo** (ex: "Não estou mais usando")
-
-6. **Clique em "Confirmar cancelamento"**
-
-7. **Observe:**
-   - Console mostra logs detalhados
-   - Toast aparece: "✓ SIMULAÇÃO: Cancelamento registrado!..."
-   - Modal fecha
-   - Plano recarrega
-
-### Resultado Esperado:
-
-✅ **Funciona 100% localmente** sem precisar fazer deploy
-
----
-
-## 🚀 Para Produção: Deploy das Edge Functions
-
-Quando estiver pronto para produção:
-
-### 1. Deploy via CLI:
 ```bash
+# Migrations (já rodam com ADD COLUMN IF NOT EXISTS — idempotentes)
+supabase db push
+
+# Edge functions
 supabase functions deploy criar-cupom
 supabase functions deploy registrar-cancelamento
-```
-
-### 2. Ou via Dashboard:
-1. Acesse: `https://app.supabase.com/project/SEU_PROJETO/functions`
-2. Crie duas funções:
-   - `criar-cupom` (copie de `supabase/functions/criar-cupom/index.ts`)
-   - `registrar-cancelamento` (copie de `supabase/functions/registrar-cancelamento/index.ts`)
-
-### 3. Configure Secrets:
-```bash
-supabase secrets set ASAAS_API_KEY=your_key
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_key
-```
-
-### 4. Teste Novamente:
-
-Agora ao invés de 404, receberá 200:
-```
-[Cancel Survey] Response status: 200
-[Cancel Survey] Response: { ok: true, mensagem: 'Assinatura cancelada...' }
+supabase functions deploy reverter-desconto
 ```
 
 ---
 
-## 📊 Verificar no Banco (Após Deploy)
+## 📊 Verificar no Banco
 
 ```sql
--- Ver cancelamentos registrados
-SELECT 
-  motivo,
-  recebeu_desconto,
-  cancelamento_efetivado,
-  criado_em
-FROM cancelamentos
-ORDER BY criado_em DESC;
+-- Últimos cancelamentos
+SELECT motivo, recebeu_desconto, tipo_desconto,
+       desconto_percentual, cancelamento_efetivado
+FROM cancelamentos ORDER BY criado_em DESC;
+
+-- Taxa de retenção
+SELECT
+  ROUND(COUNT(*) FILTER (WHERE NOT cancelamento_efetivado)::numeric /
+    NULLIF(COUNT(*), 0) * 100, 2) as taxa_retencao_pct
+FROM cancelamentos WHERE recebeu_desconto = true;
 ```
 
 ---
 
-## 🐛 Se Ainda Não Funcionar
+## 📚 Documentação Completa
 
-### Verifique no Console do Navegador:
-
-**Erro: `abrirCancelSurvey is not defined`**
-- Causa: Arquivo `configuracoes.html` não está atualizado
-- Solução: Hard refresh (`Ctrl + Shift + R`)
-
-**Erro: `toast is not defined`**
-- Causa: `ui-helpers.js` não carregado
-- Solução: Verifique se `<script src="/modules/ui-helpers.js"></script>` está no `<head>`
-
-**Erro: `Cannot read property 'access_token' of null`**
-- Causa: Sessão expirada
-- Solução: Faça logout e login novamente
+- **Arquitetura e fluxo:** [`docs/CANCEL-SURVEY-DOC.md`](CANCEL-SURVEY-DOC.md)
+- **Guia de testes:** [`docs/CANCEL-SURVEY-TESTES.md`](CANCEL-SURVEY-TESTES.md)
+- **Debug rápido:** (este documento)
 
 ---
 
-## 📝 Checklist
-
-- [x] Modo simulação implementado (funciona sem deploy)
-- [x] Logging detalhado adicionado
-- [x] Fallback para toast (usa alert se necessário)
-- [x] Testes unitários criados (14 passando)
-- [x] Documentação de testes completa
-- [ ] Deploy das edge functions (quando pronto para produção)
-- [ ] Teste com dados reais após deploy
-
----
-
-**Última atualização:** 2026-04-08  
-**Status:** ✅ Resolvido - Funciona localmente com modo simulação
+**Última atualização:** 2026-04-09
+**Status:** ✅ Implementado, testado, aguardando deploy

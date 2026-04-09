@@ -78,11 +78,13 @@ Deno.serve(async (req: Request) => {
     );
 
     // 1. Buscar descontos expirados ainda não revertidos
+    // Filtro tipo_desconto = mensal_imediato: plano YEARLY nunca recebe desconto (já tem 25% embutido)
     const { data: descontosExpirados, error: queryErr } = await supabase
       .from("cancelamentos")
       .select("*, prestadores!inner(id, nome, asaas_customer_id, asaas_sub_id, plano, assinatura_periodicidade)")
       .eq("recebeu_desconto", true)
       .eq("cancelamento_efetivado", false)
+      .eq("tipo_desconto", "mensal_imediato")
       .lt("desconto_valido_ate", new Date().toISOString())
       .not("desconto_asaas_sub_id", "is", null)
       .not("assinatura_original_sub_id", "is", null);
