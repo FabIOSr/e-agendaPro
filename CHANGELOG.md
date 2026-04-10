@@ -1,5 +1,23 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-09] — INF-3: Validação de Origem com Variáveis de Ambiente
+
+### 🔒 Melhorias no CORS
+
+**`supabase/functions/_shared/cors.ts`:**
+- Variáveis `ALLOWED_ORIGINS` e `ALLOWED_ORIGINS_DEV` para customizar origins via env
+- Localhost habilitado automaticamente em dev (`SENTRY_ENVIRONMENT !== "production"`)
+- Fallback para hardcode se variáveis não definidas
+- Todas as 22 Edge Functions já validam origem com `validateOrigin()`
+
+**Novas variáveis de ambiente (opcionais):**
+```
+ALLOWED_ORIGINS=https://e-agendapro.web.app,https://agendapro.com.br
+ALLOWED_ORIGINS_DEV=http://localhost:3000,http://localhost:5173
+```
+
+---
+
 ## [2026-04-09] — INF-2: Rate Limiting nas Edge Functions Críticas
 
 ### ✨ Novo Módulo

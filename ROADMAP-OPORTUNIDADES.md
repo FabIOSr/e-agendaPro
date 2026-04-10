@@ -1730,38 +1730,12 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 
 ### INF-3: Validação de Origem nas Edge Functions
 
-**Problema:** CORS permite qualquer origem (`Access-Control-Allow-Origin: "*"`). Seguro por JWT, mas pode haver abuso de domínio desconhecido.
+**Status:** ✅ **IMPLEMENTADO** — `supabase/functions/_shared/cors.ts` já valida origem em todas as 22 Edge Functions.
 
-**Solução Proposta:**
-
-Middleware ` _shared/validate-origin.ts`:
-
-```typescript
-// supabase/functions/_shared/validate-origin.ts
-const ALLOWED_ORIGINS = [
-  "https://e-agendapro.web.app",
-  "https://agendapro.com.br",
-  "https://www.agendapro.com.br",
-];
-const ALLOWED_IN_DEV = ["http://localhost:3000", "http://localhost:5173"];
-
-export function validateOrigin(req: Request): { valid: boolean; origin?: string } {
-  const origin = req.headers.get("origin");
-  if (!origin) return { valid: true }; // Server-to-server
-
-  const isProd = Deno.env.get("SENTRY_ENVIRONMENT") === "production";
-  const allowed = isProd ? ALLOWED_ORIGINS : [...ALLOWED_ORIGINS, ...ALLOWED_IN_DEV];
-
-  if (allowed.includes(origin)) return { valid: true, origin };
-  return { valid: false, origin };
-}
-```
-
-**Referência:** `CORS-SETUP.md` já documenta como "Opção B: Validar origem nas Edge Functions"
-
-**Impacto:** ✅ Proteção extra contra domínios não autorizados, ✅ Permite dev local
-**Esforço:** ~3h (1h middleware + 2h aplicação em 28 funções)
-**Prioridade:** 🟢 Média
+**Melhoria adicionada:**
+- Variáveis de ambiente `ALLOWED_ORIGINS` e `ALLOWED_ORIGINS_DEV` para customizar origins sem redeploys
+- Localhost habilitado automaticamente em ambientes não-prod (`SENTRY_ENVIRONMENT !== "production"`)
+- Fallback para hardcode se variáveis não definidas
 
 ---
 

@@ -3,19 +3,42 @@
 // Módulo centralizado de configuração de CORS para todas as Edge Functions.
 // Importado assim:
 //   import { corsHeaders, validateOrigin } from "../_shared/cors.ts";
+//
+// Origins permitidas via variável de ambiente (opcional, fallback para hardcode):
+//   ALLOWED_ORIGINS=https://e-agendapro.web.app,https://agendapro.com.br
+//   ALLOWED_ORIGINS_DEV=http://localhost:3000,http://localhost:5173
 
-const ALLOWED_ORIGINS = [
+const HARDCODED_ORIGINS = [
   "https://e-agendapro.web.app",
   "https://agendapro.com.br",
   "https://www.agendapro.com.br",
-  //"http://localhost:3000",       // desenvolvimento local
-  //"http://127.0.0.1:3000",
 ];
+
+function getAllowedOrigins(): string[] {
+  // Override via variável de ambiente
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) {
+    return envOrigins.split(",").map((o) => o.trim()).filter(Boolean);
+  }
+  return HARDCODED_ORIGINS;
+}
+
+function getAllowedDevOrigins(): string[] {
+  const envDev = Deno.env.get("ALLOWED_ORIGINS_DEV");
+  if (envDev) {
+    return envDev.split(",").map((o) => o.trim()).filter(Boolean);
+  }
+  return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"];
+}
+
+function getAllOrigins(): string[] {
+  const isProd = Deno.env.get("SENTRY_ENVIRONMENT") === "production";
+  if (isProd) return getAllowedOrigins();
+  return [...getAllowedOrigins(), ...getAllowedDevOrigins()];
+}
 
 /**
  * Retorna os headers CORS para uma requisição.
- * Se a origem for permitida, retorna o header com ela.
- * Caso contrário, retorna headers sem Allow-Origin (bloqueia).
  */
 export function corsHeaders(reqOrigin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
@@ -23,15 +46,12 @@ export function corsHeaders(reqOrigin: string | null): Record<string, string> {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   };
 
-  // Se não há origem (request server-side ou curl), permite
   if (!reqOrigin) {
     headers["Access-Control-Allow-Origin"] = "*";
     return headers;
   }
 
-  // Verifica se a origem está na lista de permitidas
-  const allowed = ALLOWED_ORIGINS.some((pattern) => {
-    // Suporte a wildcard: "https://*.agendapro.com.br"
+  const allowed = getAllOrigins().some((pattern) => {
     if (pattern.includes("*")) {
       const regex = new RegExp("^" + pattern.replace(".", "\\.").replace("*", "[^.]+") + "$");
       return regex.test(reqOrigin);
@@ -48,11 +68,10 @@ export function corsHeaders(reqOrigin: string | null): Record<string, string> {
 
 /**
  * Valida a origem de uma requisição.
- * Retorna true se a origem é permitida ou se não há origem (server-side).
  */
 export function validateOrigin(reqOrigin: string | null): boolean {
-  if (!reqOrigin) return true; // server-side, curl, etc.
-  return ALLOWED_ORIGINS.some((pattern) => {
+  if (!reqOrigin) return true;
+  return getAllOrigins().some((pattern) => {
     if (pattern.includes("*")) {
       const regex = new RegExp("^" + pattern.replace(".", "\\.").replace("*", "[^.]+") + "$");
       return regex.test(reqOrigin);
@@ -63,7 +82,6 @@ export function validateOrigin(reqOrigin: string | null): boolean {
 
 /**
  * Handler de preflight CORS (OPTIONS).
- * Retorna 204 com headers apropriados.
  */
 export function handleCorsPreflight(reqOrigin: string | null): Response | null {
   const headers = corsHeaders(reqOrigin);
