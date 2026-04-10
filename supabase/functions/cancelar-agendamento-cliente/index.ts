@@ -4,8 +4,9 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8";
-import { handleCancelarAgendamentoClienteRequest } from "../../../modules/cancelar-agendamento-cliente-handler.ts";
+import { handleCancelarAgendamentoClienteRequest } from "../../../modules/cancelar-agendamento-cliente-handler.js";
 import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
+import { createRateLimiter, RATE_LIMITS, rateLimitHeaders, rateLimitResponse } from "../_shared/rate-limit.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -15,14 +16,7 @@ if (SENTRY_DSN) {
   });
 }
 
-// CORS local antigo (substituído pelo módulo _shared/cors.ts)
-// function corsHeaders() {
-//   return {
-//     "Access-Control-Allow-Origin": "*",
-//     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-//     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-//   };
-// }
+const limiter = createRateLimiter("cancelar-agendamento-cliente");
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
   const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
@@ -125,11 +119,15 @@ Deno.serve(async (req: Request) => {
     return handleCorsPreflight(origin) ?? new Response("Forbidden", { status: 403 });
   }
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const rateResult = limiter.check(ip, RATE_LIMITS.cancelarAgendamento);
+  if (!rateResult.allowed) return rateLimitResponse(rateResult);
+
   if (!validateOrigin(origin)) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const cors = corsHeaders(origin);
+  const cors = { ...corsHeaders(origin), ...rateLimitHeaders(rateResult) };
 
   return handleCancelarAgendamentoClienteRequest(req, {
     corsHeaders: () => cors,

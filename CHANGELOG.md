@@ -1,5 +1,29 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-09] — INF-2: Rate Limiting nas Edge Functions Críticas
+
+### ✨ Novo Módulo
+
+**`supabase/functions/_shared/rate-limit.ts`:**
+- Baseado em IP (`x-forwarded-for`)
+- Janela deslizante com auto-cleanup (5 min)
+- Headers `X-RateLimit-*` em todas as respostas
+- Resposta `429` com `Retry-After` quando excedido
+
+### 🔒 Edge Functions Protegidas
+
+| Função | Limite | Janela |
+|--------|--------|--------|
+| `criar-agendamento` | 10 req | 1 min |
+| `cancelar-agendamento-cliente` | 10 req | 1 min |
+| `reagendar-cliente` | 10 req | 1 min |
+
+### 🧪 Testes
+
+- ✅ 74 testes passando
+
+---
+
 ## [2026-04-09] — INF-1: Logger Estruturado com Níveis e TypeScript
 
 ### ✨ Novos Módulos

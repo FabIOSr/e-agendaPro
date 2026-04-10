@@ -1712,50 +1712,19 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 
 **Problema:** Sem proteção contra abuso de APIs. Risco de brute force em admin, spam de agendamentos, abuso de WhatsApp/email.
 
-**Solução Proposta:**
+**Solução Proposta:** Middleware reutilizável `_shared/rate-limit.ts` com configs pré-definidas por função.
 
-Middleware reutilizável `_shared/rate-limit.ts`:
+**Status:** ✅ **IMPLEMENTADO** — `supabase/functions/_shared/rate-limit.ts`
 
-```typescript
-// supabase/functions/_shared/rate-limit.ts
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+**Limites aplicados:**
 
-export function checkRateLimit(
-  identifier: string,
-  config: { max: number; windowMs: number } = { max: 100, windowMs: 60000 }
-): { allowed: boolean; remaining: number; resetAt: number } {
-  const now = Date.now();
-  const entry = rateLimitStore.get(identifier);
+| Edge Function | Limite | Janela |
+|---------------|--------|--------|
+| `criar-agendamento` | 10 req | 1 min |
+| `cancelar-agendamento-cliente` | 10 req | 1 min |
+| `reagendar-cliente` | 10 req | 1 min |
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(identifier, { count: 1, resetAt: now + config.windowMs });
-    return { allowed: true, remaining: config.max - 1, resetAt: now + config.windowMs };
-  }
-
-  if (entry.count >= config.max) {
-    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
-  }
-
-  entry.count++;
-  return { allowed: true, remaining: config.max - entry.count, resetAt: entry.resetAt };
-}
-```
-
-**Limites Recomendados por Função:**
-
-| Edge Function | Limite | Janela | Justificativa |
-|---------------|--------|--------|---------------|
-| `admin-validate` | 5 | 15 min | Prevenir brute force |
-| `criar-agendamento` | 10 | 1 min | Prevenir spam |
-| `horarios-disponiveis` | 30 | 1 min | Permitir browsing |
-| `lembretes-whatsapp` | 5 | 1 min | Controlar custos |
-| `criar-assinatura` | 3 | 1 hora | Prevenir abuso |
-
-**Referência:** `CORS-SETUP.md` já menciona como "Opção A: Rate Limiting no Supabase"
-
-**Impacto:** ✅ Proteção contra ataques, ✅ Controle de custos, ✅ Respostas padronizadas (429 + Retry-After)
-**Esforço:** ~8h (2h middleware + 6h aplicação em 8 funções críticas)
-**Prioridade:** 🟡 Alta
+**Headers:** `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` + `429` com `Retry-After`
 
 ---
 
