@@ -1,5 +1,37 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-10] — Decisão Oficial da Stack Frontend
+
+### 🎨 Stack Frontend Decidida: Alpine.js + Tailwind CSS v4 + Vite
+
+**Decisão oficial documentada em `docs/stack/STACK-DECISION.md`.**
+
+| Camada | Tecnologia | Motivo |
+|---|---|---|
+| Reatividade | Alpine.js 3.x | Leve (15kb), reativo direto no HTML, migração incremental |
+| CSS | Tailwind CSS v4 | Tokens centralizados, purge automático, consistência de design |
+| Build | Vite 6.x | Minificação, tree-shaking, HMR, Tailwind com purge |
+| Type Safety | JSDoc + `@ts-check` | Type safety gradual sem migrar para TypeScript puro |
+| Gráficos | Chart.js 4.x | Relatórios e dashboard admin |
+
+**Rejeitados:** Next.js (muda hosting), React (overkill), Vue (sem vantagem), Astro (SEO não é prioridade), Svelte (requer compilação), Angular (exagero).
+
+**Documentação completa criada:**
+- `docs/stack/README.md` — Índice
+- `docs/stack/STACK-DECISION.md` — Decisão oficial + alternativas rejeitadas
+- `docs/stack/ALPINE-GUIDE.md` — Guia prático de Alpine.js
+- `docs/stack/VITE-CONFIG.md` — Configuração do Vite
+- `docs/stack/TAILWIND-TOKENS.md` — Tokens de design mapeados do ColorSchema
+- `docs/stack/BIBLIOTECAS-LOCAIS.md` — Bibliotecas aprovadas e rejeitadas
+- `docs/stack/MIGRACAO-PLANO.md` — Plano de migração página por página (8 fases, 2-3 semanas)
+
+**Documentos arquivados (referência histórica, não seguir):**
+- `docs/sugestoes/migracao-astro/*`
+- `docs/sugestoes/migracao-alpine-tailwind/*`
+- `docs/admin/STACK-MODERNIZACAO.md`
+
+---
+
 ## [2026-04-10] — Cancel Survey em Planos.html + Documentação do projeto
 
 ### 📄 Documentação de Referência

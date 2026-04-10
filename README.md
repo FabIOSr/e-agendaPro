@@ -2,6 +2,7 @@
 
 > App de agendamento para profissionais autônomos brasileiros.
 > Stack: Firebase Hosting (front) · Supabase (banco, auth, Edge Functions) · Asaas (pagamentos) · Evolution API (WhatsApp self-hosted)
+> Frontend: Alpine.js + Tailwind CSS v4 + Vite — ver [docs/stack/](docs/stack/README.md)
 
 ---
 
@@ -737,13 +738,25 @@ npm run test:db:local
 
 ## 📋 Documentação Adicional
 
+### 🎨 Stack Frontend (DECISÃO OFICIAL)
+| Documento | Descrição |
+|-----------|-----------|
+| [docs/stack/README.md](docs/stack/README.md) | **COMECE AQUI** — Índice da documentação de stack |
+| [docs/stack/STACK-DECISION.md](docs/stack/STACK-DECISION.md) | Decisão oficial: Alpine.js + Tailwind + Vite, alternativas rejeitadas |
+| [docs/stack/ALPINE-GUIDE.md](docs/stack/ALPINE-GUIDE.md) | Guia prático de Alpine.js |
+| [docs/stack/VITE-CONFIG.md](docs/stack/VITE-CONFIG.md) | Configuração do Vite |
+| [docs/stack/TAILWIND-TOKENS.md](docs/stack/TAILWIND-TOKENS.md) | Tokens de design mapeados |
+| [docs/stack/BIBLIOTECAS-LOCAIS.md](docs/stack/BIBLIOTECAS-LOCAIS.md) | Bibliotecas aprovadas e rejeitadas |
+| [docs/stack/MIGRACAO-PLANO.md](docs/stack/MIGRACAO-PLANO.md) | Plano de migração página por página |
+
 ### 🆕 Administração do SaaS
 | Documento | Descrição |
 |-----------|-----------|
-| [docs/admin/RESUMO-EXECUTIVO.md](docs/admin/RESUMO-EXECUTIVO.md) | **COMECE AQUI** — Resumo para dono do SaaS |
+| [docs/admin/RESUMO-EXECUTIVO.md](docs/admin/RESUMO-EXECUTIVO.md) | Resumo para dono do SaaS |
 | [docs/admin/PAINEL-ADMIN-DOC.md](docs/admin/PAINEL-ADMIN-DOC.md) | Diagnóstico completo + requisitos do admin |
-| [docs/admin/STACK-MODERNIZACAO.md](docs/admin/STACK-MODERNIZACAO.md) | Análise: Alpine.js + TypeScript + Tailwind |
 | [docs/admin/IMPLEMENTACAO-ADMIN.md](docs/admin/IMPLEMENTACAO-ADMIN.md) | Plano passo-a-passo executável |
+
+> ⚠️ Documentos arquivados (não seguir): `docs/sugestoes/migracao-astro/*`, `docs/sugestoes/migracao-alpine-tailwind/*`, `docs/admin/STACK-MODERNIZACAO.md` — mantidos apenas como referência histórica.
 
 ### 📖 Documentação Existente
 | Documento | Descrição |

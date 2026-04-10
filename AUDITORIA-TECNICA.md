@@ -256,7 +256,7 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 
 ### Médio prazo (próximo mês)
 
-9. **Migrar frontend para framework leve** (Astro, Vite + Preact) (16h)
+9. ~~**Migrar frontend para framework leve** (Astro, Vite + Preact) (16h)~~ ✅ **DECIDIDO**: Alpine.js + Tailwind CSS v4 + Vite — ver `docs/stack/STACK-DECISION.md`
 10. **Implementar features do ROADMAP** (Lista de Espera 100%, Dunning, Nurturing) (20h)
 11. **Adicionar métricas de produto** (Plausible/Mixpanel) (4h)
 
@@ -273,8 +273,8 @@ O módulo está bem implementado, com fallbacks adequados e não quebrará a apl
 [ ] CORS restrito no Supabase (ação manual)
 [ ] Sentry.setTag('plano') implementado
 [x] Testes E2E expandidos para fluxo completo ✅ 50 testes no booking-flow
-[ ] TypeScript adotado gradualmente
-[ ] Frontend migrado para framework
+[ ] TypeScript adotado gradualmente (JSDoc + @ts-check — ver docs/stack/)
+[x] Stack frontend decidida ✅ Alpine.js + Tailwind CSS v4 + Vite
 ```
 
 ---
