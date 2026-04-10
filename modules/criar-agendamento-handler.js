@@ -1,4 +1,5 @@
 import { normalizarResultadoCriacaoAgendamento } from './agendamento-response.js';
+import { sendServerEvent } from './analytics.js';
 
 export async function handleCriarAgendamentoRequest(req, deps) {
   const {
@@ -146,6 +147,8 @@ export async function handleCriarAgendamentoRequest(req, deps) {
     }
 
     console.log(`Agendamento criado: ${agendamentoId} - prestador: ${prestador_id}`);
+
+    sendServerEvent('agendamento_criado', { prestador_id, servico_id }, getEnv);
 
     return Response.json(
       { ok: true, agendamento_id: agendamentoId },

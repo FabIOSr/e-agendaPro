@@ -1,3 +1,5 @@
+import { sendServerEvent } from './analytics.js';
+
 export async function handleReagendarClienteRequest(req, deps) {
   const {
     appUrl,
@@ -175,6 +177,7 @@ export async function handleReagendarClienteRequest(req, deps) {
         );
       }
 
+      sendServerEvent('agendamento_reagendado', { prestador_id: ag.prestador_id }, getEnv);
       return Response.json({ ok: true, nova_data_hora: novaDataHora }, { headers: corsHeaders });
     }
 

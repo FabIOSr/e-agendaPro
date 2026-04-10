@@ -6,6 +6,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
+import { sendServerEvent } from "../_shared/analytics.ts";
 
 // CORS local antigo (substituído pelo módulo _shared/cors.ts)
 // const cors_local = {
@@ -86,6 +87,9 @@ serve(async (req) => {
         { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Track analytics (fire-and-forget, nao bloquear resposta)
+    sendServerEvent('trial_iniciado', { prestador_id: user.id }, (k) => Deno.env.get(k));
 
     return new Response(
       JSON.stringify({

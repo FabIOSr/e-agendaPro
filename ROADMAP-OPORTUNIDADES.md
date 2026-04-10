@@ -1739,47 +1739,6 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 
 ---
 
-### INF-4: Analytics de Produto (Plausible/Mixpanel)
-
-**Problema:** Sem tracking de eventos de negócio. Sentry captura erros, mas não comportamento do usuário. Dificuldade de medir conversão e churn.
-
-**Solução Proposta:**
-
-**Opção A: Plausible (Privacy-First, Recomendada)**
-
-```html
-<!-- Adicionar em <head> de todas as páginas -->
-<script defer data-domain="e-agendapro.web.app" src="https://plausible.io/js/script.js"></script>
-```
-
-**Eventos para Tracking:**
-
-| Evento | Quando | Propriedades |
-|--------|--------|--------------|
-| `Agendamento Criado` | Após confirmar | plano, servico, horario |
-| `Upgrade Concluído` | Após webhook ativar Pro | periodicidade, valor |
-| `Trial Iniciado` | Após ativar trial | - |
-| `Trial Expirado` | Após downgrade | dias_usados |
-| `Cancelamento Survey` | Ao abrir survey | motivo |
-| `Lista de Espera Entrada` | Ao entrar na lista | servico, preferencia |
-
-**Uso:**
-
-```javascript
-// Após criação de agendamento
-plausible('Agendamento Criado', {
-  props: { plano: 'pro', servico: 'corte', horario: '14:00' }
-});
-```
-
-**Referência:** `README.md` e `.env.example` já mencionam `PLAUSIBLE_DOMAIN`
-
-**Impacto:** ✅ Visibilidade de funil, ✅ Medição de features, ✅ Dados para decisões
-**Esforço:** ~6h (1h setup + 3h tracking + 2h dashboard)
-**Prioridade:** 🟢 Média
-
----
-
 ### INF-5: Guia de Execução de Testes
 
 **Problema:** 168 testes existem (74 unitários + 94 E2E), mas falta documentação de como rodar, interpretar resultados e expandir.

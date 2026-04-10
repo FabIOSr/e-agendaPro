@@ -15,6 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
 import { getDataAtualBRT, podeEntrarNaListaEspera } from "../../../modules/lista-espera-rules.js";
 import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
+import { sendServerEvent } from "../_shared/analytics.ts";
 
 const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
 if (SENTRY_DSN) {
@@ -633,6 +634,12 @@ Deno.serve(async (req: Request) => {
     switch (action) {
       case "entrar":
         const resultadoEntrar = await entrarListaEspera(body, supabase);
+        if (resultadoEntrar.status === 200) {
+          sendServerEvent('lista_espera_entrada', {
+            servico_id: body.servico_id,
+            preferencia: body.preferencia_horario,
+          }, (k) => Deno.env.get(k));
+        }
         return new Response(JSON.stringify(resultadoEntrar.body), {
           status: resultadoEntrar.status,
           headers: { ...cors, "Content-Type": "application/json" },

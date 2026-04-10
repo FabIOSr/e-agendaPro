@@ -3,6 +3,7 @@ import {
   classificarEventoAsaas,
   extrairAssinaturaAsaas,
 } from './asaas-webhook-rules.js';
+import { sendServerEvent } from './analytics.js';
 
 export async function handleWebhookAsaasRequest(req, deps) {
   const {
@@ -131,6 +132,7 @@ export async function handleWebhookAsaasRequest(req, deps) {
       }
 
       console.log(`Pro ativado para ${prestador.id} ate ${validoAte.toISOString()} (${ciclo})`);
+      sendServerEvent('upgrade_concluido', { prestador_id: prestador.id, ciclo }, getEnv);
       return Response.json({ ok: true, acao: 'plano_ativado', valido_ate: validoAte }, { headers: cors });
     }
 
@@ -150,6 +152,7 @@ export async function handleWebhookAsaasRequest(req, deps) {
       }
 
       console.log(`Rebaixado para free + limites aplicados: ${prestador.id} (${evento})`);
+      sendServerEvent('downgrade_efetuado', { prestador_id: prestador.id, evento }, getEnv);
       return Response.json({ ok: true, acao: 'plano_rebaixado_limites_aplicados' }, { headers: cors });
     }
 

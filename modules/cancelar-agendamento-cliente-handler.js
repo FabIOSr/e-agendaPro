@@ -1,3 +1,5 @@
+import { sendServerEvent } from './analytics.js';
+
 export async function handleCancelarAgendamentoClienteRequest(req, deps) {
   const {
     corsHeaders,
@@ -122,6 +124,7 @@ export async function handleCancelarAgendamentoClienteRequest(req, deps) {
         await enviarEmail(ag.cliente_email, `Agendamento cancelado com ${ag.prestadores?.nome}`, `<p>${data} as ${hora}</p>`);
       }
 
+      sendServerEvent('agendamento_cancelado', { prestador_id: ag.prestador_id, cliente_nome: ag.cliente_nome }, getEnv);
       return Response.json({ ok: true, mensagem: 'Agendamento cancelado com sucesso.' }, { headers });
     }
 

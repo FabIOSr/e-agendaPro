@@ -1,5 +1,39 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-10] — INF-4: Analytics Plausible (Privacy-First)
+
+### 📊 Integração Plausible
+
+**`pages/painel.html` + `pages/landing-page.html`:**
+- Script Plausible adicionado no `<head>` com snippet `plausible()` (async, não-bloqueante)
+- Privacy-first: sem cookies, sem banner LGPD
+
+**`modules/analytics.js` — Frontend:**
+- Módulo `analytics` com eventos tipados por domínio de negócio
+- `sendServerEvent()` para chamadas server-side
+
+**`supabase/functions/_shared/analytics.ts` — Edge Functions:**
+- `sendServerEvent()` para Deno (mesma interface, TypeScript)
+
+### 🎯 Eventos Rastreados
+
+| Evento | Origem | Propriedades |
+|--------|--------|--------------|
+| `agendamento_criado` | criar-agendamento-handler | prestador_id, servico_id |
+| `agendamento_cancelado` | cancelar-agendamento-cliente-handler | prestador_id, cliente_nome |
+| `agendamento_reagendado` | reagendar-cliente-handler | prestador_id |
+| `upgrade_concluido` | webhook-asaas-handler | prestador_id, ciclo |
+| `downgrade_efetuado` | webhook-asaas-handler | prestador_id, evento |
+| `trial_iniciado` | ativar-trial/index.ts | prestador_id |
+| `lista_espera_entrada` | lista-espera/index.ts | servico, preferencia |
+
+**Nova variável de ambiente (opcional):**
+```
+PLAUSIBLE_DOMAIN=e-agendapro.web.app
+```
+
+---
+
 ## [2026-04-09] — INF-3: Validação de Origem com Variáveis de Ambiente
 
 ### 🔒 Melhorias no CORS
