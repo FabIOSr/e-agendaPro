@@ -1,5 +1,49 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-10] — R-4: Dunning Inteligente
+
+### 💰 Recuperação de Pagamentos Falhados
+
+**`supabase/functions/dunning/index.ts` — Edge Function:**
+- Busca pagamentos com `PAYMENT_FAILED` nos últimos 3 dias
+- 3 tentativas progressivas:
+  - **Tentativa 0:** Email de aviso
+  - **Tentativa 1:** WhatsApp + Email de lembrete
+  - **Tentativa 2:** Email com oferta de desconto (15%)
+- Integração com Evolution API (WhatsApp) e SendGrid (email)
+- Templates HTML responsivos e personalizados por etapa
+- Logger estruturado + Analytics (`dunning_tentativa`)
+- Resposta JSON com estatísticas: processados, emails, WhatsApp, erros
+
+**`migrations/34_dunning_tentativas.sql` — Nova tabela:**
+- `dunning_tentativas` — rastreia cada tentativa por pagamento
+- Índice por `pagamento_id` e `prestador_id`
+- Constraint única: máximo 3 tentativas por pagamento
+
+**Cron job embutido na migration:** `0 12,18,0 * * *` (3x ao dia — 9h, 15h, 21h Brasília)
+
+**Impacto esperado:** Recuperar 15-25% de pagamentos falhados
+
+---
+
+## [2026-04-10] — Q-1: Toast "Salvo" em Formulários
+
+### ✅ Feedback Visual em Ações de Save
+
+**`modules/ui-helpers.js` — Implementado:**
+- Função `toast(message, type)` — toast genérico (success/error/warn)
+- Função `toastWithUndo(message, onUndo)` — toast com botão desfazer
+- Expostas globalmente via `window.toast` e `window.toastWithUndo`
+- Usadas em: `planos.html`, `configuracoes.html`, `clientes.html`, etc.
+- Auto-dismiss com 3s (success/error) ou 5s (com undo)
+- Posição fixa bottom-right, z-index 9999
+
+**Impacto:** Usuário agora sabe imediatamente se uma ação foi salva com sucesso ou falhou.
+
+---
+
+---
+
 ## [2026-04-10] — INF-5: Guia de Execução de Testes
 
 ### 📝 Documentação de Testes

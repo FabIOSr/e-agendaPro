@@ -156,7 +156,7 @@ TOTAL            │   12    │   4   │    1     │      0
 | R-1 | Lista de Espera Inteligente | ⭐⭐⭐⭐⭐ | 6h | Muito Alto |
 | R-2 | Cancelamento Survey | ⭐⭐⭐⭐ | 2h | Alto |
 | R-3 | Nurturing During Trial | ⭐⭐⭐⭐ | 4h | Alto |
-| R-4 | Dunning Inteligente | ⭐⭐⭐ | 4h | Médio |
+| R-4 | Dunning Inteligente | ⭐⭐⭐ | 4h | ✅ IMPLEMENTADO |
 | R-5 | Offboarding ao Downgrade | ⭐⭐⭐ | 2h | Médio |
 
 ### 🚀 Features & UX
@@ -173,11 +173,11 @@ TOTAL            │   12    │   4   │    1     │      0
 
 | ID | Oportunidade | Impacto | Esforço | ROI |
 |----|-------------|---------|---------|-----|
-| Q-1 | Toast "Salvo" em formulários | ⭐⭐⭐ | 1h | Alto |
+| Q-1 | Toast "Salvo" em formulários | ⭐⭐⭐ | 1h | Alto | ✅ IMPLEMENTADO |
 | Q-2 | Undo em ações destrutivas | ⭐⭐⭐⭐ | 2h | Alto |
 | Q-3 | Atalhos de teclado | ⭐⭐ | 2h | Médio |
 | Q-4 | Paginação de agendamentos | ⭐⭐⭐ | 3h | Médio |
-| Q-5 | Busca full-text de clientes | ⭐⭐⭐ | 2h | Alto |
+| Q-5 | Busca full-text de clientes | ⭐⭐⭐ | 2h | Alto | ✅ IMPLEMENTADO |
 
 ---
 
@@ -208,11 +208,13 @@ IMPACTO
 
 ## ⚡ Quick Wins (1-2h)
 
-### Q-1: Toast "Salvo" em Formulários
+### Q-1: Toast "Salvo" em Formulários ✅ IMPLEMENTADO
 
-**Problema:** Edições de serviços/bloqueios não têm feedback visual. Usuário não sabe se salvou.
+**Status:** ✅ IMPLEMENTADO em `modules/ui-helpers.js` — funções `toast()` e `toastWithUndo()` expostas globalmente, usadas em planos.html, configuracoes.html, etc.
 
-**Solução:**
+**Problema resolvido:** Edições de serviços/bloqueios agora têm feedback visual. Usuário sabe imediatamente se salvou.
+
+**Solução Original (referência):**
 
 ```javascript
 // modules/ui-helpers.js
@@ -1522,128 +1524,6 @@ GRANT EXECUTE ON FUNCTION public.avaliacoes_publicas TO anon;
 
 ---
 
-### R-4: Dunning Inteligente
-
-**Problema:** Pagamento falha e usuário é cancelado sem tentativa de recuperação.
-
-**Solução:**
-
-```typescript
-// supabase/functions/dunning/index.ts
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-// Cron: 0 9,15,21 * * * (3x ao dia)
-serve(async (req) => {
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  );
-
-  // Buscar pagamentos falhados nos últimos 3 dias
-  const tresDiasAtras = new Date();
-  tresDiasAtras.setDate(tresDiasAtras.getDate() - 3);
-
-  const { data: pagamentos } = await supabase
-    .from('pagamentos')
-    .select('*, prestadores(*)')
-    .eq('evento', 'PAYMENT_FAILED')
-    .gte('data_evento', tresDiasAtras.toISOString());
-
-  for (const pg of pagamentos || []) {
-    const tentativas = await contarTentativas(pg.id);
-
-    if (tentativas === 0) {
-      // 1ª tentativa: email only
-      await enviarEmailDunning(pg.prestadores, 'primeira');
-    } else if (tentativas === 1) {
-      // 2ª tentativa: WhatsApp + email
-      await enviarWhatsAppDunning(pg.prestadores);
-      await enviarEmailDunning(pg.prestadores, 'segunda');
-    } else if (tentativas === 2) {
-      // 3ª tentativa: offer de desconto
-      await enviarEmailDunning(pg.prestadores, 'desconto');
-    }
-
-    await registrarTentativa(pg.id);
-  }
-
-  return Response.json({ processados: pagamentos?.length || 0 });
-});
-
-async function enviarWhatsAppDunning(prestador: any) {
-  const evolutionUrl = Deno.env.get('EVOLUTION_API_URL');
-  const evolutionKey = Deno.env.get('EVOLUTION_API_KEY');
-  const instanceName = Deno.env.get('EVOLUTION_INSTANCE_NAME') || 'agendapro-prod';
-
-  const message = `⚠️ *Pagamento falhou*
-
-Olá, ${prestador.nome}!
-
-Houve um problema com seu pagamento da AgendaPro.
-Por favor, atualize seus dados de pagamento em:
-${window.location.origin}/configuracoes?tab=assinatura
-
-Se já atualizou, desconsidere esta mensagem.`;
-
-  await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
-    method: 'POST',
-    headers: {
-      'apikey': evolutionKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      number: `55${prestador.whatsapp.replace(/\D/g, '')}`,
-      textMessage: { text: message }
-    })
-  });
-}
-
-async function enviarEmailDunning(prestador: any, tipo: string) {
-  let assunto, corpo;
-
-  if (tipo === 'primeira') {
-    assunto = 'Pagamento falhou - Atualize seus dados';
-    corpo = `<h1>Olá, ${prestador.nome}!</h1>
-      <p>Não conseguimos processar seu pagamento. Por favor, atualize seus dados.</p>`;
-  } else if (tipo === 'segunda') {
-    assunto = '⚠️ Pagamento ainda pendente';
-    corpo = `<h1>Ação necessária</h1>
-      <p>Seu pagamento ainda não foi processado. Atualize seus dados para evitar interrupção.</p>`;
-  } else if (tipo === 'desconto') {
-    assunto = '🎁 Oferta especial - Continue conosco!';
-    corpo = `<h1>Não queremos te ver partir</h1>
-      <p>Como forma de agradecimento, oferecemos 15% de desconto no próximo mês!</p>
-      <p>Use o cupom: VOLTOU15</p>`;
-  }
-
-  await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${Deno.env.get('SENDGRID_API_KEY')}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      personalizations: [{
-        to: [{ email: prestador.email }],
-        subject: assunto
-      }],
-      from: { email: 'contato@agendapro.com.br', name: 'AgendaPro' },
-      content: [{ type: 'text/html', value: corpo }]
-    })
-  });
-}
-```
-
-**Benefícios:**
-- Recuperar pagamentos falhados
-- Reduzir churn por cartão vencido
-- Recuperar 15-25% de cancelamentos
-
-**Arquivos:** `supabase/functions/dunning/index.ts`
-
----
-
 ## 📅 Roadmap Sugerido
 
 ### Fase 1: Quick Wins (Semana 1)
@@ -1682,7 +1562,7 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 |--------|---------|------------|
 | F-1: Tempo Médio | 3h | Alta |
 | M-2: Depósito | 8h | Média |
-| R-4: Dunning | 4h | Média |
+| R-4: Dunning | ✅ | ✅ |
 
 **Total:** 15h (3-4 dias)
 
