@@ -15,7 +15,7 @@
   --border: #d8d4c8; --border2: #c4c0b4;
   --ink: #0e0d0a; --muted: #6b6860; --faint: #a8a49a;
   --lime: #c8f060; --lime-d: #8ab830; --lime-ink: #1a2a08; --lime-l: #eef6d8;
-  --rust: #c84830; --rust-l: #fdf0ed;
+  --rust: #c84830; --rust-l: #fdf0ed; --rust-t: rgba(200,72,48,.1);
   --gold: #d4a820; --gold-l: #fdf8e8;
   --radius: 14px;
 }
@@ -167,9 +167,9 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 .hist-data { font-size: 11px; color: var(--muted); }
 .hist-val  { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--lime-d); }
 
-/* ── MODAL CONFIRMAÇÃO CANCELAMENTO ── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(14,13,10,.5); z-index: 100; display: none; }
-.modal-overlay.open { display: flex; align-items: center; justify-content: center; }
+/* ── MODAL CANCEL SURVEY ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(14,13,10,.6); z-index: 100; display: none; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
 .modal {
   background: var(--cream); border: 1.5px solid var(--border);
   border-radius: var(--radius); padding: 28px; max-width: 360px; width: 90%;
@@ -181,8 +181,11 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 .modal-actions button { flex: 1; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600; font-family: 'Syne', sans-serif; cursor: pointer; border: none; transition: all .15s; }
 .btn-modal-keep { background: var(--ink); color: var(--bg); }
 .btn-modal-keep:hover { background: #2a2820; }
-.btn-modal-cancel { background: var(--rust-l); color: var(--rust); border: 1.5px solid rgba(200,72,48,.3) !important; }
-.btn-modal-cancel:hover { background: #f5d8d3; }
+.btn-modal-cancel { background: transparent; color: var(--rust); border: 1.5px solid rgba(200,72,48,.3) !important; }
+.btn-modal-cancel:hover:not(:disabled) { background: var(--rust-t); }
+.btn-modal-cancel:disabled { opacity: .4; cursor: not-allowed; }
+.survey-option:hover { border-color: var(--lime-d) !important; background: rgba(200,240,96,.05); }
+.survey-option:has(input:checked) { border-color: var(--lime-d); background: rgba(200,240,96,.1); }
 </style>
 </head>
 <body>
@@ -329,14 +332,55 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
   </div>
 </div>
 
-<!-- MODAL CANCELAMENTO -->
-<div class="modal-overlay" id="modal-overlay">
-  <div class="modal">
-    <h3>Cancelar assinatura?</h3>
-    <p>Você continuará com acesso Pro até o fim do período já pago. Depois disso, sua conta volta para o plano grátis (10 agendamentos/mês).</p>
+<!-- MODAL CANCEL SURVEY -->
+<div class="modal-overlay" id="modal-cancel-survey">
+  <div class="modal" style="max-width:480px">
+    <h3 style="margin-bottom:8px">Podemos ajudar? 😔</h3>
+    <p style="font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:20px">Conte-nos o motivo do cancelamento para que possamos melhorar:</p>
+
+    <div id="survey-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s">
+        <input type="radio" name="cancel-reason" value="muito-caro" style="accent-color:var(--lime-d)">
+        <span style="font-size:14px">Muito caro para o que uso</span>
+      </label>
+      <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s">
+        <input type="radio" name="cancel-reason" value="nao-uso" style="accent-color:var(--lime-d)">
+        <span style="font-size:14px">Não estou mais usando</span>
+      </label>
+      <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s">
+        <input type="radio" name="cancel-reason" value="faltou-feature" style="accent-color:var(--lime-d)">
+        <span style="font-size:14px">Faltou alguma funcionalidade</span>
+      </label>
+      <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s">
+        <input type="radio" name="cancel-reason" value="mudei-ramo" style="accent-color:var(--lime-d)">
+        <span style="font-size:14px">Mudei de ramo/atividade</span>
+      </label>
+      <label class="survey-option" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s">
+        <input type="radio" name="cancel-reason" value="outro" style="accent-color:var(--lime-d)">
+        <span style="font-size:14px">Outro motivo</span>
+      </label>
+    </div>
+
+    <!-- Campo outro motivo -->
+    <div id="survey-outro-field" style="display:none;margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;margin-bottom:6px;display:block">Qual motivo?</label>
+      <input type="text" id="survey-outro-input" placeholder="Descreva o motivo..." style="width:100%;background:var(--cream);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:'Syne',sans-serif;color:var(--ink);outline:none;transition:border-color .2s">
+    </div>
+
+    <!-- Oferta de desconto (só aparece se "muito-caro" e plano mensal) -->
+    <div id="cancel-discount-offer" style="display:none;margin-bottom:20px;padding:20px;background:rgba(200,240,96,.1);border:1.5px solid var(--lime-d);border-radius:12px;text-align:center">
+      <div style="font-size:24px;margin-bottom:8px">🎁</div>
+      <h4 style="margin:0 0 6px;font-size:16px">Oferta especial</h4>
+      <p style="font-size:14px;color:var(--muted);margin:0 0 12px">Que tal <strong style="color:var(--text)">20% de desconto</strong> por 3 meses?</p>
+      <div style="font-size:22px;font-weight:700;color:var(--lime-d);margin-bottom:16px">R$31/mês em vez de R$39</div>
+      <button class="btn-accept-discount" onclick="aceitarDesconto()" style="background:var(--lime-d);color:var(--lime-ink);border:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:8px;width:100%">✓ Aceitar desconto</button>
+      <br>
+      <button class="btn-decline-discount" onclick="recusarDesconto()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline">Não, quero cancelar</button>
+    </div>
+
     <div class="modal-actions">
-      <button class="btn-modal-keep" onclick="fecharModal()">Manter Pro</button>
-      <button class="btn-modal-cancel" onclick="confirmarCancelamento()">Sim, cancelar</button>
+      <button class="btn-modal-keep" onclick="fecharModal()">Voltar</button>
+      <button class="btn-modal-cancel" id="btn-confirm-cancel" onclick="window.confirmarCancelamento()" disabled>Confirmar cancelamento</button>
     </div>
   </div>
 </div>
@@ -360,6 +404,7 @@ const PRESTADOR = {
   agendamentos_mes: 0,
   limite_free: 10,
   nome: '',
+  assinatura_periodicidade: null,
 };
 
 let planoSelecionado  = 'pro';
@@ -375,17 +420,18 @@ async function carregarTudo() {
 async function carregarPlanoReal() {
   const { data, error } = await supabase
     .from('prestadores')
-    .select('nome, plano, plano_valido_ate, asaas_sub_id, trial_ends_at, trial_usado')
+    .select('nome, plano, plano_valido_ate, asaas_sub_id, trial_ends_at, trial_usado, assinatura_periodicidade')
     .eq('id', userId)
     .single();
   if (error || !data) return;
 
-  PRESTADOR.plano           = data.plano           ?? 'free';
-  PRESTADOR.plano_valido_ate = data.plano_valido_ate ?? null;
-  PRESTADOR.asaas_sub_id    = data.asaas_sub_id    ?? null;
-  PRESTADOR.nome            = data.nome             ?? '';
-  PRESTADOR.trial_ends_at   = data.trial_ends_at   ?? null;
-  PRESTADOR.trial_usado     = data.trial_usado     ?? false;
+  PRESTADOR.plano                   = data.plano                   ?? 'free';
+  PRESTADOR.plano_valido_ate        = data.plano_valido_ate        ?? null;
+  PRESTADOR.asaas_sub_id            = data.asaas_sub_id            ?? null;
+  PRESTADOR.nome                    = data.nome                    ?? '';
+  PRESTADOR.trial_ends_at           = data.trial_ends_at           ?? null;
+  PRESTADOR.trial_usado             = data.trial_usado             ?? false;
+  PRESTADOR.assinatura_periodicidade = data.assinatura_periodicidade ?? null;
 
   // Atualizar topbar
   const topEl = document.getElementById('topbar-nome');
@@ -732,41 +778,214 @@ window.assinar = async function() {
   }
 };
 
-// ── CANCELAMENTO ───────────────────────────────────────────────────────────
+// ── CANCEL SURVEY ───────────────────────────────────────────────────────────
+let cancelReason = null;
+let isProcessing = false;
+
 window.abrirModalCancelamento = function() {
-  document.getElementById('modal-overlay').classList.add('open');
-};
-window.fecharModal = function() {
-  document.getElementById('modal-overlay').classList.remove('open');
-};
+  const modal = document.getElementById('modal-cancel-survey');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  cancelReason = null;
+  isProcessing = false;
+  document.querySelectorAll('input[name="cancel-reason"]').forEach(r => r.checked = false);
+  const outroField = document.getElementById('survey-outro-field');
+  if (outroField) outroField.style.display = 'none';
+  const discountOffer = document.getElementById('cancel-discount-offer');
+  if (discountOffer) discountOffer.style.display = 'none';
+  const btnConfirm = document.getElementById('btn-confirm-cancel');
+  if (btnConfirm) btnConfirm.disabled = true;
+  const outroInput = document.getElementById('survey-outro-input');
+  if (outroInput) outroInput.value = '';
 
-window.confirmarCancelamento = async function() {
-  window.fecharModal();
-  try {
-    const { data: { session: s } } = await supabase.auth.getSession();
-    const token = s?.access_token;
-
-    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/cancelar-assinatura`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    if (!res.ok) {
-      const d = await res.json();
-      throw new Error(d.erro || d.error || 'Erro ao cancelar');
+  // Aviso plano anual
+  const isAnual = PRESTADOR.assinatura_periodicidade === 'YEARLY';
+  let aviso = document.getElementById('aviso-plano-anual');
+  if (isAnual) {
+    if (!aviso) {
+      aviso = document.createElement('div');
+      aviso.id = 'aviso-plano-anual';
+      aviso.style.cssText = 'margin-bottom:16px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.6';
+      const surveyOpt = document.getElementById('survey-options');
+      surveyOpt.parentNode.insertBefore(aviso, surveyOpt);
     }
-    await carregarPlanoReal();
-    renderStatus();
-    await carregarHistoricoReal();
-    toast('Assinatura cancelada. Acesso Pro até o fim do período pago.', false);
-  } catch (e) {
-    toast('Erro ao cancelar: ' + e.message, false);
+    aviso.innerHTML = 'ℹ️ Você está no <strong>plano anual</strong> e já paga o melhor preço (R$29/mês). Seu plano continuará ativo até o fim do ciclo pago.';
+    aviso.style.display = 'block';
+  } else if (aviso) {
+    aviso.style.display = 'none';
   }
 };
 
-// ── INIT ───────────────────────────────────────────────────────────────────
-document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) window.fecharModal();
+window.fecharModal = function() {
+  const modal = document.getElementById('modal-cancel-survey');
+  if (modal) modal.style.display = 'none';
+};
+
+// Listeners do survey
+(function setupSurveyListeners() {
+  const radios = document.querySelectorAll('input[name="cancel-reason"]');
+  if (!radios.length) return;
+
+  radios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      cancelReason = e.target.value;
+      const outroField = document.getElementById('survey-outro-field');
+      if (outroField) outroField.style.display = cancelReason === 'outro' ? 'block' : 'none';
+
+      const isAnual = PRESTADOR.assinatura_periodicidade === 'YEARLY';
+      const discountOffer = document.getElementById('cancel-discount-offer');
+      if (discountOffer) {
+        if (isAnual) {
+          discountOffer.style.display = 'none';
+        } else {
+          discountOffer.style.display = cancelReason === 'muito-caro' ? 'block' : 'none';
+        }
+      }
+
+      const btnConfirm = document.getElementById('btn-confirm-cancel');
+      if (btnConfirm) btnConfirm.disabled = false;
+    });
+  });
+})();
+
+window.aceitarDesconto = async function() {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  const btn = document.querySelector('.btn-accept-discount');
+  const originalText = btn?.textContent || '';
+  if (btn) { btn.textContent = 'Aplicando...'; btn.disabled = true; }
+  const showToast = typeof toast === 'function' ? toast : (msg) => alert(msg);
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Não autenticado');
+
+    const response = await fetch(`${window.SUPABASE_URL}/functions/v1/criar-cupom`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        desconto_percentual: 20,
+        meses: 3,
+        motivo: 'muito-caro'
+      })
+    });
+
+    if (response.status === 404) {
+      showToast('✓ SIMULAÇÃO: Desconto de 20% aplicado! (Edge function não deployada)');
+      fecharModal();
+      await carregarPlanoReal();
+      renderStatus();
+      await carregarHistoricoReal();
+      return;
+    }
+
+    const result = await response.json();
+    if (!response.ok) {
+      if (result.ciclo === "YEARLY") {
+        showToast(result.erro);
+        const discountOffer = document.getElementById('cancel-discount-offer');
+        if (discountOffer) discountOffer.style.display = 'none';
+        const btnConfirm = document.getElementById('btn-confirm-cancel');
+        if (btnConfirm) btnConfirm.disabled = false;
+        return;
+      }
+      throw new Error(result.erro || 'Erro ao aplicar desconto');
+    }
+
+    showToast('✓ Desconto de 20% aplicado por 3 meses!');
+    fecharModal();
+    await carregarPlanoReal();
+    renderStatus();
+    await carregarHistoricoReal();
+  } catch (error) {
+    showToast('Erro ao aplicar desconto: ' + error.message);
+  } finally {
+    if (btn) { btn.textContent = originalText; btn.disabled = false; }
+    isProcessing = false;
+  }
+};
+
+window.recusarDesconto = function() {
+  const discountOffer = document.getElementById('cancel-discount-offer');
+  if (discountOffer) discountOffer.style.display = 'none';
+  const btnConfirm = document.getElementById('btn-confirm-cancel');
+  if (btnConfirm) btnConfirm.disabled = false;
+};
+
+window.confirmarCancelamento = async function() {
+  if (!cancelReason) {
+    if (typeof toast === 'function') { toast('Selecione um motivo', false); } else { alert('Selecione um motivo'); }
+    return;
+  }
+
+  const outroMotivo = document.getElementById('survey-outro-input')?.value.trim() || '';
+  if (cancelReason === 'outro' && !outroMotivo) {
+    if (typeof toast === 'function') { toast('Descreva o motivo do cancelamento', false); } else { alert('Descreva o motivo do cancelamento'); }
+    return;
+  }
+
+  const btn = document.getElementById('btn-confirm-cancel');
+  const originalText = btn?.textContent || '';
+  if (btn) { btn.textContent = 'Cancelando...'; btn.disabled = true; }
+
+  try {
+    // Chama registrar-cancelamento (salva motivo no banco)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Não autenticado');
+
+    const response = await fetch(`${window.SUPABASE_URL}/functions/v1/registrar-cancelamento`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        motivo: cancelReason,
+        outro_motivo: cancelReason === 'outro' ? outroMotivo : null
+      })
+    });
+
+    if (response.status === 404) {
+      const motivoNomes = {
+        'muito-caro': 'Muito caro',
+        'nao-uso': 'Não uso mais',
+        'faltou-feature': 'Faltou funcionalidade',
+        'mudei-ramo': 'Mudei de ramo',
+        'outro': 'Outro motivo'
+      };
+      if (typeof toast === 'function') {
+        toast(`✓ SIMULAÇÃO: Cancelamento registrado! Motivo: ${motivoNomes[cancelReason]}`);
+      }
+      fecharModal();
+      await carregarPlanoReal();
+      renderStatus();
+      await carregarHistoricoReal();
+      return;
+    }
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.erro || 'Erro ao cancelar');
+
+    if (typeof toast === 'function') { toast(result.mensagem || 'Assinatura cancelada com sucesso!'); }
+    fecharModal();
+    await carregarPlanoReal();
+    renderStatus();
+    await carregarHistoricoReal();
+  } catch (error) {
+    if (typeof toast === 'function') { toast('Erro ao cancelar: ' + error.message, false); }
+    else { alert('Erro ao cancelar: ' + error.message); }
+  } finally {
+    if (btn) { btn.textContent = originalText; btn.disabled = false; }
+  }
+};
+
+// Click fora do modal fecha
+document.getElementById('modal-cancel-survey')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModal();
 });
 
 carregarTudo();

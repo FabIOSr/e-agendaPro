@@ -1,5 +1,37 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-10] — Cancel Survey em Planos.html + Documentação do projeto
+
+### 📄 Documentação de Referência
+
+**`AgendaPro_PRD.md` — Product Requirements Document:**
+- Visão do produto, stack técnica, modelo de planos
+- Páginas e funcionalidades documentadas
+- Modelo de dados (principais tabelas)
+- Edge Functions listadas
+- Regras de negócio críticas (timezone, limite free, grace period)
+- Roadmap e pendências organizadas por prioridade
+
+**`AgendaPro_ColorSchema.html` — Color Schema & Typography:**
+- Painel dark: 13 tokens (--bg a --lime-t)
+- Página pública light: 12 tokens (--bg a --warn-l)
+- Tipografia: Syne, Fraunces, DM Sans, Instrument Serif, DM Mono
+- Border radius: 4px a 100px com contexto de uso
+- Cores por contexto (painel vs página)
+- Accent dinâmico sobrescrito via JS no :root
+
+### 🔄 Cancel Survey em Planos.html
+
+**`pages/planos.html` — Modal de cancelamento agora idêntico ao de `configuracoes.html`:**
+- Survey com 5 motivos + campo "outro"
+- Oferta de 20% desconto por 3 meses (mensal + "muito-caro")
+- Aviso para plano anual (sem oferta de desconto)
+- Chama `registrar-cancelamento` (salva motivo + cancela no Asaas)
+- Campo `assinatura_periodicidade` adicionado ao estado PRESTADOR
+- Variável CSS `--rust-t` adicionada para hover do botão cancelar
+
+---
+
 ## [2026-04-10] — R-4: Dunning Inteligente
 
 ### 💰 Recuperação de Pagamentos Falhados

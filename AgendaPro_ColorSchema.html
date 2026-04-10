@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro — Color Schema</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: #0a0908;
+    color: #f0ede6;
+    min-height: 100vh;
+    padding: 48px 24px 64px;
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #c8f060;
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    font-size: 0.8rem;
+    color: #8a8778;
+    margin-bottom: 48px;
+  }
+
+  .surface {
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+
+  .surface-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* ── PAINEL (dark) ── */
+  .surface-painel {
+    background: #0e0d0a;
+    border: 1px solid #2a2724;
+  }
+  .surface-painel .surface-label { color: #3e3c36; }
+
+  /* ── PÁGINA PÚBLICA (light) ── */
+  .surface-pagina {
+    background: #faf9f6;
+    border: 1px solid #e4e0d6;
+  }
+  .surface-pagina .surface-label { color: #b8b4a8; }
+
+  /* ── COLOR GRID ── */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .color-chip {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .chip-swatch {
+    height: 56px;
+    width: 100%;
+  }
+
+  .chip-info {
+    padding: 8px 10px;
+  }
+
+  .chip-token {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .chip-hex {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .chip-desc {
+    font-size: 10px;
+    margin-top: 2px;
+    opacity: .7;
+  }
+
+  /* Painel chips */
+  .painel .chip-info  { background: #1c1a16; }
+  .painel .chip-token { color: #3e3c36; }
+  .painel .chip-hex   { color: #f0ede6; }
+  .painel .chip-desc  { color: #8a8778; }
+
+  /* Página chips */
+  .pagina .chip-info  { background: #f2f0ea; border-top: 1px solid #e4e0d6; }
+  .pagina .chip-token { color: #b8b4a8; }
+  .pagina .chip-hex   { color: #1a1a17; }
+  .pagina .chip-desc  { color: #7a7669; }
+
+  /* ── TIPOGRAFIA ── */
+  .typo-section {
+    margin-bottom: 32px;
+  }
+
+  .typo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .typo-card {
+    background: #1c1a16;
+    border: 1px solid #2a2724;
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .typo-sample-dark {
+    font-size: 22px;
+    margin-bottom: 8px;
+    color: #f0ede6;
+  }
+  .typo-sample-light {
+    font-size: 22px;
+    margin-bottom: 8px;
+    color: #1a1a17;
+  }
+
+  .typo-meta {
+    font-size: 10px;
+    color: #3e3c36;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.6;
+  }
+
+  .typo-card-light {
+    background: #f2f0ea;
+    border: 1px solid #e4e0d6;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .typo-card-light .typo-meta { color: #b8b4a8; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-header-line {
+    flex: 1;
+    height: 1px;
+    background: #2a2724;
+  }
+  .section-header-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #c8f060;
+    white-space: nowrap;
+  }
+
+  /* ── RADIUS ── */
+  .radius-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .radius-card {
+    background: #1c1a16;
+    border: 1px solid #2a2724;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 100px;
+  }
+  .radius-sample {
+    width: 48px;
+    height: 48px;
+    background: #c8f060;
+  }
+  .radius-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #8a8778;
+  }
+  .radius-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #3e3c36;
+  }
+
+  /* ── DYNAMIC ACCENT NOTE ── */
+  .note-box {
+    background: #1c1a16;
+    border: 1px solid #2a2724;
+    border-left: 3px solid #c8f060;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: #8a8778;
+    line-height: 1.6;
+    margin-top: 16px;
+  }
+  .note-box strong { color: #f0ede6; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: #2a2724; margin: 40px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-title">AgendaPro</div>
+<div class="page-sub">Color Schema & Typography · Referência de design do sistema</div>
+
+<!-- ══ PAINEL (dark) ══ -->
+<div class="section-header">
+  <div class="section-header-title">Painel de Configurações — Dark Theme</div>
+  <div class="section-header-line"></div>
+</div>
+
+<div class="surface surface-painel">
+  <div class="surface-label">configuracoes.html · :root</div>
+  <div class="color-grid painel">
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#0e0d0a"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bg</div>
+        <div class="chip-hex">#0e0d0a</div>
+        <div class="chip-desc">Fundo principal</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#141310"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bg2</div>
+        <div class="chip-hex">#141310</div>
+        <div class="chip-desc">Fundo secundário</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#1c1a16"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bg3</div>
+        <div class="chip-hex">#1c1a16</div>
+        <div class="chip-desc">Cards / painéis</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#242118"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bg4</div>
+        <div class="chip-hex">#242118</div>
+        <div class="chip-desc">Hover / elevado</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#2a2724; border: 1px solid #3e3c36"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bord</div>
+        <div class="chip-hex">#2a2724</div>
+        <div class="chip-desc">Borda padrão</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#383430; border: 1px solid #3e3c36"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bord2</div>
+        <div class="chip-hex">#383430</div>
+        <div class="chip-desc">Borda ativa</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#f0ede6"></div>
+      <div class="chip-info">
+        <div class="chip-token">--text</div>
+        <div class="chip-hex">#f0ede6</div>
+        <div class="chip-desc">Texto principal</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#8a8778"></div>
+      <div class="chip-info">
+        <div class="chip-token">--muted</div>
+        <div class="chip-hex">#8a8778</div>
+        <div class="chip-desc">Texto secundário</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#3e3c36"></div>
+      <div class="chip-info">
+        <div class="chip-token">--faint</div>
+        <div class="chip-hex">#3e3c36</div>
+        <div class="chip-desc">Texto desabilitado</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#c8f060"></div>
+      <div class="chip-info">
+        <div class="chip-token">--lime</div>
+        <div class="chip-hex">#c8f060</div>
+        <div class="chip-desc">Accent principal (CTA)</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#8ab830"></div>
+      <div class="chip-info">
+        <div class="chip-token">--lime-d</div>
+        <div class="chip-hex">#8ab830</div>
+        <div class="chip-desc">Accent hover / foco</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#1a2a08"></div>
+      <div class="chip-info">
+        <div class="chip-token">--lime-ink</div>
+        <div class="chip-hex">#1a2a08</div>
+        <div class="chip-desc">Texto sobre lime</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:rgba(200,240,96,.1);border:1px solid #2a2724"></div>
+      <div class="chip-info">
+        <div class="chip-token">--lime-t</div>
+        <div class="chip-hex">rgba(200,240,96,.1)</div>
+        <div class="chip-desc">Lime translúcido</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ PÁGINA PÚBLICA (light) ══ -->
+<div class="section-header">
+  <div class="section-header-title">Página Pública — Light Theme</div>
+  <div class="section-header-line"></div>
+</div>
+
+<div class="surface surface-pagina">
+  <div class="surface-label" style="color:#b8b4a8">pagina-cliente.html · :root</div>
+  <div class="color-grid pagina">
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#faf9f6; border:1px solid #e4e0d6"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bg</div>
+        <div class="chip-hex">#faf9f6</div>
+        <div class="chip-desc">Fundo principal</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#f2f0ea; border:1px solid #e4e0d6"></div>
+      <div class="chip-info">
+        <div class="chip-token">--bg2</div>
+        <div class="chip-hex">#f2f0ea</div>
+        <div class="chip-desc">Fundo secundário</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#e4e0d6"></div>
+      <div class="chip-info">
+        <div class="chip-token">--border</div>
+        <div class="chip-hex">#e4e0d6</div>
+        <div class="chip-desc">Borda padrão</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#ccc8bc"></div>
+      <div class="chip-info">
+        <div class="chip-token">--border2</div>
+        <div class="chip-hex">#ccc8bc</div>
+        <div class="chip-desc">Borda ativa</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#1a1a17"></div>
+      <div class="chip-info">
+        <div class="chip-token">--text</div>
+        <div class="chip-hex">#1a1a17</div>
+        <div class="chip-desc">Texto principal</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#7a7669"></div>
+      <div class="chip-info">
+        <div class="chip-token">--muted</div>
+        <div class="chip-hex">#7a7669</div>
+        <div class="chip-desc">Texto secundário</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#b8b4a8"></div>
+      <div class="chip-info">
+        <div class="chip-token">--faint</div>
+        <div class="chip-hex">#b8b4a8</div>
+        <div class="chip-desc">Texto desabilitado</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#2d5a27"></div>
+      <div class="chip-info">
+        <div class="chip-token">--accent*</div>
+        <div class="chip-hex">#2d5a27</div>
+        <div class="chip-desc">Accent padrão (verde)</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#eef4ec"></div>
+      <div class="chip-info">
+        <div class="chip-token">--accent-l*</div>
+        <div class="chip-hex">#eef4ec</div>
+        <div class="chip-desc">Accent claro (10%)</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#c8dfc4"></div>
+      <div class="chip-info">
+        <div class="chip-token">--accent-m*</div>
+        <div class="chip-hex">#c8dfc4</div>
+        <div class="chip-desc">Accent médio (30%)</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#8a4a10"></div>
+      <div class="chip-info">
+        <div class="chip-token">--warn</div>
+        <div class="chip-hex">#8a4a10</div>
+        <div class="chip-desc">Aviso / alerta</div>
+      </div>
+    </div>
+
+    <div class="color-chip">
+      <div class="chip-swatch" style="background:#fdf3ea; border:1px solid #f0c896"></div>
+      <div class="chip-info">
+        <div class="chip-token">--warn-l</div>
+        <div class="chip-hex">#fdf3ea</div>
+        <div class="chip-desc">Fundo de aviso</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note-box">
+    <strong>* --accent é dinâmico.</strong> O valor padrão é #2d5a27 (verde). Quando o profissional tem plano Pro e configurou uma cor de tema, o JS sobrescreve --accent, --accent-l e --accent-m no :root via <code>style.setProperty()</code>. As variações clara e escura são derivadas da cor hex: <code>cor + '1a'</code> (10% opacidade) e <code>cor + '4d'</code> (30% opacidade).
+  </div>
+</div>
+
+<!-- ══ TIPOGRAFIA ══ -->
+<div class="section-header">
+  <div class="section-header-title">Tipografia</div>
+  <div class="section-header-line"></div>
+</div>
+
+<div class="typo-grid" style="margin-bottom:32px">
+
+  <div class="typo-card">
+    <div class="typo-sample-dark" style="font-family:'Syne',sans-serif;font-weight:700">Syne Bold</div>
+    <div class="typo-meta">
+      font-family: 'Syne', sans-serif<br>
+      weights: 400, 500, 600, 700<br>
+      uso: painel — headings, nav, labels, botões<br>
+      <span style="color:#c8f060">Painel (dark theme)</span>
+    </div>
+  </div>
+
+  <div class="typo-card">
+    <div class="typo-sample-dark" style="font-family:'Fraunces',serif;font-style:italic">Fraunces Italic</div>
+    <div class="typo-meta">
+      font-family: 'Fraunces', serif<br>
+      weights: 300, 400 (+ italic)<br>
+      uso: painel — logo, títulos de seção principais<br>
+      <span style="color:#c8f060">Painel (dark theme)</span>
+    </div>
+  </div>
+
+  <div class="typo-card-light">
+    <div class="typo-sample-light" style="font-family:'DM Sans',sans-serif">DM Sans</div>
+    <div class="typo-meta">
+      font-family: 'DM Sans', sans-serif<br>
+      weights: 300, 400, 500<br>
+      uso: página pública — corpo, formulários, botões<br>
+      <span style="color:#7a7669">Página pública (light theme)</span>
+    </div>
+  </div>
+
+  <div class="typo-card-light">
+    <div class="typo-sample-light" style="font-family:'Instrument Serif',serif">Instrument Serif</div>
+    <div class="typo-meta">
+      font-family: 'Instrument Serif', serif<br>
+      weights: 400 (+ italic)<br>
+      uso: página pública — nome do profissional, títulos de sucesso<br>
+      <span style="color:#7a7669">Página pública (light theme)</span>
+    </div>
+  </div>
+
+  <div class="typo-card" style="grid-column: span 1">
+    <div class="typo-sample-dark" style="font-family:'DM Mono',monospace;font-size:18px">DM Mono 400</div>
+    <div class="typo-meta">
+      font-family: 'DM Mono', monospace<br>
+      weights: 400, 500<br>
+      uso: ambos — preços, horários, slugs, inputs mono<br>
+      <span style="color:#8a8778">Compartilhado</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ BORDER RADIUS ══ -->
+<div class="section-header">
+  <div class="section-header-title">Border Radius</div>
+  <div class="section-header-line"></div>
+</div>
+
+<div class="radius-grid" style="margin-bottom:32px">
+
+  <div class="radius-card" style="border-radius:8px">
+    <div class="radius-sample" style="border-radius:4px"></div>
+    <div class="radius-label">4px</div>
+    <div class="radius-value">tags, badges pequenos</div>
+  </div>
+
+  <div class="radius-card" style="border-radius:8px">
+    <div class="radius-sample" style="border-radius:8px"></div>
+    <div class="radius-label">8px</div>
+    <div class="radius-value">botões compactos, slots</div>
+  </div>
+
+  <div class="radius-card" style="border-radius:8px">
+    <div class="radius-sample" style="border-radius:10px"></div>
+    <div class="radius-label">10px</div>
+    <div class="radius-value">inputs, chips de horário</div>
+  </div>
+
+  <div class="radius-card" style="border-radius:8px">
+    <div class="radius-sample" style="border-radius:12px"></div>
+    <div class="radius-label">12px — <span style="color:#c8f060">--radius (painel)</span></div>
+    <div class="radius-value">cards do painel</div>
+  </div>
+
+  <div class="radius-card" style="border-radius:8px">
+    <div class="radius-sample" style="border-radius:14px"></div>
+    <div class="radius-label">14px — <span style="color:#8ab830">--radius (página)</span></div>
+    <div class="radius-value">cards da página pública</div>
+  </div>
+
+  <div class="radius-card" style="border-radius:8px">
+    <div class="radius-sample" style="border-radius:100px"></div>
+    <div class="radius-label">100px</div>
+    <div class="radius-value">pills, badges de plano</div>
+  </div>
+
+</div>
+
+<!-- ══ CONTEXTO DE USO ══ -->
+<div class="section-header">
+  <div class="section-header-title">Cores por Contexto</div>
+  <div class="section-header-line"></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+
+  <div style="background:#1c1a16;border:1px solid #2a2724;border-radius:12px;padding:20px">
+    <div style="font-size:0.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c8f060;margin-bottom:12px">Painel — Ações principais</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-family:'DM Mono',monospace;color:#8a8778;line-height:1.8">
+      <span>CTA primário → <span style="color:#c8f060">--lime</span> (#c8f060)</span>
+      <span>Hover CTA → <span style="color:#8ab830">--lime-d</span> (#8ab830)</span>
+      <span>Texto em CTA → <span style="color:#f0ede6">--lime-ink</span> (#1a2a08)</span>
+      <span>Focus border → <span style="color:#8ab830">--lime-d</span></span>
+      <span>Toggle ON → <span style="color:#c8f060">--lime</span></span>
+    </div>
+  </div>
+
+  <div style="background:#f2f0ea;border:1px solid #e4e0d6;border-radius:12px;padding:20px">
+    <div style="font-size:0.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7a7669;margin-bottom:12px">Página — Ações principais</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-family:'DM Mono',monospace;color:#7a7669;line-height:1.8">
+      <span>CTA primário → <span style="color:#2d5a27">--accent</span> (dinâmico)</span>
+      <span>Fundo selecionado → <span style="color:#2d5a27">--accent</span></span>
+      <span>Hover card → <span style="color:#2d5a27">--accent-m</span></span>
+      <span>Step ativo → <span style="color:#2d5a27">--accent</span></span>
+      <span>Preço serviço → <span style="color:#2d5a27">--accent</span></span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
