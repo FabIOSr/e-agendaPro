@@ -1739,28 +1739,6 @@ async function enviarEmailDunning(prestador: any, tipo: string) {
 
 ---
 
-### INF-5: Guia de Execução de Testes
-
-**Problema:** 168 testes existem (74 unitários + 94 E2E), mas falta documentação de como rodar, interpretar resultados e expandir.
-
-**Solução Proposta:**
-
-Criar `TESTS-GUIDE.md` com:
-- Como rodar testes unitários (`npm test`)
-- Como rodar E2E (`npm run test:e2e`, `--ui`, `--headed`)
-- Como rodar smoke tests de DB (`npm run test:db:local`)
-- Como adicionar novos testes (exemplos de unitários e E2E)
-- Cobertura atual e gaps
-- CI/CD: como testes bloqueiam deploy
-
-**Referência:** `AUDITORIA-TECNICA.md` já documenta 80 testes E2E e infraestrutura
-
-**Impacto:** ✅ Onboarding de devs mais rápido, ✅ Testes não ficam esquecidos
-**Esforço:** ~2h (documentação)
-**Prioridade:** 🟢 Baixa
-
----
-
 ### INF-6: Migração Gradual para TypeScript
 
 **Problema:** Edge Functions já em TypeScript, mas módulos compartilhados (`modules/*.js`) em JavaScript. Inconsistência, risco de erros de tipo em runtime.

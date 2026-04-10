@@ -1,5 +1,21 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-10] — INF-5: Guia de Execução de Testes
+
+### 📝 Documentação de Testes
+
+**`docs/tests/TESTS-GUIDE.md`:**
+- Como rodar testes unitários (`npm test`) — 74 testes em 10 arquivos
+- Como rodar E2E (`npm run test:e2e`, `--ui`, `--headed`) — 102 testes em 7 arquivos
+- Como rodar smoke tests de DB (`npm run test:db:local`)
+- Como adicionar novos testes (padrões e exemplos)
+- Cobertura atual e gaps identificados (7 módulos sem testes)
+- CI/CD: pipeline completo e o que bloqueia deploy
+
+**Contagem atualizada: 177 testes** (74 unitários + 102 E2E + 1 smoke DB)
+
+---
+
 ## [2026-04-10] — INF-4: Analytics Plausible (Privacy-First)
 
 ### 📊 Integração Plausible
