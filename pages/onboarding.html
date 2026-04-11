@@ -1,547 +1,774 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<script src="/config.js"></script>
-<script src="/modules/sentry.js"></script>
-<script src="/modules/ui-helpers.js"></script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgendaPro — Configurar minha página</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="/config.js"></script>
+  <script src="/modules/sentry.js"></script>
+  <script src="/modules/ui-helpers.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgendaPro — Configurar minha página</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
 
-<!-- ═══════════════════ CSS MÍNIMO (animações + pseudo-elementos) ═══════════════════ -->
-<style>
-@keyframes fadein { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-@keyframes pop { from { transform: scale(0) rotate(-20deg); opacity:0; } to { transform: scale(1) rotate(0); opacity:1; } }
+  <!-- ═══════════════════ CSS MÍNIMO (animações + pseudo-elementos) ═══════════════════ -->
+  <style>
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
 
-/* Grid de fundo no painel esquerdo */
-.left-panel::before {
-  content: ''; position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 40px 40px; pointer-events: none;
-}
-.left-panel::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
-  background: radial-gradient(ellipse 80% 60% at 50% 120%, rgba(200,240,96,.18), transparent);
-  pointer-events: none;
-}
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
 
-/* Linha conectora entre steps */
-.step-li:not(:last-child)::after {
-  content: ''; position: absolute; left: 15px; top: 52px; bottom: 0;
-  width: 1px; background: rgba(255,255,255,.08);
-}
+    @keyframes pop {
+      from {
+        transform: scale(0) rotate(-20deg);
+        opacity: 0;
+      }
 
-/* Checkmark no step concluído */
-.step-li.done .step-circle-left::after { content: '✓'; }
+      to {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+      }
+    }
 
-/* Traço do step-num */
-.step-num::before { content: ''; display: block; width: 20px; height: 1px; background: var(--color-lime-d); }
+    /* Grid de fundo no painel esquerdo */
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255, 255, 255, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
 
-/* Sistema de telas */
-.step-content { display: none; animation: fadein .3s ease; }
-.step-content.active { display: flex !important; flex-direction: column; }
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: radial-gradient(ellipse 80% 60% at 50% 120%, rgba(200, 240, 96, .18), transparent);
+      pointer-events: none;
+    }
 
-/* Estados controlados por JS */
-.step-li.active .step-circle-left {
-  background: var(--color-lime); border-color: var(--color-lime);
-  color: var(--color-lime-ink); box-shadow: 0 0 16px rgba(200,240,96,.4);
-}
-.step-li.done .step-circle-left {
-  background: rgba(200,240,96,.15); border-color: rgba(200,240,96,.3);
-  color: var(--color-lime); font-size: 11px;
-}
-.step-li.active .step-li-title, .step-li.done .step-li-title { color: rgba(255,255,255,.9); }
-.step-li.active .step-li-desc { color: rgba(255,255,255,.45); }
-.categoria-item.selected { border-color: var(--color-lime-d); background: var(--color-lime-l-light); }
-.categoria-item.selected .cat-label { color: var(--color-lime-ink); }
-.dia-btn.on { border-color: var(--color-lime-d); background: var(--color-lime-l-light); }
-.dia-btn.on .dia-nome { color: var(--color-lime-ink); }
-.blq-chip.on { background: var(--color-lime-l-light); border-color: var(--color-lime-d); color: var(--color-lime-ink); }
-.form-input.error { border-color: var(--color-rust-light); box-shadow: 0 0 0 3px rgba(200,72,48,.12); }
-.form-input.ok    { border-color: var(--color-lime-d); }
-.slug-status.ok     { color: var(--color-lime-d); }
-.slug-status.error  { color: var(--color-rust-light); }
-.slug-status.checking { color: var(--color-faint); }
-.btn-next.lime:hover { background: #b8e050; }
-</style>
+    /* Linha conectora entre steps */
+    .step-li:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 52px;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, .08);
+    }
+
+    /* Checkmark no step concluído */
+    .step-li.done .step-circle-left::after {
+      content: '✓';
+    }
+
+    /* Traço do step-num */
+    .step-num::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--color-lime-d);
+    }
+
+    /* Sistema de telas */
+    .step-content {
+      display: none;
+      animation: fadein .3s ease;
+    }
+
+    .step-content.active {
+      display: flex !important;
+      flex-direction: column;
+    }
+
+    /* Estados controlados por JS */
+    .step-li.active .step-circle-left {
+      background: var(--color-lime);
+      border-color: var(--color-lime);
+      color: var(--color-lime-ink);
+      box-shadow: 0 0 16px rgba(200, 240, 96, .4);
+    }
+
+    .step-li.done .step-circle-left {
+      background: rgba(200, 240, 96, .15);
+      border-color: rgba(200, 240, 96, .3);
+      color: var(--color-lime);
+      font-size: 11px;
+    }
+
+    .step-li.active .step-li-title,
+    .step-li.done .step-li-title {
+      color: rgba(255, 255, 255, .9);
+    }
+
+    .step-li.active .step-li-desc {
+      color: rgba(255, 255, 255, .45);
+    }
+
+    .categoria-item.selected {
+      border-color: var(--color-lime-d);
+      background: var(--color-lime-l-light);
+    }
+
+    .categoria-item.selected .cat-label {
+      color: var(--color-lime-ink);
+    }
+
+    .dia-btn.on {
+      border-color: var(--color-lime-d);
+      background: var(--color-lime-l-light);
+    }
+
+    .dia-btn.on .dia-nome {
+      color: var(--color-lime-ink);
+    }
+
+    .blq-chip.on {
+      background: var(--color-lime-l-light);
+      border-color: var(--color-lime-d);
+      color: var(--color-lime-ink);
+    }
+
+    .form-input.error {
+      border-color: var(--color-rust-light);
+      box-shadow: 0 0 0 3px rgba(200, 72, 48, .12);
+    }
+
+    .form-input.ok {
+      border-color: var(--color-lime-d);
+    }
+
+    .slug-status.ok {
+      color: var(--color-lime-d);
+    }
+
+    .slug-status.error {
+      color: var(--color-rust-light);
+    }
+
+    .slug-status.checking {
+      color: var(--color-faint);
+    }
+
+    .btn-next.lime:hover {
+      background: #b8e050;
+    }
+  </style>
 </head>
+
 <body class="font-['Syne',sans-serif] bg-[var(--color-bg-light)] text-[var(--color-ink)] flex min-h-[100vh]">
 
-<!-- PAINEL ESQUERDO -->
-<div class="left-panel w-[380px] flex-shrink-0 bg-[var(--color-ink)] fixed top-0 left-0 bottom-0 flex flex-col p-[40px_36px] overflow-hidden relative z-[1]">
-  <div class="left-inner relative z-[1] h-full flex flex-col">
-    <div class="logo font-['Fraunces',serif] text-[22px] font-[400] text-[#f5f2eb] flex items-center gap-2 mb-[52px]">
-      <div class="logo-dot w-2 h-2 bg-[var(--color-lime)] rounded-full shadow-[0_0_12px_rgba(200,240,96,.5)]"></div>
-      AgendaPro
-    </div>
+  <!-- PAINEL ESQUERDO -->
+  <div
+    class="left-panel w-[380px] flex-shrink-0 bg-[var(--color-ink)] fixed top-0 left-0 bottom-0 flex flex-col p-[40px_36px] overflow-hidden relative z-[1] [@media(max-width:860px)]:hidden">
+    <div class="left-inner relative z-[1] h-full flex flex-col">
+      <div class="logo font-['Fraunces',serif] text-[22px] font-[400] text-[#f5f2eb] flex items-center gap-2 mb-[52px]">
+        <div class="logo-dot w-2 h-2 bg-[var(--color-lime)] rounded-full shadow-[0_0_12px_rgba(200,240,96,.5)]"></div>
+        AgendaPro
+      </div>
 
-    <div class="steps-list flex flex-col gap-0 flex-1">
-      <div class="step-li active flex gap-4 items-start py-5 relative cursor-pointer" id="sl-1">
-        <div class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">1</div>
-        <div class="step-li-body pt-[5px]">
-          <div class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">Sua identidade</div>
-          <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">Nome, foto e link personalizado</div>
+      <div class="steps-list flex flex-col gap-0 flex-1">
+        <div class="step-li active flex gap-4 items-start py-5 relative cursor-pointer" id="sl-1">
+          <div
+            class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">
+            1</div>
+          <div class="step-li-body pt-[5px]">
+            <div
+              class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">
+              Sua identidade</div>
+            <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">Nome, foto e link
+              personalizado</div>
+          </div>
+        </div>
+        <div class="step-li flex gap-4 items-start py-5 relative cursor-pointer" id="sl-2">
+          <div
+            class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">
+            2</div>
+          <div class="step-li-body pt-[5px]">
+            <div
+              class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">
+              Seus serviços</div>
+            <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">O que você oferece e quanto
+              cobra</div>
+          </div>
+        </div>
+        <div class="step-li flex gap-4 items-start py-5 relative cursor-pointer" id="sl-3">
+          <div
+            class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">
+            3</div>
+          <div class="step-li-body pt-[5px]">
+            <div
+              class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">
+              Sua agenda</div>
+            <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">Dias, horários e bloqueios
+              fixos</div>
+          </div>
+        </div>
+        <div class="step-li flex gap-4 items-start py-5 relative cursor-pointer" id="sl-4">
+          <div
+            class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">
+            4</div>
+          <div class="step-li-body pt-[5px]">
+            <div
+              class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">
+              Tudo pronto!</div>
+            <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">Compartilhe seu link e
+              comece</div>
+          </div>
         </div>
       </div>
-      <div class="step-li flex gap-4 items-start py-5 relative cursor-pointer" id="sl-2">
-        <div class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">2</div>
-        <div class="step-li-body pt-[5px]">
-          <div class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">Seus serviços</div>
-          <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">O que você oferece e quanto cobra</div>
-        </div>
-      </div>
-      <div class="step-li flex gap-4 items-start py-5 relative cursor-pointer" id="sl-3">
-        <div class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">3</div>
-        <div class="step-li-body pt-[5px]">
-          <div class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">Sua agenda</div>
-          <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">Dias, horários e bloqueios fixos</div>
-        </div>
-      </div>
-      <div class="step-li flex gap-4 items-start py-5 relative cursor-pointer" id="sl-4">
-        <div class="step-circle-left w-8 h-8 rounded-full flex-shrink-0 border-[1.5px] border-[rgba(255,255,255,.15)] flex items-center justify-center text-[13px] font-[600] text-[rgba(255,255,255,.3)] transition-all duration-300 bg-transparent">4</div>
-        <div class="step-li-body pt-[5px]">
-          <div class="step-li-title text-[14px] font-[600] text-[rgba(255,255,255,.3)] transition-colors duration-300 mb-[3px]">Tudo pronto!</div>
-          <div class="step-li-desc text-[12px] text-[rgba(255,255,255,.2)] leading-[1.5]">Compartilhe seu link e comece</div>
-        </div>
-      </div>
-    </div>
 
-    <div class="preview-box bg-[rgba(255,255,255,.05)] border border-[rgba(255,255,255,.08)] rounded-xl p-4 mt-auto">
-      <div class="preview-label text-[10px] tracking-[.1em] uppercase text-[rgba(255,255,255,.25)] mb-[10px]">Pré-visualização</div>
-      <div class="preview-url font-['DM_Mono',monospace] text-[12px] text-[var(--color-lime)] break-all" id="prev-url">—</div>
-      <div class="preview-profile flex items-center gap-[10px] mt-[10px]">
-        <div class="preview-avatar w-9 h-9 rounded-full bg-[rgba(255,255,255,.08)] border border-[rgba(255,255,255,.1)] flex items-center justify-center text-[15px] text-[rgba(255,255,255,.5)] font-[600] transition-all duration-300 overflow-hidden font-['Syne',sans-serif]" id="prev-avatar">?</div>
-        <div class="preview-name-wrap flex-1">
-          <div class="preview-name text-[13px] font-[600] text-[rgba(255,255,255,.8)] min-h-[18px]" id="prev-nome">Seu nome</div>
-          <div class="preview-serv text-[11px] text-[rgba(255,255,255,.3)]" id="prev-servs">0 serviços cadastrados</div>
+      <div class="preview-box bg-[rgba(255,255,255,.05)] border border-[rgba(255,255,255,.08)] rounded-xl p-4 mt-auto">
+        <div class="preview-label text-[10px] tracking-[.1em] uppercase text-[rgba(255,255,255,.25)] mb-[10px]">
+          Pré-visualização</div>
+        <div class="preview-url font-['DM_Mono',monospace] text-[12px] text-[var(--color-lime)] break-all"
+          id="prev-url">—</div>
+        <div class="preview-profile flex items-center gap-[10px] mt-[10px]">
+          <div
+            class="preview-avatar w-9 h-9 rounded-full bg-[rgba(255,255,255,.08)] border border-[rgba(255,255,255,.1)] flex items-center justify-center text-[15px] text-[rgba(255,255,255,.5)] font-[600] transition-all duration-300 overflow-hidden font-['Syne',sans-serif]"
+            id="prev-avatar">?</div>
+          <div class="preview-name-wrap flex-1">
+            <div class="preview-name text-[13px] font-[600] text-[rgba(255,255,255,.8)] min-h-[18px]" id="prev-nome">Seu
+              nome</div>
+            <div class="preview-serv text-[11px] text-[rgba(255,255,255,.3)]" id="prev-servs">0 serviços cadastrados
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- PAINEL DIREITO -->
-<div class="right-panel ml-[380px] flex-1 min-h-[100vh] pb-[80px] flex flex-col [@media(max-width:860px)]:ml-0">
-  <div class="right-top p-[32px_48px_0] flex justify-end">
-    <button class="skip-btn bg-none border-none text-[13px] text-[var(--color-faint)] cursor-pointer font-['Syne',sans-serif] transition-colors duration-200 hover:text-[var(--color-muted)]" onclick="pularOnboarding()">Pular configuração →</button>
-  </div>
+  <!-- PAINEL DIREITO -->
+  <div class="right-panel ml-[380px] flex-1 min-h-[100vh] pb-[80px] flex flex-col [@media(max-width:860px)]:ml-0">
+    <div class="right-top p-[32px_48px_0] flex justify-end">
+      <button
+        class="skip-btn bg-none border-none text-[13px] text-[var(--color-faint)] cursor-pointer font-['Syne',sans-serif] transition-colors duration-200 hover:text-[var(--color-muted)]"
+        onclick="pularOnboarding()">Pular configuração →</button>
+    </div>
 
-  <!-- STEP 1: IDENTIDADE -->
-  <div class="step-content active p-[40px_48px] flex-1 [@media(max-width:860px)]:p-[32px_20px]" id="step-1">
-    <div class="step-num text-[11px] font-[700] tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-[10px] flex items-center gap-[6px]">Passo 1 de 3</div>
-    <h1 class="step-h font-['Fraunces',serif] text-[clamp(28px,3.5vw,42px)] font-[300] tracking-[-.02em] leading-[1.1] mb-[10px]">Vamos criar<br><em>sua página</em></h1>
-    <p class="step-sub text-[15px] text-[var(--color-muted)] leading-[1.6] mb-9 max-w-[480px]">Primeiras informações para seus clientes saberem quem é você.</p>
+    <!-- STEP 1: IDENTIDADE -->
+    <div class="step-content active p-[40px_48px] flex-1 [@media(max-width:860px)]:p-[32px_20px]" id="step-1">
+      <div
+        class="step-num text-[11px] font-[700] tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-[10px] flex items-center gap-[6px]">
+        Passo 1 de 3</div>
+      <h1
+        class="step-h font-['Fraunces',serif] text-[clamp(28px,3.5vw,42px)] font-[300] tracking-[-.02em] leading-[1.1] mb-[10px]">
+        Vamos criar<br><em>sua página</em></h1>
+      <p class="step-sub text-[15px] text-[var(--color-muted)] leading-[1.6] mb-9 max-w-[480px]">Primeiras informações
+        para seus clientes saberem quem é você.</p>
 
-    <!-- Foto -->
-    <div class="foto-area flex items-center gap-6 mb-7 max-w-[480px]">
-      <div class="foto-circle w-[72px] h-[72px] rounded-full flex-shrink-0 bg-[var(--color-bg-light2)] border-2 border-dashed border-[var(--color-border-light2)] flex items-center justify-center text-[26px] cursor-pointer transition-all duration-200 relative overflow-hidden hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light3)]" id="foto-circle" onclick="document.getElementById('foto-input').click()">
-        📷
+      <!-- Foto -->
+      <div class="foto-area flex items-center gap-6 mb-7 max-w-[480px]">
+        <div
+          class="foto-circle w-[72px] h-[72px] rounded-full flex-shrink-0 bg-[var(--color-bg-light2)] border-2 border-dashed border-[var(--color-border-light2)] flex items-center justify-center text-[26px] cursor-pointer transition-all duration-200 relative overflow-hidden hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light3)]"
+          id="foto-circle" onclick="document.getElementById('foto-input').click()">
+          📷
+        </div>
+        <div class="foto-info flex-1">
+          <p class="text-[13px] text-[var(--color-muted)] leading-[1.6]">Adicione uma foto de perfil.<br>Clientes
+            confiam mais em profissionais com foto.</p>
+          <button
+            class="btn-foto mt-2 bg-none border-[1.5px] border-[var(--color-border-light)] text-[var(--color-muted)] rounded-lg py-[7px] px-[14px] text-[12px] font-[600] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]"
+            onclick="document.getElementById('foto-input').click()">Escolher foto</button>
+          <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="previewFoto(this)">
+        </div>
       </div>
-      <div class="foto-info flex-1">
-        <p class="text-[13px] text-[var(--color-muted)] leading-[1.6]">Adicione uma foto de perfil.<br>Clientes confiam mais em profissionais com foto.</p>
-        <button class="btn-foto mt-2 bg-none border-[1.5px] border-[var(--color-border-light)] text-[var(--color-muted)] rounded-lg py-[7px] px-[14px] text-[12px] font-[600] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]" onclick="document.getElementById('foto-input').click()">Escolher foto</button>
-        <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="previewFoto(this)">
+
+      <!-- Categoria -->
+      <div class="form-group mb-5 max-w-[480px]">
+        <div
+          class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
+          Qual é sua profissão?</div>
+        <div class="categoria-grid grid grid-cols-3 gap-[10px] max-w-[520px] mb-7">
+          <div
+            class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
+            onclick="selecionarCat(this,'Cabeleireiro','✂️')">
+            <div class="cat-icon text-[22px] mb-[6px]">✂️</div>
+            <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Cabeleireiro(a)</div>
+          </div>
+          <div
+            class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
+            onclick="selecionarCat(this,'Manicure','💅')">
+            <div class="cat-icon text-[22px] mb-[6px]">💅</div>
+            <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Manicure</div>
+          </div>
+          <div
+            class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
+            onclick="selecionarCat(this,'Personal','🏋️')">
+            <div class="cat-icon text-[22px] mb-[6px]">🏋️</div>
+            <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Personal</div>
+          </div>
+          <div
+            class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
+            onclick="selecionarCat(this,'Tatuador','🎨')">
+            <div class="cat-icon text-[22px] mb-[6px]">🎨</div>
+            <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Tatuador(a)</div>
+          </div>
+          <div
+            class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
+            onclick="selecionarCat(this,'Massagista','💆')">
+            <div class="cat-icon text-[22px] mb-[6px]">💆</div>
+            <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Massagista</div>
+          </div>
+          <div
+            class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
+            onclick="selecionarCat(this,'Outro','👤')">
+            <div class="cat-icon text-[22px] mb-[6px]">👤</div>
+            <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Outro</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nome -->
+      <div class="form-group mb-5 max-w-[480px]">
+        <div
+          class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
+          Seu nome profissional
+          <span class="form-hint text-[11px] text-[var(--color-faint)] font-[400] tracking-0 normal-case">Como aparece
+            para os clientes</span>
+        </div>
+        <input
+          class="form-input w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)]"
+          id="input-nome" placeholder="Ex: Ana Beatriz Cabelos" oninput="atualizarPreview()">
+      </div>
+
+      <!-- Slug -->
+      <div class="form-group mb-5 max-w-[480px]">
+        <div
+          class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
+          Seu link personalizado</div>
+        <div class="form-input-wrap relative">
+          <span
+            class="form-prefix absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-[var(--color-muted)] font-['DM_Mono',monospace] pointer-events-none whitespace-nowrap pr-2 border-r border-[var(--color-border-light)] mr-1"
+            id="form-prefix-url">agendapro.com.br/</span>
+          <input
+            class="form-input has-prefix w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 pl-[175px] pr-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)]"
+            id="input-slug" placeholder="ana-cabelos" oninput="atualizarSlug(this)">
+        </div>
+        <div
+          class="slug-status flex items-center gap-[6px] text-[12px] mt-[6px] min-h-[18px] text-[var(--color-faint)] transition-colors duration-200"
+          id="slug-status">
+          <span id="slug-msg">Digite seu link personalizado</span>
+        </div>
+      </div>
+
+      <!-- Bio -->
+      <div class="form-group mb-5 max-w-[480px]">
+        <div
+          class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
+          Bio curta
+          <span
+            class="form-hint text-[11px] text-[var(--color-faint)] font-[400] tracking-0 normal-case">Opcional</span>
+        </div>
+        <textarea
+          class="form-input textarea w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)] resize-vertical min-h-[80px] leading-[1.6]"
+          id="input-bio" placeholder="Ex: Especialista em coloração e tratamentos capilares. 10 anos de experiência."
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      </div>
+
+      <!-- Whatsapp -->
+      <div class="form-group mb-5 max-w-[480px]">
+        <div
+          class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
+          WhatsApp (para receber avisos)</div>
+        <input
+          class="form-input w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)]"
+          id="input-wpp" placeholder="(11) 99999-0000" oninput="mascaraTel(this)">
+      </div>
+
+      <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
+        <button
+          class="btn-next flex-1 bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#2a2820] disabled:opacity-35 disabled:cursor-default disabled:transform-none"
+          id="btn-next-1" onclick="irPara(2)">
+          Próximo — Serviços →
+        </button>
       </div>
     </div>
 
-    <!-- Categoria -->
-    <div class="form-group mb-5 max-w-[480px]">
-      <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">Qual é sua profissão?</div>
-      <div class="categoria-grid grid grid-cols-3 gap-[10px] max-w-[520px] mb-7">
-        <div class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]" onclick="selecionarCat(this,'Cabeleireiro','✂️')">
-          <div class="cat-icon text-[22px] mb-[6px]">✂️</div>
-          <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Cabeleireiro(a)</div>
-        </div>
-        <div class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]" onclick="selecionarCat(this,'Manicure','💅')">
-          <div class="cat-icon text-[22px] mb-[6px]">💅</div>
-          <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Manicure</div>
-        </div>
-        <div class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]" onclick="selecionarCat(this,'Personal','🏋️')">
-          <div class="cat-icon text-[22px] mb-[6px]">🏋️</div>
-          <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Personal</div>
-        </div>
-        <div class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]" onclick="selecionarCat(this,'Tatuador','🎨')">
-          <div class="cat-icon text-[22px] mb-[6px]">🎨</div>
-          <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Tatuador(a)</div>
-        </div>
-        <div class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]" onclick="selecionarCat(this,'Massagista','💆')">
-          <div class="cat-icon text-[22px] mb-[6px]">💆</div>
-          <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Massagista</div>
-        </div>
-        <div class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]" onclick="selecionarCat(this,'Outro','👤')">
-          <div class="cat-icon text-[22px] mb-[6px]">👤</div>
-          <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Outro</div>
-        </div>
-      </div>
-    </div>
+    <!-- STEP 2: SERVIÇOS -->
+    <div class="step-content p-[40px_48px] flex-1 [@media(max-width:860px)]:p-[32px_20px]" id="step-2">
+      <div
+        class="step-num text-[11px] font-[700] tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-[10px] flex items-center gap-[6px]">
+        Passo 2 de 3</div>
+      <h1
+        class="step-h font-['Fraunces',serif] text-[clamp(28px,3.5vw,42px)] font-[300] tracking-[-.02em] leading-[1.1] mb-[10px]">
+        Seus<br><em>serviços</em></h1>
+      <p class="step-sub text-[15px] text-[var(--color-muted)] leading-[1.6] mb-9 max-w-[480px]">Adicione o que você
+        oferece, a duração e o preço. O cliente vai ver isso na hora de agendar.</p>
 
-    <!-- Nome -->
-    <div class="form-group mb-5 max-w-[480px]">
-      <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
-        Seu nome profissional
-        <span class="form-hint text-[11px] text-[var(--color-faint)] font-[400] tracking-0 normal-case">Como aparece para os clientes</span>
-      </div>
-      <input class="form-input w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)]" id="input-nome" placeholder="Ex: Ana Beatriz Cabelos"
-        oninput="atualizarPreview()">
-    </div>
+      <div class="servicos-list flex flex-col gap-[10px] max-w-[540px] mb-5" id="servicos-list"></div>
 
-    <!-- Slug -->
-    <div class="form-group mb-5 max-w-[480px]">
-      <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">Seu link personalizado</div>
-      <div class="form-input-wrap relative">
-        <span class="form-prefix absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-[var(--color-muted)] font-['DM_Mono',monospace] pointer-events-none whitespace-nowrap pr-2 border-r border-[var(--color-border-light)] mr-1" id="form-prefix-url">agendapro.com.br/</span>
-        <input class="form-input has-prefix w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 pl-[175px] pr-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)]" id="input-slug" placeholder="ana-cabelos"
-          oninput="atualizarSlug(this)">
-      </div>
-      <div class="slug-status flex items-center gap-[6px] text-[12px] mt-[6px] min-h-[18px] text-[var(--color-faint)] transition-colors duration-200" id="slug-status">
-        <span id="slug-msg">Digite seu link personalizado</span>
-      </div>
-    </div>
-
-    <!-- Bio -->
-    <div class="form-group mb-5 max-w-[480px]">
-      <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">
-        Bio curta
-        <span class="form-hint text-[11px] text-[var(--color-faint)] font-[400] tracking-0 normal-case">Opcional</span>
-      </div>
-      <textarea class="form-input textarea w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)] resize-vertical min-h-[80px] leading-[1.6]" id="input-bio"
-        placeholder="Ex: Especialista em coloração e tratamentos capilares. 10 anos de experiência."
-        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-    </div>
-
-    <!-- Whatsapp -->
-    <div class="form-group mb-5 max-w-[480px]">
-      <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-2 flex justify-between items-center">WhatsApp (para receber avisos)</div>
-      <input class="form-input w-full bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-4 text-[15px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.2)]" id="input-wpp" placeholder="(11) 99999-0000"
-        oninput="mascaraTel(this)">
-    </div>
-
-    <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
-      <button class="btn-next flex-1 bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#2a2820] disabled:opacity-35 disabled:cursor-default disabled:transform-none" id="btn-next-1" onclick="irPara(2)">
-        Próximo — Serviços →
+      <button
+        class="btn-add-servico flex items-center gap-2 bg-none border-[1.5px] border-dashed border-[var(--color-border-light2)] rounded-xl py-3 px-4 text-[13px] text-[var(--color-muted)] font-[600] font-['Syne',sans-serif] cursor-pointer max-w-[540px] transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime-ink)] hover:bg-[var(--color-lime-l-light)]"
+        onclick="adicionarServico()">
+        + Adicionar serviço
       </button>
-    </div>
-  </div>
 
-  <!-- STEP 2: SERVIÇOS -->
-  <div class="step-content p-[40px_48px] flex-1 [@media(max-width:860px)]:p-[32px_20px]" id="step-2">
-    <div class="step-num text-[11px] font-[700] tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-[10px] flex items-center gap-[6px]">Passo 2 de 3</div>
-    <h1 class="step-h font-['Fraunces',serif] text-[clamp(28px,3.5vw,42px)] font-[300] tracking-[-.02em] leading-[1.1] mb-[10px]">Seus<br><em>serviços</em></h1>
-    <p class="step-sub text-[15px] text-[var(--color-muted)] leading-[1.6] mb-9 max-w-[480px]">Adicione o que você oferece, a duração e o preço. O cliente vai ver isso na hora de agendar.</p>
-
-    <div class="servicos-list flex flex-col gap-[10px] max-w-[540px] mb-5" id="servicos-list"></div>
-
-    <button class="btn-add-servico flex items-center gap-2 bg-none border-[1.5px] border-dashed border-[var(--color-border-light2)] rounded-xl py-3 px-4 text-[13px] text-[var(--color-muted)] font-[600] font-['Syne',sans-serif] cursor-pointer max-w-[540px] transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime-ink)] hover:bg-[var(--color-lime-l-light)]" onclick="adicionarServico()">
-      + Adicionar serviço
-    </button>
-
-    <div class="max-w-[540px] mt-4 py-3 px-4 bg-[var(--color-lime-l-light)] border border-[var(--color-lime)] rounded-[10px] text-[13px] text-[var(--color-lime-ink)]">
-      💡 <strong>Dica:</strong> Quanto mais completo, maior a chance do cliente agendar sem precisar te perguntar nada.
-    </div>
-
-    <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
-      <button class="btn-back bg-none border-[1.5px] border-[var(--color-border-light)] text-[var(--color-muted)] rounded-[10px] py-[13px] px-5 text-[14px] font-[500] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]" onclick="irPara(1)">← Voltar</button>
-      <button class="btn-next flex-1 bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#2a2820] disabled:opacity-35 disabled:cursor-default disabled:transform-none" id="btn-next-2" onclick="irPara(3)">
-        Próximo — Horários →
-      </button>
-    </div>
-  </div>
-
-  <!-- STEP 3: HORÁRIOS -->
-  <div class="step-content p-[40px_48px] flex-1 [@media(max-width:860px)]:p-[32px_20px]" id="step-3">
-    <div class="step-num text-[11px] font-[700] tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-[10px] flex items-center gap-[6px]">Passo 3 de 3</div>
-    <h1 class="step-h font-['Fraunces',serif] text-[clamp(28px,3.5vw,42px)] font-[300] tracking-[-.02em] leading-[1.1] mb-[10px]">Sua<br><em>disponibilidade</em></h1>
-    <p class="step-sub text-[15px] text-[var(--color-muted)] leading-[1.6] mb-9 max-w-[480px]">Quais dias e horários você atende? Pode ajustar depois quando quiser.</p>
-
-    <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-[10px] flex justify-between items-center">Dias que você atende</div>
-    <div class="dias-grid grid grid-cols-7 gap-[6px] max-w-[520px] mb-6" id="dias-grid"></div>
-
-    <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-[10px] mt-1 flex justify-between items-center">Horário de atendimento</div>
-    <div class="horario-row flex items-center gap-3 max-w-[360px] mb-3">
-      <span class="horario-label text-[13px] text-[var(--color-muted)] w-20 flex-shrink-0">Início</span>
-      <input type="time" class="time-input bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-lg py-2 px-3 text-[14px] font-['DM_Mono',monospace] text-[var(--color-ink)] outline-none w-[100px] transition-colors duration-200 focus:border-[var(--color-lime-d)]" id="hora-inicio" value="09:00">
-    </div>
-    <div class="horario-row flex items-center gap-3 max-w-[360px] mb-3">
-      <span class="horario-label text-[13px] text-[var(--color-muted)] w-20 flex-shrink-0">Fim</span>
-      <input type="time" class="time-input bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-lg py-2 px-3 text-[14px] font-['DM_Mono',monospace] text-[var(--color-ink)] outline-none w-[100px] transition-colors duration-200 focus:border-[var(--color-lime-d)]" id="hora-fim" value="18:00">
-    </div>
-
-    <div class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-[10px] mt-6 flex justify-between items-center">
-      Bloqueios fixos
-      <span class="form-hint font-[400] text-[11px] text-[var(--color-faint)] normal-case tracking-0">Selecione os que se aplicam</span>
-    </div>
-    <div class="bloqueios-quick flex gap-2 flex-wrap max-w-[480px] mt-4">
-      <div class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]" onclick="toggleBlq(this,'🍽️ Almoço (12–13h)')">🍽️ Almoço</div>
-      <div class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]" onclick="toggleBlq(this,'☕ Café (10–10:30h)')">☕ Café manhã</div>
-      <div class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]" onclick="toggleBlq(this,'☕ Café (15–15:30h)')">☕ Café tarde</div>
-      <div class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]" onclick="toggleBlq(this,'🧹 Limpeza (19–19:30h)')">🧹 Limpeza final</div>
-    </div>
-
-    <div class="max-w-[480px] mt-5 py-3 px-4 bg-[var(--color-bg-light2)] border border-[var(--color-border-light)] rounded-[10px] text-[13px] text-[var(--color-muted)] leading-[1.6]">
-      🔒 Pode adicionar férias, consultas médicas e qualquer bloqueio pontual depois, direto no painel.
-    </div>
-
-    <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
-      <button class="btn-back bg-none border-[1.5px] border-[var(--color-border-light)] text-[var(--color-muted)] rounded-[10px] py-[13px] px-5 text-[14px] font-[500] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]" onclick="irPara(2)">← Voltar</button>
-      <button class="btn-next lime flex-1 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#b8e050] disabled:opacity-35 disabled:cursor-default disabled:transform-none" onclick="finalizar()">
-        ✦ Criar minha página
-      </button>
-    </div>
-  </div>
-
-  <!-- STEP 4: SUCESSO -->
-  <div class="step-content" id="step-4">
-    <div class="success-screen flex-1 flex flex-col items-center justify-center p-12 text-center">
-      <div class="success-anim w-20 h-20 rounded-full bg-[var(--color-lime-l-light)] border-[3px] border-[var(--color-lime)] flex items-center justify-center text-[32px] mx-auto mb-6" style="animation:pop .5s cubic-bezier(.34,1.56,.64,1)">🎉</div>
-      <h2 class="success-h font-['Fraunces',serif] text-[38px] font-[300] tracking-[-.02em] mb-3">Página criada!</h2>
-      <p class="success-sub text-[16px] text-[var(--color-muted)] max-w-[380px] leading-[1.65] mb-8">Seu link de agendamento está no ar. Compartilhe agora e comece a receber clientes.</p>
-
-      <div class="link-box bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl py-3.5 px-[18px] mb-6 flex items-center gap-3 max-w-[420px] w-full">
-        <div class="link-url font-['DM_Mono',monospace] text-[14px] text-[var(--color-lime-d)] flex-1 break-all" id="link-final">—</div>
-        <button class="btn-copy bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-lg py-2 px-3.5 text-[12px] font-[600] font-['Syne',sans-serif] cursor-pointer whitespace-nowrap transition-all duration-200 hover:bg-[#2a2820]" onclick="copiarLink()">Copiar</button>
+      <div
+        class="max-w-[540px] mt-4 py-3 px-4 bg-[var(--color-lime-l-light)] border border-[var(--color-lime)] rounded-[10px] text-[13px] text-[var(--color-lime-ink)]">
+        💡 <strong>Dica:</strong> Quanto mais completo, maior a chance do cliente agendar sem precisar te perguntar
+        nada.
       </div>
 
-      <div class="success-actions flex gap-[10px] flex-wrap justify-center max-w-[420px] w-full">
-        <button class="btn-success-primary flex-1 min-w-[160px] bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-3.5 text-[14px] font-[600] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:bg-[#2a2820]" onclick="irPainel()">Ir para meu painel →</button>
-        <button class="btn-success-ghost flex-1 min-w-[160px] bg-none text-[var(--color-muted)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-3.5 text-[14px] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]" onclick="compartilhar()">📲 Compartilhar</button>
+      <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
+        <button
+          class="btn-back bg-none border-[1.5px] border-[var(--color-border-light)] text-[var(--color-muted)] rounded-[10px] py-[13px] px-5 text-[14px] font-[500] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]"
+          onclick="irPara(1)">← Voltar</button>
+        <button
+          class="btn-next flex-1 bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#2a2820] disabled:opacity-35 disabled:cursor-default disabled:transform-none"
+          id="btn-next-2" onclick="irPara(3)">
+          Próximo — Horários →
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 3: HORÁRIOS -->
+    <div class="step-content p-[40px_48px] flex-1 [@media(max-width:860px)]:p-[32px_20px]" id="step-3">
+      <div
+        class="step-num text-[11px] font-[700] tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-[10px] flex items-center gap-[6px]">
+        Passo 3 de 3</div>
+      <h1
+        class="step-h font-['Fraunces',serif] text-[clamp(28px,3.5vw,42px)] font-[300] tracking-[-.02em] leading-[1.1] mb-[10px]">
+        Sua<br><em>disponibilidade</em></h1>
+      <p class="step-sub text-[15px] text-[var(--color-muted)] leading-[1.6] mb-9 max-w-[480px]">Quais dias e horários
+        você atende? Pode ajustar depois quando quiser.</p>
+
+      <div
+        class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-[10px] flex justify-between items-center">
+        Dias que você atende</div>
+      <div class="dias-grid grid grid-cols-7 gap-[6px] max-w-[520px] mb-6" id="dias-grid"></div>
+
+      <div
+        class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-[10px] mt-1 flex justify-between items-center">
+        Horário de atendimento</div>
+      <div class="horario-row flex items-center gap-3 max-w-[360px] mb-3">
+        <span class="horario-label text-[13px] text-[var(--color-muted)] w-20 flex-shrink-0">Início</span>
+        <input type="time"
+          class="time-input bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-lg py-2 px-3 text-[14px] font-['DM_Mono',monospace] text-[var(--color-ink)] outline-none w-[100px] transition-colors duration-200 focus:border-[var(--color-lime-d)]"
+          id="hora-inicio" value="09:00">
+      </div>
+      <div class="horario-row flex items-center gap-3 max-w-[360px] mb-3">
+        <span class="horario-label text-[13px] text-[var(--color-muted)] w-20 flex-shrink-0">Fim</span>
+        <input type="time"
+          class="time-input bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-lg py-2 px-3 text-[14px] font-['DM_Mono',monospace] text-[var(--color-ink)] outline-none w-[100px] transition-colors duration-200 focus:border-[var(--color-lime-d)]"
+          id="hora-fim" value="18:00">
       </div>
 
-      <p class="text-[12px] text-[var(--color-faint)] mt-7 max-w-[340px] leading-[1.6]">
-        Cole este link na bio do Instagram, no status do WhatsApp ou envie direto para seus clientes.
-      </p>
+      <div
+        class="form-label text-[12px] font-[600] text-[var(--color-muted)] tracking-[.04em] uppercase mb-[10px] mt-6 flex justify-between items-center">
+        Bloqueios fixos
+        <span class="form-hint font-[400] text-[11px] text-[var(--color-faint)] normal-case tracking-0">Selecione os que
+          se aplicam</span>
+      </div>
+      <div class="bloqueios-quick flex gap-2 flex-wrap max-w-[480px] mt-4">
+        <div
+          class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]"
+          onclick="toggleBlq(this,'🍽️ Almoço (12–13h)')">🍽️ Almoço</div>
+        <div
+          class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]"
+          onclick="toggleBlq(this,'☕ Café (10–10:30h)')">☕ Café manhã</div>
+        <div
+          class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]"
+          onclick="toggleBlq(this,'☕ Café (15–15:30h)')">☕ Café tarde</div>
+        <div
+          class="blq-chip bg-[var(--color-bg-light2)] border-[1.5px] border-[var(--color-border-light)] rounded-full py-1.5 px-3.5 text-[12px] cursor-pointer transition-all duration-200 flex items-center gap-1.5 hover:border-[var(--color-border-light2)]"
+          onclick="toggleBlq(this,'🧹 Limpeza (19–19:30h)')">🧹 Limpeza final</div>
+      </div>
+
+      <div
+        class="max-w-[480px] mt-5 py-3 px-4 bg-[var(--color-bg-light2)] border border-[var(--color-border-light)] rounded-[10px] text-[13px] text-[var(--color-muted)] leading-[1.6]">
+        🔒 Pode adicionar férias, consultas médicas e qualquer bloqueio pontual depois, direto no painel.
+      </div>
+
+      <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
+        <button
+          class="btn-back bg-none border-[1.5px] border-[var(--color-border-light)] text-[var(--color-muted)] rounded-[10px] py-[13px] px-5 text-[14px] font-[500] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]"
+          onclick="irPara(2)">← Voltar</button>
+        <button
+          class="btn-next lime flex-1 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#b8e050] disabled:opacity-35 disabled:cursor-default disabled:transform-none"
+          onclick="finalizar()">
+          ✦ Criar minha página
+        </button>
+      </div>
     </div>
+
+    <!-- STEP 4: SUCESSO -->
+    <div class="step-content" id="step-4">
+      <div class="success-screen flex-1 flex flex-col items-center justify-center p-12 text-center">
+        <div
+          class="success-anim w-20 h-20 rounded-full bg-[var(--color-lime-l-light)] border-[3px] border-[var(--color-lime)] flex items-center justify-center text-[32px] mx-auto mb-6"
+          style="animation:pop .5s cubic-bezier(.34,1.56,.64,1)">🎉</div>
+        <h2 class="success-h font-['Fraunces',serif] text-[38px] font-[300] tracking-[-.02em] mb-3">Página criada!</h2>
+        <p class="success-sub text-[16px] text-[var(--color-muted)] max-w-[380px] leading-[1.65] mb-8">Seu link de
+          agendamento está no ar. Compartilhe agora e comece a receber clientes.</p>
+
+        <div
+          class="link-box bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl py-3.5 px-[18px] mb-6 flex items-center gap-3 max-w-[420px] w-full">
+          <div class="link-url font-['DM_Mono',monospace] text-[14px] text-[var(--color-lime-d)] flex-1 break-all"
+            id="link-final">—</div>
+          <button
+            class="btn-copy bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-lg py-2 px-3.5 text-[12px] font-[600] font-['Syne',sans-serif] cursor-pointer whitespace-nowrap transition-all duration-200 hover:bg-[#2a2820]"
+            onclick="copiarLink()">Copiar</button>
+        </div>
+
+        <div class="success-actions flex gap-[10px] flex-wrap justify-center max-w-[420px] w-full">
+          <button
+            class="btn-success-primary flex-1 min-w-[160px] bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-3.5 text-[14px] font-[600] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:bg-[#2a2820]"
+            onclick="irPainel()">Ir para meu painel →</button>
+          <button
+            class="btn-success-ghost flex-1 min-w-[160px] bg-none text-[var(--color-muted)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-3.5 text-[14px] font-['Syne',sans-serif] cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:text-[var(--color-ink)]"
+            onclick="compartilhar()">📲 Compartilhar</button>
+        </div>
+
+        <p class="text-[12px] text-[var(--color-faint)] mt-7 max-w-[340px] leading-[1.6]">
+          Cole este link na bio do Instagram, no status do WhatsApp ou envie direto para seus clientes.
+        </p>
+      </div>
+    </div>
+
   </div>
 
-</div>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+    // ── PROTEÇÃO DE ROTA + REDIRECT SE JÁ COMPLETOU ──────────────────────────
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/auth'; }
+    const userId = session.user.id;
 
-// ── PROTEÇÃO DE ROTA + REDIRECT SE JÁ COMPLETOU ──────────────────────────
-const { data: { session } } = await supabase.auth.getSession();
-if (!session) { window.location.href = '/auth'; }
-const userId = session.user.id;
-
-// Se já tem slug, onboarding já foi completado → redireciona pro painel
-const { data: prestador } = await supabase
-  .from('prestadores')
-  .select('slug')
-  .eq('id', userId)
-  .maybeSingle();
-if (prestador && prestador.slug) { window.location.href = '/painel'; }
-
-// ── ESTADO ───────────────────────────────────────────────────────────────
-const state = {
-  step: 1,
-  nome: '', slug: '', bio: '', wpp: '', cat: '', fotoEmoji: '',
-  diasAtivos: new Set([1,2,3,4,5]),
-  horaInicio: '09:00', horaFim: '18:00',
-  bloqueios: [],
-  slugOk: false,
-};
-
-const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-
-// ── NAVEGAÇÃO ────────────────────────────────────────────────────────────
-function irPara(n) {
-  document.getElementById('step-' + state.step)?.classList.remove('active');
-  state.step = n;
-  document.getElementById('step-' + n)?.classList.add('active');
-  atualizarSidebarSteps();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-window.irPara = irPara;
-
-function atualizarSidebarSteps() {
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById('sl-' + i);
-    if (!el) continue;
-    el.classList.remove('active','done');
-    if (i === state.step) el.classList.add('active');
-    else if (i < state.step) el.classList.add('done');
-    const circ = el.querySelector('.step-circle-left');
-    if (!circ) continue;
-    if (i < state.step) { circ.textContent = ''; circ.style.fontSize = '0'; }
-    else { circ.textContent = i; circ.style.fontSize = ''; }
-  }
-}
-
-window.pularOnboarding = function() {
-  irPara(4);
-  document.getElementById('link-final').textContent = `${appDomain}/meu-perfil`;
-};
-
-// ── STEP 1 — PERFIL ───────────────────────────────────────────────────────
-window.previewFoto = async function(input) {
-  if (!input.files || !input.files[0]) return;
-  const file   = input.files[0];
-  const reader = new FileReader();
-
-  // Preview local imediato
-  reader.onload = e => {
-    const circle = document.getElementById('foto-circle');
-    if (circle) circle.innerHTML = `<img src="${e.target.result}" alt="foto" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    const prevAv = document.getElementById('prev-avatar');
-    if (prevAv) prevAv.innerHTML = `<img src="${e.target.result}" alt="foto" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  };
-  reader.readAsDataURL(file);
-
-  // Upload para Supabase Storage (bucket: avatars)
-  try {
-    const ext  = file.name.split('.').pop() || 'jpg';
-    const path = `${userId}/avatar.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true, contentType: file.type });
-
-    if (upErr) {
-      console.warn('Erro no upload da foto:', upErr.message);
-      // Preview local continua mesmo sem upload
-      return;
-    }
-
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-    state.fotoUrl = urlData?.publicUrl || null;
-  } catch (e) {
-    console.warn('Storage indisponível, foto salva apenas localmente:', e);
-  }
-};
-
-const SUGESTOES = {
-  'Cabeleireiro': [
-    { nome: 'Corte feminino', dur: '60', preco: '80' },
-    { nome: 'Corte + escova', dur: '60', preco: '90' },
-    { nome: 'Tintura',        dur: '120', preco: '160' },
-  ],
-  'Manicure': [
-    { nome: 'Manicure',           dur: '45', preco: '35' },
-    { nome: 'Pedicure',           dur: '45', preco: '40' },
-    { nome: 'Manicure + Pedicure', dur: '80', preco: '65' },
-  ],
-  'Personal': [
-    { nome: 'Treino individual', dur: '60', preco: '120' },
-    { nome: 'Avaliação física',  dur: '60', preco: '80' },
-    { nome: 'Online (1h)',       dur: '60', preco: '80' },
-  ],
-  'Tatuador': [
-    { nome: 'Tatuagem pequena', dur: '60',  preco: '200' },
-    { nome: 'Tatuagem média',   dur: '120', preco: '400' },
-    { nome: 'Consultoria',      dur: '30',  preco: '0' },
-  ],
-  'Massagista': [
-    { nome: 'Relaxante 60min', dur: '60',  preco: '120' },
-    { nome: 'Relaxante 90min', dur: '90',  preco: '160' },
-    { nome: 'Drenagem',        dur: '60',  preco: '130' },
-  ],
-};
-
-window.selecionarCat = function(el, nome, emoji) {
-  document.querySelectorAll('.categoria-item').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  state.cat       = nome;
-  state.fotoEmoji = emoji;
-  const sug = SUGESTOES[nome];
-  if (sug) {
-    document.getElementById('servicos-list').innerHTML = '';
-    sug.forEach(s => adicionarServico(s.nome, s.dur, s.preco));
-    atualizarPreviewServicos();
-  }
-};
-
-window.mascaraTel = function(el) {
-  let v = el.value.replace(/\D/g,'').slice(0,11);
-  if (v.length >= 7) v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
-  else if (v.length >= 3) v = '(' + v.slice(0,2) + ') ' + v.slice(2);
-  else if (v.length >= 1) v = '(' + v;
-  el.value = v;
-};
-
-// ── SLUG ─────────────────────────────────────────────────────────────────
-let slugTimer;
-window.atualizarSlug = function(el) {
-  let v = el.value.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9-]/g,'-')
-    .replace(/-+/g,'-').replace(/^-|-$/g,'');
-  el.value = v;
-  state.slug = v;
-  atualizarPreview();
-
-  const status = document.getElementById('slug-status');
-  const msg    = document.getElementById('slug-msg');
-  clearTimeout(slugTimer);
-  state.slugOk = false;
-  el.classList.remove('ok','error');
-
-  if (!v) {
-    status.className = 'slug-status';
-    msg.textContent  = 'Digite seu link personalizado';
-    return;
-  }
-  if (v.length < 3) {
-    status.className = 'slug-status error';
-    msg.textContent  = 'Mínimo 3 caracteres';
-    el.classList.add('error');
-    return;
-  }
-
-  status.className = 'slug-status checking';
-  msg.textContent  = 'Verificando disponibilidade…';
-
-  slugTimer = setTimeout(async () => {
-    const { data } = await supabase
+    // Se já tem slug, onboarding já foi completado → redireciona pro painel
+    const { data: prestador } = await supabase
       .from('prestadores')
-      .select('id')
-      .eq('slug', v)
-      .neq('id', userId)
+      .select('slug')
+      .eq('id', userId)
       .maybeSingle();
-    if (data) {
-      status.className = 'slug-status error';
-      msg.textContent  = '✕ Este link já está em uso';
-      el.classList.add('error');
-    } else {
-      status.className = 'slug-status ok';
-      msg.textContent  = '✓ Disponível!';
-      el.classList.add('ok');
-      state.slugOk = true;
+    if (prestador && prestador.slug) { window.location.href = '/painel'; }
+
+    // ── ESTADO ───────────────────────────────────────────────────────────────
+    const state = {
+      step: 1,
+      nome: '', slug: '', bio: '', wpp: '', cat: '', fotoEmoji: '',
+      diasAtivos: new Set([1, 2, 3, 4, 5]),
+      horaInicio: '09:00', horaFim: '18:00',
+      bloqueios: [],
+      slugOk: false,
+    };
+
+    const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    // ── NAVEGAÇÃO ────────────────────────────────────────────────────────────
+    function irPara(n) {
+      document.getElementById('step-' + state.step)?.classList.remove('active');
+      state.step = n;
+      document.getElementById('step-' + n)?.classList.add('active');
+      atualizarSidebarSteps();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, 700);
-};
+    window.irPara = irPara;
 
-window.atualizarPreview = function() {
-  const nome = document.getElementById('input-nome')?.value.trim() || '';
-  const bio  = document.getElementById('input-bio')?.value.trim()  || '';
-  const slug = state.slug;
-  state.nome = nome;
-  state.bio  = bio;
+    function atualizarSidebarSteps() {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('sl-' + i);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (i === state.step) el.classList.add('active');
+        else if (i < state.step) el.classList.add('done');
+        const circ = el.querySelector('.step-circle-left');
+        if (!circ) continue;
+        if (i < state.step) { circ.textContent = ''; circ.style.fontSize = '0'; }
+        else { circ.textContent = i; circ.style.fontSize = ''; }
+      }
+    }
 
-  const prevNome = document.getElementById('prev-nome');
-  const prevUrl  = document.getElementById('prev-url');
-  if (prevNome) prevNome.textContent = nome || 'Seu nome';
-  if (prevUrl)  prevUrl.textContent  = slug ? `${appDomain}/${slug}` : `${appDomain}/seu-link`;
+    window.pularOnboarding = function () {
+      irPara(4);
+      document.getElementById('link-final').textContent = `${appDomain}/meu-perfil`;
+    };
 
-  // Avatar com inicial se não tiver foto
-  const prevAv = document.getElementById('prev-avatar');
-  if (prevAv && nome && !prevAv.querySelector('img')) {
-    prevAv.textContent = nome[0].toUpperCase();
-    prevAv.style.background = '#dde8c8';
-    prevAv.style.color = '#4a6a20';
-  }
-};
+    // ── STEP 1 — PERFIL ───────────────────────────────────────────────────────
+    window.previewFoto = async function (input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const reader = new FileReader();
 
-// ── STEP 2 — SERVIÇOS ─────────────────────────────────────────────────────
-let servicoId = 0;
+      // Preview local imediato
+      reader.onload = e => {
+        const circle = document.getElementById('foto-circle');
+        if (circle) circle.innerHTML = `<img src="${e.target.result}" alt="foto" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        const prevAv = document.getElementById('prev-avatar');
+        if (prevAv) prevAv.innerHTML = `<img src="${e.target.result}" alt="foto" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      };
+      reader.readAsDataURL(file);
 
-function adicionarServico(nome='', dur='', preco='') {
-  const id = ++servicoId;
-  const row = document.createElement('div');
-  row.className = 'servico-row bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl py-3.5 px-4 flex gap-[10px] items-center';
-  row.style.animation = 'fadein .2s ease';
-  row.id = 'srv-' + id;
-  row.innerHTML = `
+      // Upload para Supabase Storage (bucket: avatars)
+      try {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const path = `${userId}/avatar.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('avatars')
+          .upload(path, file, { upsert: true, contentType: file.type });
+
+        if (upErr) {
+          console.warn('Erro no upload da foto:', upErr.message);
+          // Preview local continua mesmo sem upload
+          return;
+        }
+
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+        state.fotoUrl = urlData?.publicUrl || null;
+      } catch (e) {
+        console.warn('Storage indisponível, foto salva apenas localmente:', e);
+      }
+    };
+
+    const SUGESTOES = {
+      'Cabeleireiro': [
+        { nome: 'Corte feminino', dur: '60', preco: '80' },
+        { nome: 'Corte + escova', dur: '60', preco: '90' },
+        { nome: 'Tintura', dur: '120', preco: '160' },
+      ],
+      'Manicure': [
+        { nome: 'Manicure', dur: '45', preco: '35' },
+        { nome: 'Pedicure', dur: '45', preco: '40' },
+        { nome: 'Manicure + Pedicure', dur: '80', preco: '65' },
+      ],
+      'Personal': [
+        { nome: 'Treino individual', dur: '60', preco: '120' },
+        { nome: 'Avaliação física', dur: '60', preco: '80' },
+        { nome: 'Online (1h)', dur: '60', preco: '80' },
+      ],
+      'Tatuador': [
+        { nome: 'Tatuagem pequena', dur: '60', preco: '200' },
+        { nome: 'Tatuagem média', dur: '120', preco: '400' },
+        { nome: 'Consultoria', dur: '30', preco: '0' },
+      ],
+      'Massagista': [
+        { nome: 'Relaxante 60min', dur: '60', preco: '120' },
+        { nome: 'Relaxante 90min', dur: '90', preco: '160' },
+        { nome: 'Drenagem', dur: '60', preco: '130' },
+      ],
+    };
+
+    window.selecionarCat = function (el, nome, emoji) {
+      document.querySelectorAll('.categoria-item').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.cat = nome;
+      state.fotoEmoji = emoji;
+      const sug = SUGESTOES[nome];
+      if (sug) {
+        document.getElementById('servicos-list').innerHTML = '';
+        sug.forEach(s => adicionarServico(s.nome, s.dur, s.preco));
+        atualizarPreviewServicos();
+      }
+    };
+
+    window.mascaraTel = function (el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length >= 7) v = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+      else if (v.length >= 3) v = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+      else if (v.length >= 1) v = '(' + v;
+      el.value = v;
+    };
+
+    // ── SLUG ─────────────────────────────────────────────────────────────────
+    let slugTimer;
+    window.atualizarSlug = function (el) {
+      let v = el.value.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-').replace(/^-|-$/g, '');
+      el.value = v;
+      state.slug = v;
+      atualizarPreview();
+
+      const status = document.getElementById('slug-status');
+      const msg = document.getElementById('slug-msg');
+      clearTimeout(slugTimer);
+      state.slugOk = false;
+      el.classList.remove('ok', 'error');
+
+      if (!v) {
+        status.className = 'slug-status';
+        msg.textContent = 'Digite seu link personalizado';
+        return;
+      }
+      if (v.length < 3) {
+        status.className = 'slug-status error';
+        msg.textContent = 'Mínimo 3 caracteres';
+        el.classList.add('error');
+        return;
+      }
+
+      status.className = 'slug-status checking';
+      msg.textContent = 'Verificando disponibilidade…';
+
+      slugTimer = setTimeout(async () => {
+        const { data } = await supabase
+          .from('prestadores')
+          .select('id')
+          .eq('slug', v)
+          .neq('id', userId)
+          .maybeSingle();
+        if (data) {
+          status.className = 'slug-status error';
+          msg.textContent = '✕ Este link já está em uso';
+          el.classList.add('error');
+        } else {
+          status.className = 'slug-status ok';
+          msg.textContent = '✓ Disponível!';
+          el.classList.add('ok');
+          state.slugOk = true;
+        }
+      }, 700);
+    };
+
+    window.atualizarPreview = function () {
+      const nome = document.getElementById('input-nome')?.value.trim() || '';
+      const bio = document.getElementById('input-bio')?.value.trim() || '';
+      const slug = state.slug;
+      state.nome = nome;
+      state.bio = bio;
+
+      const prevNome = document.getElementById('prev-nome');
+      const prevUrl = document.getElementById('prev-url');
+      if (prevNome) prevNome.textContent = nome || 'Seu nome';
+      if (prevUrl) prevUrl.textContent = slug ? `${appDomain}/${slug}` : `${appDomain}/seu-link`;
+
+      // Avatar com inicial se não tiver foto
+      const prevAv = document.getElementById('prev-avatar');
+      if (prevAv && nome && !prevAv.querySelector('img')) {
+        prevAv.textContent = nome[0].toUpperCase();
+        prevAv.style.background = '#dde8c8';
+        prevAv.style.color = '#4a6a20';
+      }
+    };
+
+    // ── STEP 2 — SERVIÇOS ─────────────────────────────────────────────────────
+    let servicoId = 0;
+
+    function adicionarServico(nome = '', dur = '', preco = '') {
+      const id = ++servicoId;
+      const row = document.createElement('div');
+      row.className = 'servico-row bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl py-3.5 px-4 flex gap-[10px] items-center';
+      row.style.animation = 'fadein .2s ease';
+      row.id = 'srv-' + id;
+      row.innerHTML = `
     <div class="servico-row-inputs flex-1 grid grid-cols-[1fr_80px_80px] gap-2">
       <input class="si bg-[var(--color-bg-light2)] border border-[var(--color-border-light)] rounded-lg py-2 px-2.5 text-[13px] font-['Syne',sans-serif] text-[var(--color-ink)] outline-none transition-colors duration-200 focus:border-[var(--color-lime-d)] placeholder:text-[var(--color-faint)] placeholder:text-[12px]" placeholder="Nome do serviço" value="${nome}"
         oninput="atualizarPreviewServicos()">
@@ -552,200 +779,201 @@ function adicionarServico(nome='', dur='', preco='') {
     </div>
     <button class="btn-del-servico w-7 h-7 rounded-lg bg-none border border-[var(--color-border-light)] text-[var(--color-faint)] text-[14px] cursor-pointer flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:bg-[var(--color-rust-l)] hover:border-[var(--color-rust-light)] hover:text-[var(--color-rust-light)]" onclick="removerServico(${id})" title="Remover">✕</button>
   `;
-  document.getElementById('servicos-list')?.appendChild(row);
-  atualizarPreviewServicos();
-}
-window.adicionarServico = adicionarServico;
+      document.getElementById('servicos-list')?.appendChild(row);
+      atualizarPreviewServicos();
+    }
+    window.adicionarServico = adicionarServico;
 
-window.removerServico = function(id) {
-  document.getElementById('srv-' + id)?.remove();
-  atualizarPreviewServicos();
-};
-
-function atualizarPreviewServicos() {
-  const rows  = document.querySelectorAll('.servico-row');
-  const total = [...rows].filter(r => r.querySelector('.si')?.value?.trim()).length;
-  const el    = document.getElementById('prev-servs');
-  if (el) el.textContent =
-    total === 0 ? '0 serviços cadastrados'
-    : total === 1 ? '1 serviço cadastrado'
-    : `${total} serviços cadastrados`;
-}
-window.atualizarPreviewServicos = atualizarPreviewServicos;
-
-// ── STEP 3 — DIAS ─────────────────────────────────────────────────────────
-function renderDias() {
-  const grid = document.getElementById('dias-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  DIAS.forEach((d, i) => {
-    const el = document.createElement('div');
-    el.className = 'dia-btn bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-1 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)]' + (state.diasAtivos.has(i) ? ' on' : '');
-    el.innerHTML = `<span class="dia-nome text-[11px] font-[700] text-[var(--color-faint)] block mb-[2px]">${d}</span><div class="dia-check text-[10px] text-[var(--color-lime-d)] min-h-[14px]">${state.diasAtivos.has(i) ? '✓' : ''}</div>`;
-    el.onclick = () => {
-      if (state.diasAtivos.has(i)) state.diasAtivos.delete(i);
-      else state.diasAtivos.add(i);
-      renderDias();
+    window.removerServico = function (id) {
+      document.getElementById('srv-' + id)?.remove();
+      atualizarPreviewServicos();
     };
-    grid.appendChild(el);
-  });
-}
 
-window.toggleBlq = function(el, label) {
-  el.classList.toggle('on');
-  if (el.classList.contains('on')) state.bloqueios.push(label);
-  else state.bloqueios = state.bloqueios.filter(b => b !== label);
-};
-
-// ── FINALIZAR ─────────────────────────────────────────────────────────────
-window.finalizar = async function() {
-  const btn = document.querySelector('.btn-next.lime');
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
-
-  try {
-    // Lê bio e wpp dos inputs no momento de salvar
-    state.bio = document.getElementById('input-bio')?.value.trim() || null;
-    state.wpp = document.getElementById('input-wpp')?.value.trim() || null;
-
-    // 1. Atualizar prestadores
-    const { error: errP } = await supabase
-      .from('prestadores')
-      .update({
-        nome:     state.nome || session.user.user_metadata?.nome_completo || '',
-        slug:     state.slug,
-        bio:      state.bio  || null,
-        whatsapp: state.wpp  || null,
-        foto_url: state.fotoUrl || null,
-      })
-      .eq('id', userId);
-    if (errP) throw errP;
-
-    // 2. Ler serviços diretamente dos inputs (evita problema do state desincronizado)
-    const rows = document.querySelectorAll('.servico-row');
-    const servicosValidos = [];
-    rows.forEach(row => {
-      const inputs = row.querySelectorAll('.si');
-      const nome   = inputs[0]?.value.trim();
-      const dur    = parseInt(inputs[1]?.value) || 60;
-      const preco  = parseFloat(inputs[2]?.value) || 0;
-      if (nome) servicosValidos.push({ nome, dur, preco });
-    });
-
-    if (servicosValidos.length > 0) {
-      const { error: errS } = await supabase
-        .from('servicos')
-        .insert(servicosValidos.map(s => ({
-          prestador_id: userId,
-          nome:         s.nome,
-          duracao_min:  s.dur,
-          preco:        s.preco,
-          ativo:        true,
-        })));
-      if (errS) throw errS;
+    function atualizarPreviewServicos() {
+      const rows = document.querySelectorAll('.servico-row');
+      const total = [...rows].filter(r => r.querySelector('.si')?.value?.trim()).length;
+      const el = document.getElementById('prev-servs');
+      if (el) el.textContent =
+        total === 0 ? '0 serviços cadastrados'
+          : total === 1 ? '1 serviço cadastrado'
+            : `${total} serviços cadastrados`;
     }
+    window.atualizarPreviewServicos = atualizarPreviewServicos;
 
-    // 3. Inserir disponibilidade
-    const diasArray = Array.from(state.diasAtivos);
-    if (diasArray.length > 0) {
-      const { error: errD } = await supabase
-        .from('disponibilidade')
-        .insert(diasArray.map(dia => ({
-          prestador_id: userId,
-          dia_semana:   dia,
-          hora_inicio:  state.horaInicio || '09:00',
-          hora_fim:     state.horaFim    || '18:00',
-        })));
-      if (errD) throw errD;
-    }
-
-    // 4. Inserir bloqueios recorrentes (Almoço, Café, etc.)
-    if (state.bloqueios.length > 0 && diasArray.length > 0) {
-      const rows = [];
-
-      // Mapeamento manual dos bloqueios fixos
-      const mapaBloqueios = {
-        '🍽️ Almoço (12–13h)': { motivo: 'Almoço', inicio: '12:00', fim: '13:00' },
-        '☕ Café (10–10:30h)': { motivo: 'Café manhã', inicio: '10:00', fim: '10:30' },
-        '☕ Café (15–15:30h)': { motivo: 'Café tarde', inicio: '15:00', fim: '15:30' },
-        '🧹 Limpeza (19–19:30h)': { motivo: 'Limpeza final', inicio: '19:00', fim: '19:30' },
-      };
-
-      state.bloqueios.forEach(blq => {
-        const config = mapaBloqueios[blq];
-        if (!config) {
-          console.warn('Bloqueio não encontrado no mapa:', blq);
-          return;
-        }
-
-        // Cria um registro para cada dia da semana selecionado
-        diasArray.forEach(dia => {
-          rows.push({
-            prestador_id: userId,
-            dia_semana: dia,
-            hora_inicio: config.inicio,
-            hora_fim: config.fim,
-            motivo: config.motivo,
-            ativo: true,
-          });
-        });
+    // ── STEP 3 — DIAS ─────────────────────────────────────────────────────────
+    function renderDias() {
+      const grid = document.getElementById('dias-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      DIAS.forEach((d, i) => {
+        const el = document.createElement('div');
+        el.className = 'dia-btn bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-[10px] py-2.5 px-1 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)]' + (state.diasAtivos.has(i) ? ' on' : '');
+        el.innerHTML = `<span class="dia-nome text-[11px] font-[700] text-[var(--color-faint)] block mb-[2px]">${d}</span><div class="dia-check text-[10px] text-[var(--color-lime-d)] min-h-[14px]">${state.diasAtivos.has(i) ? '✓' : ''}</div>`;
+        el.onclick = () => {
+          if (state.diasAtivos.has(i)) state.diasAtivos.delete(i);
+          else state.diasAtivos.add(i);
+          renderDias();
+        };
+        grid.appendChild(el);
       });
-
-      console.log('Bloqueios recorrentes para salvar:', rows);
-
-      if (rows.length > 0) {
-        const { error: errB } = await supabase
-          .from('bloqueios_recorrentes')
-          .insert(rows);
-        if (errB) {
-          console.error('Erro ao salvar bloqueios recorrentes:', errB);
-        } else {
-          console.log('✓ Bloqueios recorrentes salvos:', rows.length);
-        }
-      }
     }
 
-    // Sucesso
-    document.getElementById('link-final').textContent = `${appDomain}/${state.slug}`;
-    irPara(4);
+    window.toggleBlq = function (el, label) {
+      el.classList.toggle('on');
+      if (el.classList.contains('on')) state.bloqueios.push(label);
+      else state.bloqueios = state.bloqueios.filter(b => b !== label);
+    };
 
-  } catch (err) {
-    console.error('Erro ao salvar onboarding:', err);
-    alert('Erro ao salvar: ' + (err.message || 'tente novamente'));
-    if (btn) { btn.disabled = false; btn.textContent = 'Criar minha página →'; }
-  }
-};
+    // ── FINALIZAR ─────────────────────────────────────────────────────────────
+    window.finalizar = async function () {
+      const btn = document.querySelector('.btn-next.lime');
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
-window.copiarLink = function() {
-  const txt = document.getElementById('link-final')?.textContent || '';
-  navigator.clipboard?.writeText(txt).then(() => {
-    const btn = document.querySelector('.btn-copy');
-    if (!btn) return;
-    btn.textContent = '✓ Copiado!';
-    btn.style.background = '#3a6a20';
-    setTimeout(() => { btn.textContent = 'Copiar'; btn.style.background = ''; }, 2000);
-  });
-};
+      try {
+        // Lê bio e wpp dos inputs no momento de salvar
+        state.bio = document.getElementById('input-bio')?.value.trim() || null;
+        state.wpp = document.getElementById('input-wpp')?.value.trim() || null;
 
-window.compartilhar = function() {
-  const txt = document.getElementById('link-final')?.textContent || '';
-  if (navigator.share) navigator.share({ title: 'Meu link de agendamento', url: txt.startsWith('http') ? txt : 'https://' + txt });
-  else window.copiarLink();
-};
+        // 1. Atualizar prestadores
+        const { error: errP } = await supabase
+          .from('prestadores')
+          .update({
+            nome: state.nome || session.user.user_metadata?.nome_completo || '',
+            slug: state.slug,
+            bio: state.bio || null,
+            whatsapp: state.wpp || null,
+            foto_url: state.fotoUrl || null,
+          })
+          .eq('id', userId);
+        if (errP) throw errP;
 
-window.irPainel = function() {
-  window.location.href = '/painel';
-};
+        // 2. Ler serviços diretamente dos inputs (evita problema do state desincronizado)
+        const rows = document.querySelectorAll('.servico-row');
+        const servicosValidos = [];
+        rows.forEach(row => {
+          const inputs = row.querySelectorAll('.si');
+          const nome = inputs[0]?.value.trim();
+          const dur = parseInt(inputs[1]?.value) || 60;
+          const preco = parseFloat(inputs[2]?.value) || 0;
+          if (nome) servicosValidos.push({ nome, dur, preco });
+        });
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-// Preenche o prefixo da URL com APP_URL do config.js
-const appUrl = (window.APP_URL || 'https://agendapro.com.br').replace(/\/$/, '');
-const appDomain = appUrl.replace(/^https?:\/\//, '');
-const prefixEl = document.getElementById('form-prefix-url');
-if (prefixEl) prefixEl.textContent = appDomain + '/';
+        if (servicosValidos.length > 0) {
+          const { error: errS } = await supabase
+            .from('servicos')
+            .insert(servicosValidos.map(s => ({
+              prestador_id: userId,
+              nome: s.nome,
+              duracao_min: s.dur,
+              preco: s.preco,
+              ativo: true,
+            })));
+          if (errS) throw errS;
+        }
 
-renderDias();
-adicionarServico();
-adicionarServico();
-</script>
+        // 3. Inserir disponibilidade
+        const diasArray = Array.from(state.diasAtivos);
+        if (diasArray.length > 0) {
+          const { error: errD } = await supabase
+            .from('disponibilidade')
+            .insert(diasArray.map(dia => ({
+              prestador_id: userId,
+              dia_semana: dia,
+              hora_inicio: state.horaInicio || '09:00',
+              hora_fim: state.horaFim || '18:00',
+            })));
+          if (errD) throw errD;
+        }
+
+        // 4. Inserir bloqueios recorrentes (Almoço, Café, etc.)
+        if (state.bloqueios.length > 0 && diasArray.length > 0) {
+          const rows = [];
+
+          // Mapeamento manual dos bloqueios fixos
+          const mapaBloqueios = {
+            '🍽️ Almoço (12–13h)': { motivo: 'Almoço', inicio: '12:00', fim: '13:00' },
+            '☕ Café (10–10:30h)': { motivo: 'Café manhã', inicio: '10:00', fim: '10:30' },
+            '☕ Café (15–15:30h)': { motivo: 'Café tarde', inicio: '15:00', fim: '15:30' },
+            '🧹 Limpeza (19–19:30h)': { motivo: 'Limpeza final', inicio: '19:00', fim: '19:30' },
+          };
+
+          state.bloqueios.forEach(blq => {
+            const config = mapaBloqueios[blq];
+            if (!config) {
+              console.warn('Bloqueio não encontrado no mapa:', blq);
+              return;
+            }
+
+            // Cria um registro para cada dia da semana selecionado
+            diasArray.forEach(dia => {
+              rows.push({
+                prestador_id: userId,
+                dia_semana: dia,
+                hora_inicio: config.inicio,
+                hora_fim: config.fim,
+                motivo: config.motivo,
+                ativo: true,
+              });
+            });
+          });
+
+          console.log('Bloqueios recorrentes para salvar:', rows);
+
+          if (rows.length > 0) {
+            const { error: errB } = await supabase
+              .from('bloqueios_recorrentes')
+              .insert(rows);
+            if (errB) {
+              console.error('Erro ao salvar bloqueios recorrentes:', errB);
+            } else {
+              console.log('✓ Bloqueios recorrentes salvos:', rows.length);
+            }
+          }
+        }
+
+        // Sucesso
+        document.getElementById('link-final').textContent = `${appDomain}/${state.slug}`;
+        irPara(4);
+
+      } catch (err) {
+        console.error('Erro ao salvar onboarding:', err);
+        alert('Erro ao salvar: ' + (err.message || 'tente novamente'));
+        if (btn) { btn.disabled = false; btn.textContent = 'Criar minha página →'; }
+      }
+    };
+
+    window.copiarLink = function () {
+      const txt = document.getElementById('link-final')?.textContent || '';
+      navigator.clipboard?.writeText(txt).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        if (!btn) return;
+        btn.textContent = '✓ Copiado!';
+        btn.style.background = '#3a6a20';
+        setTimeout(() => { btn.textContent = 'Copiar'; btn.style.background = ''; }, 2000);
+      });
+    };
+
+    window.compartilhar = function () {
+      const txt = document.getElementById('link-final')?.textContent || '';
+      if (navigator.share) navigator.share({ title: 'Meu link de agendamento', url: txt.startsWith('http') ? txt : 'https://' + txt });
+      else window.copiarLink();
+    };
+
+    window.irPainel = function () {
+      window.location.href = '/painel';
+    };
+
+    // ── INIT ─────────────────────────────────────────────────────────────────
+    // Preenche o prefixo da URL com APP_URL do config.js
+    const appUrl = (window.APP_URL || 'https://agendapro.com.br').replace(/\/$/, '');
+    const appDomain = appUrl.replace(/^https?:\/\//, '');
+    const prefixEl = document.getElementById('form-prefix-url');
+    if (prefixEl) prefixEl.textContent = appDomain + '/';
+
+    renderDias();
+    adicionarServico();
+    adicionarServico();
+  </script>
 </body>
+
 </html>
