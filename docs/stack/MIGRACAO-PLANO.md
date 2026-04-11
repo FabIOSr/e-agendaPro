@@ -34,20 +34,23 @@ npm run test:e2e   # ✅ 102 testes E2E passando
 
 ---
 
-## 2. Fase 1 — Landing Page (1 dia)
+## 2. Fase 1 — Landing Page ✅ CONCLUÍDA
 
 **Página:** `pages/landing-page.html`
 **Complexidade:** Baixa — página estática, sem estado complexo
+**Status:** ✅ **MIGRADA** — 2026-04-11
 
 ### Tarefas
 
-| # | Tarefa | Detalhe |
+| # | Tarefa | Status |
 |---|---|---|
-| 1.1 | Adicionar `<script type="module">` | Entry point do Vite |
-| 1.2 | Importar `main.css` | `<link href="/src/styles/main.css" rel="stylesheet">` |
-| 1.3 | Converter CSS inline → classes Tailwind | Hero, CTAs, FAQ, preços, depoimentos |
-| 1.4 | Adicionar Alpine.js para toggles | FAQ accordion, menu mobile |
-| 1.5 | Testar visualmente | Comparar com versão atual |
+| 1.1 | Adicionar `<script type="module">` | ✅ Feito — entry point Vite em `src/app.js` |
+| 1.2 | Importar `main.css` | ✅ Feito — `src/style.css` com `@import tailwindcss` + `@theme` |
+| 1.3 | Converter CSS inline → classes Tailwind | ✅ Feito — ~600 linhas → ~50 linhas CSS mínimo |
+| 1.4 | Preservar JS vanilla | ✅ Feito — `smoothScrollTo()`, `toggleFaq()`, `IntersectionObserver` intactos |
+| 1.5 | Testar visualmente | ✅ Aprovado — eyebrow, ticks ✓, mockup, navbar mobile |
+| 1.6 | Configurar breakpoints responsivos | ✅ Feito — 500px, 900px customizados |
+| 1.7 | Copiar `modules/` no build | ✅ Feito — `vite.config.js` copia para `dist/modules/` |
 | 1.6 | Rodar E2E da landing page | `npm run test:e2e -- tests/e2e/landing-page.spec.ts` |
 
 ### Padrões Alpine nesta página

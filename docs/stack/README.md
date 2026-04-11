@@ -1,7 +1,8 @@
 # Documentação da Stack Frontend — Índice
 
 > **Stack Oficial:** Alpine.js + Tailwind CSS v4 + Vite
-> **Última atualização:** 2026-04-10
+> **Última atualização:** 2026-04-11
+> **Progresso da migração:** 1/14 páginas migradas (landing-page ✅)
 
 ---
 

@@ -162,13 +162,26 @@ O `firebase.json` continua apontando para `dist/` como `public`. O Vite gera exa
 
 | Funcionalidade | `build.js` (antes) | Vite (depois) |
 |---|---|---|
-| Copiar arquivos | `fs.copyFileSync` | Rollup input/output |
-| Substituir `__VAR__` | Regex manual | `define` do Vite |
+| Copiar HTMLs | `fs.copyFileSync` | Plugin `copyAndInjectHtml` |
+| Copiar `modules/` | `fs.copyFileSync` recursivo | Plugin `copyDir()` no `closeBundle` |
+| Copiar `config.js` | Regex manual | `define` do Vite + substituição no plugin |
+| Injetar assets nos HTMLs | ❌ Não fazia | ✅ Auto-injeta `<link>` e `<script>` |
 | Minificação | ❌ Nenhuma | ✅ esbuild (JS + CSS) |
 | Tree-shaking | ❌ Nenhum | ✅ Automático |
-| Tailwind purge | ❌ Não existia | ✅ Via plugin |
+| Tailwind purge | ❌ Não existia | ✅ Via plugin `@tailwindcss/vite` |
 | Dev server com HMR | ❌ Não tinha | ✅ Nativo |
 | Source maps | ❌ Não tinha | ✅ Configurável |
+
+### Cópia de `modules/` para `dist/modules/`
+
+O plugin `copyAndInjectHtml` no `closeBundle` copia automaticamente o diretório `modules/` para `dist/modules/` após cada build. Isso garante que scripts como `sentry.js`, `auth-session.js`, etc. estejam disponíveis no path `/modules/sentry.js` sem erro 404.
+
+```javascript
+// Copia modules/ para dist/modules/
+const srcModules = resolve(__dirname, 'modules');
+const destModules = resolve(outDir, 'modules');
+copyDir(srcModules, destModules);
+```
 
 ---
 

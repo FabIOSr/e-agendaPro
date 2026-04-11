@@ -1,5 +1,39 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-11] — Migração Landing Page para Tailwind CSS v4
+
+### 🎨 Landing Page: CSS vanilla → Tailwind CSS v4
+
+**Migração completa da landing-page.html de ~600 linhas de CSS vanilla para utilitários Tailwind CSS v4, mantendo JS vanilla intacto.**
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/landing-page.html` | ~600 linhas CSS inline → ~50 linhas CSS mínimo (só @keyframes, pseudo-elementos, estado FAQ) |
+| `src/style.css` | Google Fonts + `@import tailwindcss` + `@theme` com 12 cores + 3 fonts + `[x-cloak]` + `scroll-behavior: smooth` |
+| `src/app.js` | Simplificado: só Alpine import + `start()` |
+| `vite.config.js` | Plugin `copyAndInjectHtml` agora copia `modules/` → `dist/modules/` (corrige erro 404 do sentry.js) |
+| `package.json` | Removidos `@alpinejs/collapse` e `@alpinejs/intersect` (não utilizados) |
+
+**Detalhes técnicos:**
+- JS vanilla preservado: `smoothScrollTo()`, `toggleFaq()`, `IntersectionObserver` (data-reveal)
+- Breakpoints customizados com `@media(min-width:900px)` para navbar e mockup hero
+- Grid "Como funciona": `<500px` 1 coluna | `500-900px` 2 colunas | `>900px` 4 colunas
+- Navbar mobile: só **AgendaPro** + **Começar grátis →** (links somem até 900px)
+- Hero mockup (celular decorativo) some em telas < 900px
+- Cards de plano: ticks `✓` via `::before`, itens `off` com tachado + opacidade
+- Build: 4 modules transformed, dist/ com 21 módulos copiados
+
+**Correções aplicadas pós-migração:**
+- Restaurada classe `.eyebrow` nos títulos de seção (traço `—` antes do texto)
+- Restaurada classe `.preco-lista` nos `<ul>` dos planos (ticks verdes)
+- `text-decoration: line-through` + `opacity: .5` em itens `.off` do plano grátis
+- `whitespace-nowrap` em "Intervalo customizado entre agendamentos" (sem quebra)
+- `hidden [@media(min-width:900px)]:block` no mockup hero
+- `hidden [@media(min-width:900px)]:flex` nos links da navbar
+- Cópia de `modules/` para `dist/modules/` no build (resolve GET 404 sentry.js)
+
+---
+
 ## [2026-04-10] — Decisão Oficial da Stack Frontend
 
 ### 🎨 Stack Frontend Decidida: Alpine.js + Tailwind CSS v4 + Vite

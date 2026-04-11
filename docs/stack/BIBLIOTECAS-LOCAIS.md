@@ -45,6 +45,12 @@ Estes são módulos do próprio projeto, reutilizáveis entre páginas:
 | `analytics.js` | `modules/analytics.js` | Eventos Plausible tipados |
 | `relatorio-pdf.js` | `modules/relatorio-pdf.js` | Geração de relatório PDF |
 
+### 1.4 Build e Distribuição de Módulos
+
+Os módulos em `modules/` são copiados automaticamente para `dist/modules/` durante o build do Vite via o plugin `copyAndInjectHtml` no `closeBundle`. Isso garante que scripts carregados via `<script src="/modules/sentry.js">` estejam disponíveis sem erro 404.
+
+**21 módulos copiados** no build (incluindo `.js`, `.ts`, e subdiretórios).
+
 ---
 
 ## 2. Bibliotecas Expressamente Não Aprovadas

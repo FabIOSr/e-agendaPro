@@ -1,0 +1,34 @@
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
+
+@import "tailwindcss";
+
+/* ── Landing-page vars (compatibilidade com CSS inline existente) ── */
+@theme {
+  --font-syne: "Syne", sans-serif;
+  --font-fraunces: "Fraunces", serif;
+  --font-dm-sans: "DM Sans", sans-serif;
+
+  --color-ink: #0e0d0a;
+  --color-paper: #f5f2eb;
+  --color-paper2: #ede9df;
+  --color-paper3: #e4dfd2;
+  --color-cream: #faf8f3;
+  --color-lime: #c8f060;
+  --color-lime-d: #8ab830;
+  --color-lime-ink: #1a2a08;
+  --color-rust: #c84830;
+  --color-gold: #d4a820;
+  --color-muted: #6b6860;
+  --color-faint: #a8a49a;
+  --color-border: #d8d4c8;
+}
+
+/* ── [x-cloak] para Alpine.js ── */
+[x-cloak] { display: none !important; }
+
+/* ── Scroll behavior ── */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 70px;
+}
