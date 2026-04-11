@@ -38,6 +38,18 @@
   --color-lime-l: #1a2a08;
   --color-rust: #f06048;
   --color-rust-t: rgba(240,96,72,.12);
+
+  /* Light theme (onboarding.html) */
+  --color-bg-light: #f5f2eb;
+  --color-bg-light2: #ede9df;
+  --color-bg-light3: #e4dfd2;
+  --color-cream: #faf8f3;
+  --color-border-light: #d8d4c8;
+  --color-border-light2: #c4c0b4;
+  --color-ink: #0e0d0a;
+  --color-lime-l-light: #eef6d8;
+  --color-rust-light: #c84830;
+  --color-rust-l: #fdf0ed;
 }
 
 /* ── [x-cloak] para Alpine.js ── */
