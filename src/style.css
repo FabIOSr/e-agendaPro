@@ -3,6 +3,9 @@
 
 @import "tailwindcss";
 
+/* Escaneia todos os HTMLs para gerar as classes utility */
+@source "../pages/**/*.html";
+
 /* ── Landing-page vars (compatibilidade com CSS inline existente) ── */
 @theme {
   --font-syne: "Syne", sans-serif;
@@ -18,10 +21,23 @@
   --color-lime-d: #8ab830;
   --color-lime-ink: #1a2a08;
   --color-rust: #c84830;
+  --color-rust-dark: #f06048;
   --color-gold: #d4a820;
   --color-muted: #6b6860;
   --color-faint: #a8a49a;
   --color-border: #d8d4c8;
+
+  /* Dark theme (auth.html) */
+  --color-bg: #0e0d0a;
+  --color-bg2: #181714;
+  --color-bg3: #222018;
+  --color-border-dark: #2e2b24;
+  --color-border2: #3e3b32;
+  --color-text: #f0ede6;
+  --color-lime-t: rgba(200,240,96,.12);
+  --color-lime-l: #1a2a08;
+  --color-rust: #f06048;
+  --color-rust-t: rgba(240,96,72,.12);
 }
 
 /* ── [x-cloak] para Alpine.js ── */

@@ -7,336 +7,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgendaPro — Entrar</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:     #0e0d0a;
-  --bg2:    #181714;
-  --bg3:    #222018;
-  --border: #2e2b24;
-  --bord2:  #3e3b32;
-  --text:   #f0ede6;
-  --muted:  #8a8778;
-  --faint:  #4a4840;
-  --lime:   #c8f060;
-  --lime-d: #8ab830;
-  --lime-l: #1a2a08;
-  --lime-t: rgba(200,240,96,.12);
-  --rust:   #f06048;
-  --rust-t: rgba(240,96,72,.12);
-  --radius: 14px;
-}
-html, body { height: 100%; }
-body {
-  font-family: 'Syne', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  display: flex; align-items: stretch; min-height: 100vh;
-}
 
-/* ── GRADE DE FUNDO ── */
+<!-- ═══════════════════ CSS MÍNIMO (animações + pseudo-elementos) ═══════════════════ -->
+<style>
+@keyframes fadein { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+
+/* Grade de fundo */
 body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+  content: ''; position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-  background-size: 52px 52px;
-  pointer-events: none; z-index: 0;
+  background-size: 52px 52px; pointer-events: none; z-index: 0;
 }
 body::after {
-  content: '';
-  position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+  content: ''; position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
   width: 600px; height: 300px;
   background: radial-gradient(ellipse, rgba(200,240,96,.07) 0%, transparent 70%);
   pointer-events: none; z-index: 0;
 }
-
-/* ── LAYOUT SPLIT ── */
-.split { display: flex; width: 100%; min-height: 100vh; position: relative; z-index: 1; }
-
-/* lado esquerdo — decorativo */
-.left {
-  flex: 1; display: flex; flex-direction: column;
-  justify-content: space-between; padding: 48px;
-  background: var(--bg2); border-right: 1px solid var(--border);
-  position: relative; overflow: hidden;
-}
 .left::before {
-  content: '';
-  position: absolute; top: -80px; left: -80px;
+  content: ''; position: absolute; top: -80px; left: -80px;
   width: 400px; height: 400px;
   background: radial-gradient(circle, rgba(200,240,96,.06), transparent 60%);
   pointer-events: none;
 }
 @media (max-width: 800px) { .left { display: none; } }
 
-.brand { display: flex; align-items: center; gap: 8px; }
-.brand-dot { width: 8px; height: 8px; background: var(--lime); border-radius: 50%; box-shadow: 0 0 10px rgba(200,240,96,.5); }
-.brand-name { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 400; }
+/* Eyebrow traço */
+.screen-eyebrow::before { content:''; display:block; width:16px; height:1px; background:var(--color-lime-d); }
 
-.left-quote {
-  flex: 1; display: flex; flex-direction: column; justify-content: center;
-  padding: 40px 0;
-}
-.quote-text {
-  font-family: 'Fraunces', serif; font-style: italic;
-  font-size: clamp(24px, 2.5vw, 34px); font-weight: 300;
-  line-height: 1.3; letter-spacing: -.02em;
-  color: var(--text); margin-bottom: 20px;
-}
-.quote-text em { color: var(--lime); font-style: normal; }
-.quote-author { font-size: 13px; color: var(--muted); }
+/* Divider social */
+.divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--color-border-dark); }
 
-/* mini mockup animado */
-.left-mockup {
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px; margin-top: 20px;
-}
-.mock-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.mock-row:last-child { margin-bottom: 0; }
-.mock-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.mock-bar { height: 8px; border-radius: 4px; background: var(--border); }
-.mock-val { font-family: 'DM Mono', monospace; font-size: 11px; margin-left: auto; }
-.mock-val.lime { color: var(--lime); }
-
-.left-stats { display: flex; gap: 12px; }
-.stat-mini {
-  flex: 1; background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px; text-align: center;
-}
-.stat-mini-val  { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; color: var(--lime); }
-.stat-mini-label{ font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-/* ── FORMULÁRIO ── */
-.right {
-  width: 480px; flex-shrink: 0;
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 48px 52px;
-}
-@media (max-width: 800px) { .right { width: 100%; padding: 40px 24px; } }
-
-/* painel de telas */
-.screen { display: none; animation: fadein .25s ease; }
-.screen.active { display: block; }
-@keyframes fadein { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-
-.screen-eyebrow {
-  font-size: 11px; font-weight: 600; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--lime-d);
-  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
-}
-.screen-eyebrow::before { content:''; display:block; width:16px; height:1px; background:var(--lime-d); }
-
-.screen-h {
-  font-family: 'Fraunces', serif; font-size: clamp(28px, 4vw, 38px);
-  font-weight: 300; letter-spacing: -.02em; line-height: 1.1;
-  margin-bottom: 8px;
-}
-.screen-sub { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
-
-/* campos */
-.field { margin-bottom: 16px; }
-.field-label {
-  font-size: 11px; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 7px; display: block;
-}
-.field-wrap { position: relative; }
-.field-input {
-  width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
-  border-radius: 10px; padding: 12px 44px 12px 16px;
-  font-size: 15px; font-family: 'Syne', sans-serif; color: var(--text);
-  outline: none; transition: border-color .2s, box-shadow .2s;
-}
-.field-input::placeholder { color: var(--faint); }
-.field-input:focus { border-color: var(--lime-d); box-shadow: 0 0 0 3px rgba(200,240,96,.1); }
-.field-input.error { border-color: var(--rust); box-shadow: 0 0 0 3px var(--rust-t); }
-.field-input.ok    { border-color: var(--lime-d); }
-
-.field-icon {
-  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-  font-size: 16px; color: var(--faint); pointer-events: none;
-}
-.field-icon.btn { pointer-events: all; cursor: pointer; transition: color .2s; }
-.field-icon.btn:hover { color: var(--muted); }
-
-.field-error { font-size: 12px; color: var(--rust); margin-top: 5px; display: none; }
-.field-error.visible { display: block; }
-
-/* força de senha */
-.strength-wrap { margin-top: 6px; display: none; }
-.strength-wrap.visible { display: block; }
-.strength-bars { display: flex; gap: 3px; margin-bottom: 4px; }
-.strength-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background .3s; }
-.strength-bar.f { background: var(--rust); }
-.strength-bar.m { background: #d4a820; }
-.strength-bar.s { background: var(--lime-d); }
-.strength-label { font-size: 11px; color: var(--muted); }
-
-/* divider social */
-.divider {
-  display: flex; align-items: center; gap: 12px;
-  margin: 20px 0; color: var(--faint); font-size: 12px;
-}
-.divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
-
-/* botão Google */
-.btn-google {
-  width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
-  border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 500;
-  font-family: 'Syne', sans-serif; color: var(--text); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: border-color .2s, background .2s; margin-bottom: 16px;
-}
-.btn-google:hover { border-color: var(--bord2); background: var(--bg3); }
-.google-icon { width: 18px; height: 18px; }
-
-/* botão primário */
-.btn-primary {
-  width: 100%; background: var(--lime); color: var(--lime-l);
-  border: none; border-radius: 10px; padding: 14px;
-  font-size: 15px; font-weight: 700; font-family: 'Syne', sans-serif;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: background .2s, transform .1s; margin-top: 4px;
-}
-.btn-primary:hover { background: #b8e050; }
-.btn-primary:active { transform: scale(.98); }
-.btn-primary:disabled { opacity: .35; cursor: default; transform: none; }
+/* Estado loading do botão */
 .btn-primary.loading::after {
-  content: '';
-  width: 16px; height: 16px;
-  border: 2px solid var(--lime-l);
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
+  content: ''; width:16px; height:16px;
+  border:2px solid var(--color-lime-l); border-top-color:transparent;
+  border-radius:50%; animation: spin .7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* link de nav entre telas */
-.nav-link {
-  text-align: center; font-size: 13px; color: var(--muted);
-  margin-top: 18px;
-}
-.nav-link a { color: var(--lime-d); cursor: pointer; text-decoration: none; font-weight: 600; }
-.nav-link a:hover { color: var(--lime); }
+/* Mobile brand */
+@media (max-width: 800px) { .mobile-brand { display: flex !important; } }
 
-/* termos */
-.terms {
-  font-size: 11px; color: var(--faint); text-align: center;
-  margin-top: 16px; line-height: 1.6;
-}
-.terms a { color: var(--muted); }
+/* Screens */
+.screen { display: none; animation: fadein .25s ease; }
+.screen.active { display: block !important; }
 
-/* alerta de feedback */
-.alert {
-  border-radius: 8px; padding: 10px 14px; font-size: 13px;
-  margin-bottom: 16px; display: none; line-height: 1.5;
-}
-.alert.visible { display: block; }
-.alert.success { background: var(--lime-t); border: 1px solid rgba(200,240,96,.3); color: var(--lime); }
-.alert.error   { background: var(--rust-t); border: 1px solid rgba(240,96,72,.3);  color: var(--rust); }
+/* Strength bars */
+.strength-bar.f { background: var(--color-rust-dark); }
+.strength-bar.m { background: #d4a820; }
+.strength-bar.s { background: var(--color-lime-d); }
 
-/* senha visível/oculta */
-.pass-toggle { pointer-events: all !important; cursor: pointer !important; }
-
-/* OTP / magic link enviado */
-.sent-icon {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: var(--lime-t); border: 1px solid rgba(200,240,96,.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px; margin-bottom: 20px;
-  animation: pop .4s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
-
-.otp-grid { display: flex; gap: 8px; margin-bottom: 24px; }
-.otp-input {
-  flex: 1; background: var(--bg2); border: 1.5px solid var(--border);
-  border-radius: 10px; padding: 14px 0; text-align: center;
-  font-size: 22px; font-family: 'DM Mono', monospace; font-weight: 500;
-  color: var(--text); outline: none; transition: border-color .2s;
-}
-.otp-input:focus { border-color: var(--lime-d); box-shadow: 0 0 0 3px rgba(200,240,96,.1); }
-
-/* mobile brand */
-.mobile-brand {
-  display: none; align-items: center; gap: 8px; margin-bottom: 36px;
-}
-@media (max-width: 800px) { .mobile-brand { display: flex; } }
+/* Field error/input states */
+.field-input.error { border-color: var(--color-rust-dark); box-shadow: 0 0 0 3px var(--color-rust-t); }
+.field-input.ok    { border-color: var(--color-lime-d); }
+.strength-wrap.visible { display: block !important; }
 </style>
 </head>
-<body>
-<div class="split">
 
-  <!-- ESQUERDA decorativa -->
-  <div class="left">
-    <div class="brand">
-      <div class="brand-dot"></div>
-      <div class="brand-name">AgendaPro</div>
+<body class="font-['Syne',sans-serif] bg-[var(--color-bg)] text-[var(--color-text)] flex items-stretch min-h-[100vh] relative overflow-x-hidden">
+
+<!-- ═══════════════════ LAYOUT SPLIT ═══════════════════ -->
+<div class="split flex w-full min-h-[100vh] relative z-[1]">
+
+  <!-- ═══════════ ESQUERDA decorativa ═══════════ -->
+  <div class="left flex-1 flex flex-col justify-between p-12 bg-[var(--color-bg2)] border-r border-[var(--color-border)] relative overflow-hidden">
+    <div class="brand flex items-center gap-2">
+      <div class="w-2 h-2 bg-[var(--color-lime)] rounded-full shadow-[0_0_10px_rgba(200,240,96,.5)]"></div>
+      <div class="font-['Fraunces',serif] text-xl font-normal">AgendaPro</div>
     </div>
 
-    <div class="left-quote">
-      <div class="quote-text">
+    <div class="flex-1 flex flex-col justify-center py-10">
+      <div class="font-['Fraunces',serif] italic text-[clamp(24px,2.5vw,34px)] font-[300] leading-[1.3] tracking-[-.02em] text-[var(--color-text)] mb-5">
         Transforme seu<br>
         WhatsApp em uma<br>
-        <em>agenda profissional</em>
+        <em class="text-[var(--color-lime)] not-italic">agenda profissional</em>
       </div>
-      <div class="quote-author">+1.200 profissionais autônomos</div>
+      <div class="text-[13px] text-[var(--color-muted)]">+1.200 profissionais autônomos</div>
 
-      <div class="left-mockup" style="margin-top:32px">
-        <div class="mock-row">
-          <div class="mock-dot" style="background:var(--lime)"></div>
-          <div class="mock-bar" style="width:55%;flex:none"></div>
-          <div class="mock-val lime">R$3.900</div>
+      <!-- mini mockup -->
+      <div class="bg-[var(--color-bg3)] border border-[var(--color-border)] rounded-xl p-4 mt-5">
+        <div class="flex items-center gap-2.5 mb-2.5">
+          <div class="w-2 h-2 rounded-full flex-shrink-0 bg-[var(--color-lime)]"></div>
+          <div class="flex-1 h-2 rounded bg-[var(--color-border)] w-[55%]"></div>
+          <div class="font-['DM_Mono',monospace] text-[11px] text-[var(--color-lime)] ml-auto">R$3.900</div>
         </div>
-        <div class="mock-row">
-          <div class="mock-dot" style="background:#5DCAA5"></div>
-          <div class="mock-bar" style="width:40%;flex:none"></div>
-          <div class="mock-val" style="color:#5DCAA5">23 clientes</div>
+        <div class="flex items-center gap-2.5 mb-2.5">
+          <div class="w-2 h-2 rounded-full flex-shrink-0 bg-[#5DCAA5]"></div>
+          <div class="flex-1 h-2 rounded bg-[var(--color-border)] w-[40%]"></div>
+          <div class="font-['DM_Mono',monospace] text-[11px] text-[#5DCAA5] ml-auto">23 clientes</div>
         </div>
-        <div class="mock-row">
-          <div class="mock-dot" style="background:#85B7EB"></div>
-          <div class="mock-bar" style="width:70%;flex:none"></div>
-          <div class="mock-val" style="color:#85B7EB">0 no-shows</div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-2 h-2 rounded-full flex-shrink-0 bg-[#85B7EB]"></div>
+          <div class="flex-1 h-2 rounded bg-[var(--color-border)] w-[70%]"></div>
+          <div class="font-['DM_Mono',monospace] text-[11px] text-[#85B7EB] ml-auto">0 no-shows</div>
         </div>
       </div>
     </div>
 
-    <div class="left-stats">
-      <div class="stat-mini">
-        <div class="stat-mini-val">70%</div>
-        <div class="stat-mini-label">menos no-show</div>
+    <!-- stats -->
+    <div class="flex gap-3">
+      <div class="flex-1 bg-[var(--color-bg3)] border border-[var(--color-border)] rounded-[10px] p-3 text-center">
+        <div class="font-['Fraunces',serif] text-[22px] font-[300] text-[var(--color-lime)]">70%</div>
+        <div class="text-[10px] text-[var(--color-muted)] mt-0.5">menos no-show</div>
       </div>
-      <div class="stat-mini">
-        <div class="stat-mini-val">3h</div>
-        <div class="stat-mini-label">economizadas/sem</div>
+      <div class="flex-1 bg-[var(--color-bg3)] border border-[var(--color-border)] rounded-[10px] p-3 text-center">
+        <div class="font-['Fraunces',serif] text-[22px] font-[300] text-[var(--color-lime)]">3h</div>
+        <div class="text-[10px] text-[var(--color-muted)] mt-0.5">economizadas/sem</div>
       </div>
-      <div class="stat-mini">
-        <div class="stat-mini-val">5min</div>
-        <div class="stat-mini-label">para configurar</div>
+      <div class="flex-1 bg-[var(--color-bg3)] border border-[var(--color-border)] rounded-[10px] p-3 text-center">
+        <div class="font-['Fraunces',serif] text-[22px] font-[300] text-[var(--color-lime)]">5min</div>
+        <div class="text-[10px] text-[var(--color-muted)] mt-0.5">para configurar</div>
       </div>
     </div>
   </div>
 
-  <!-- DIREITA — formulários -->
-  <div class="right">
+  <!-- ═══════════ DIREITA — formulários ═══════════ -->
+  <div class="right w-[480px] flex-shrink-0 flex flex-col justify-center p-[48px_52px] [@media(max-width:800px)]:w-full [@media(max-width:800px)]:p-[40px_24px]">
 
     <!-- BRAND MOBILE -->
-    <div class="mobile-brand">
-      <div class="brand-dot"></div>
-      <div class="brand-name" style="font-family:'Fraunces',serif;font-size:18px;font-weight:400">AgendaPro</div>
+    <div class="mobile-brand hidden items-center gap-2 mb-9">
+      <div class="w-2 h-2 bg-[var(--color-lime)] rounded-full shadow-[0_0_10px_rgba(200,240,96,.5)]"></div>
+      <div class="font-['Fraunces',serif] text-lg font-normal">AgendaPro</div>
     </div>
 
     <!-- ── TELA: LOGIN ── -->
     <div class="screen active" id="screen-login">
-      <div class="screen-eyebrow">Bem-vindo de volta</div>
-      <h1 class="screen-h">Entre na<br><em style="color:var(--muted);font-style:italic">sua conta</em></h1>
-      <p class="screen-sub">Acesse seu painel e gerencie sua agenda.</p>
+      <div class="screen-eyebrow text-[11px] font-semibold tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-2.5 flex items-center gap-1.5">Bem-vindo de volta</div>
+      <h1 class="screen-h font-['Fraunces',serif] text-[clamp(28px,4vw,38px)] font-[300] tracking-[-.02em] leading-[1.1] mb-2">Entre na<br><em class="text-[var(--color-muted)] italic">sua conta</em></h1>
+      <p class="screen-sub text-[14px] text-[var(--color-muted)] leading-[1.6] mb-8">Acesse seu painel e gerencie sua agenda.</p>
 
       <div class="alert" id="login-alert"></div>
 
-      <button class="btn-google" onclick="loginGoogle()">
-        <svg class="google-icon" viewBox="0 0 24 24">
+      <button class="btn-google w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 text-[14px] font-medium font-['Syne',sans-serif] text-[var(--color-text)] cursor-pointer flex items-center justify-center gap-2.5 transition-colors transition-bg hover:border-[var(--color-border2)] hover:bg-[var(--color-bg3)] mb-4" onclick="loginGoogle()">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
@@ -345,52 +151,48 @@ body::after {
         Continuar com Google
       </button>
 
-      <div class="divider">ou com e-mail</div>
+      <div class="divider flex items-center gap-3 my-5 text-[var(--color-faint)] text-[12px]">ou com e-mail</div>
 
-      <div class="field">
-        <label class="field-label">E-mail</label>
-        <div class="field-wrap">
-          <input class="field-input" id="login-email" type="email"
-            placeholder="seu@email.com" oninput="clearError('login-email')">
-          <span class="field-icon">@</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">E-mail</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="login-email" type="email" placeholder="seu@email.com" oninput="clearError('login-email')">
+          <span class="field-icon absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-none">@</span>
         </div>
-        <div class="field-error" id="login-email-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="login-email-err"></div>
       </div>
 
-      <div class="field">
-        <label class="field-label" style="display:flex;justify-content:space-between">
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block flex justify-between items-baseline">
           Senha
-          <a style="color:var(--muted);font-size:11px;cursor:pointer;font-weight:400;text-decoration:none;text-transform:none;letter-spacing:0"
-            onclick="irPara('screen-forgot')">Esqueceu?</a>
+          <a class="text-[var(--color-muted)] text-[11px] cursor-pointer font-normal normal-case tracking-normal normal-nowrap" onclick="irPara('screen-forgot')">Esqueceu?</a>
         </label>
-        <div class="field-wrap">
-          <input class="field-input" id="login-senha" type="password"
-            placeholder="••••••••" oninput="clearError('login-senha')"
-            onkeydown="if(event.key==='Enter') fazerLogin()">
-          <span class="field-icon btn pass-toggle" onclick="toggleSenha('login-senha',this)">👁</span>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="login-senha" type="password" placeholder="••••••••" oninput="clearError('login-senha')" onkeydown="if(event.key==='Enter') fazerLogin()">
+          <span class="field-icon btn absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-auto cursor-pointer transition-colors hover:text-[var(--color-muted)] pass-toggle" onclick="toggleSenha('login-senha',this)">👁</span>
         </div>
-        <div class="field-error" id="login-senha-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="login-senha-err"></div>
       </div>
 
-      <button class="btn-primary" id="btn-login" onclick="fazerLogin()">
+      <button class="btn-primary w-full bg-[var(--color-lime)] text-[var(--color-lime-l)] border-0 rounded-[10px] py-3.5 text-[15px] font-bold font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[background,transform] active:scale-[.98] disabled:opacity-35 disabled:cursor-default disabled:transform-none mt-1" id="btn-login" onclick="fazerLogin()">
         Entrar na minha conta
       </button>
 
-      <div class="nav-link">
-        Não tem conta? <a onclick="irPara('screen-cadastro')">Criar conta grátis</a>
+      <div class="nav-link text-center text-[13px] text-[var(--color-muted)] mt-[18px]">
+        Não tem conta? <a class="text-[var(--color-lime-d)] cursor-pointer font-semibold no-underline hover:text-[var(--color-lime)]" onclick="irPara('screen-cadastro')">Criar conta grátis</a>
       </div>
     </div>
 
     <!-- ── TELA: CADASTRO ── -->
     <div class="screen" id="screen-cadastro">
-      <div class="screen-eyebrow">Novo por aqui</div>
-      <h1 class="screen-h">Crie sua<br><em style="color:var(--muted);font-style:italic">conta grátis</em></h1>
-      <p class="screen-sub">Pronto em menos de 2 minutos. Sem cartão.</p>
+      <div class="screen-eyebrow text-[11px] font-semibold tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-2.5 flex items-center gap-1.5">Novo por aqui</div>
+      <h1 class="screen-h font-['Fraunces',serif] text-[clamp(28px,4vw,38px)] font-[300] tracking-[-.02em] leading-[1.1] mb-2">Crie sua<br><em class="text-[var(--color-muted)] italic">conta grátis</em></h1>
+      <p class="screen-sub text-[14px] text-[var(--color-muted)] leading-[1.6] mb-8">Pronto em menos de 2 minutos. Sem cartão.</p>
 
       <div class="alert" id="cadastro-alert"></div>
 
-      <button class="btn-google" onclick="loginGoogle()">
-        <svg class="google-icon" viewBox="0 0 24 24">
+      <button class="btn-google w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 text-[14px] font-medium font-['Syne',sans-serif] text-[var(--color-text)] cursor-pointer flex items-center justify-center gap-2.5 transition-colors transition-bg hover:border-[var(--color-border2)] hover:bg-[var(--color-bg3)] mb-4" onclick="loginGoogle()">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
@@ -399,167 +201,158 @@ body::after {
         Cadastrar com Google
       </button>
 
-      <div class="divider">ou com e-mail</div>
+      <div class="divider flex items-center gap-3 my-5 text-[var(--color-faint)] text-[12px]">ou com e-mail</div>
 
-      <div class="field">
-        <label class="field-label">Nome completo</label>
-        <div class="field-wrap">
-          <input class="field-input" id="cad-nome" type="text"
-            placeholder="Ana Beatriz Silva" oninput="clearError('cad-nome')">
-          <span class="field-icon">✦</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">Nome completo</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="cad-nome" type="text" placeholder="Ana Beatriz Silva" oninput="clearError('cad-nome')">
+          <span class="field-icon absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-none">✦</span>
         </div>
-        <div class="field-error" id="cad-nome-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="cad-nome-err"></div>
       </div>
 
-      <div class="field">
-        <label class="field-label">E-mail</label>
-        <div class="field-wrap">
-          <input class="field-input" id="cad-email" type="email"
-            placeholder="seu@email.com" oninput="clearError('cad-email')">
-          <span class="field-icon">@</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">E-mail</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="cad-email" type="email" placeholder="seu@email.com" oninput="clearError('cad-email')">
+          <span class="field-icon absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-none">@</span>
         </div>
-        <div class="field-error" id="cad-email-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="cad-email-err"></div>
       </div>
 
-      <div class="field">
-        <label class="field-label">Senha</label>
-        <div class="field-wrap">
-          <input class="field-input" id="cad-senha" type="password"
-            placeholder="Mínimo 8 caracteres"
-            oninput="clearError('cad-senha');verificarForca(this.value)"
-            onkeydown="if(event.key==='Enter') fazerCadastro()">
-          <span class="field-icon btn pass-toggle" onclick="toggleSenha('cad-senha',this)">👁</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">Senha</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="cad-senha" type="password" placeholder="Mínimo 8 caracteres" oninput="clearError('cad-senha');verificarForca(this.value)" onkeydown="if(event.key==='Enter') fazerCadastro()">
+          <span class="field-icon btn absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-auto cursor-pointer transition-colors hover:text-[var(--color-muted)] pass-toggle" onclick="toggleSenha('cad-senha',this)">👁</span>
         </div>
-        <div class="strength-wrap" id="strength-wrap">
-          <div class="strength-bars">
-            <div class="strength-bar" id="sb1"></div>
-            <div class="strength-bar" id="sb2"></div>
-            <div class="strength-bar" id="sb3"></div>
-            <div class="strength-bar" id="sb4"></div>
+        <div class="strength-wrap hidden mt-1.5" id="strength-wrap">
+          <div class="strength-bars flex gap-[3px] mb-1">
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="sb1"></div>
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="sb2"></div>
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="sb3"></div>
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="sb4"></div>
           </div>
-          <div class="strength-label" id="strength-label">Muito fraca</div>
+          <div class="strength-label text-[11px] text-[var(--color-muted)]">Muito fraca</div>
         </div>
-        <div class="field-error" id="cad-senha-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="cad-senha-err"></div>
       </div>
 
-      <button class="btn-primary" id="btn-cadastro" onclick="fazerCadastro()">
+      <button class="btn-primary w-full bg-[var(--color-lime)] text-[var(--color-lime-l)] border-0 rounded-[10px] py-3.5 text-[15px] font-bold font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[background,transform] active:scale-[.98] disabled:opacity-35 disabled:cursor-default disabled:transform-none mt-1" id="btn-cadastro" onclick="fazerCadastro()">
         Criar conta grátis
       </button>
 
-      <div class="terms">
+      <div class="terms text-[11px] text-[var(--color-faint)] text-center mt-4 leading-[1.6]">
         Ao criar conta você concorda com os
-        <a href="#">Termos de uso</a> e a
-        <a href="#">Política de privacidade</a>.
+        <a href="#" class="text-[var(--color-muted)] no-underline">Termos de uso</a> e a
+        <a href="#" class="text-[var(--color-muted)] no-underline">Política de privacidade</a>.
       </div>
 
-      <div class="nav-link">
-        Já tem conta? <a onclick="irPara('screen-login')">Entrar</a>
+      <div class="nav-link text-center text-[13px] text-[var(--color-muted)] mt-[18px]">
+        Já tem conta? <a class="text-[var(--color-lime-d)] cursor-pointer font-semibold no-underline hover:text-[var(--color-lime)]" onclick="irPara('screen-login')">Entrar</a>
       </div>
     </div>
 
     <!-- ── TELA: CONFIRME O E-MAIL ── -->
     <div class="screen" id="screen-confirmar">
-      <div class="sent-icon">📬</div>
-      <div class="screen-eyebrow">Quase lá</div>
-      <h1 class="screen-h">Confirme<br><em style="color:var(--muted);font-style:italic">seu e-mail</em></h1>
-      <p class="screen-sub" id="confirmar-sub">
+      <div class="sent-icon w-16 h-16 rounded-full bg-[var(--color-lime-t)] border border-[rgba(200,240,96,.2)] flex items-center justify-center text-[28px] mb-5" style="animation:pop .4s cubic-bezier(.34,1.56,.64,1)">📬</div>
+      <div class="screen-eyebrow text-[11px] font-semibold tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-2.5 flex items-center gap-1.5">Quase lá</div>
+      <h1 class="screen-h font-['Fraunces',serif] text-[clamp(28px,4vw,38px)] font-[300] tracking-[-.02em] leading-[1.1] mb-2">Confirme<br><em class="text-[var(--color-muted)] italic">seu e-mail</em></h1>
+      <p class="screen-sub text-[14px] text-[var(--color-muted)] leading-[1.6] mb-8" id="confirmar-sub">
         Enviamos um link de confirmação para <strong id="confirmar-email"></strong>.
         Clique no link para ativar sua conta.
       </p>
 
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px">
+      <div class="bg-[var(--color-bg2)] border border-[var(--color-border)] rounded-[10px] py-3.5 px-4 text-[13px] text-[var(--color-muted)] leading-[1.6] mb-5">
         💡 Não encontrou? Verifique a pasta de spam ou clique abaixo para reenviar.
       </div>
 
-      <button class="btn-primary" id="btn-reenviar" onclick="reenviarEmail()" style="background:var(--bg2);color:var(--text);border:1.5px solid var(--border)">
+      <button class="btn-primary w-full bg-[var(--color-bg2)] text-[var(--color-text)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3.5 text-[15px] font-bold font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[background,transform] active:scale-[.98] disabled:opacity-35 disabled:cursor-default disabled:transform-none mt-1" id="btn-reenviar" onclick="reenviarEmail()">
         Reenviar e-mail
       </button>
 
-      <div class="nav-link" style="margin-top:12px">
-        <a onclick="irPara('screen-login')">← Voltar para o login</a>
+      <div class="nav-link text-center text-[13px] text-[var(--color-muted)] mt-3">
+        <a class="text-[var(--color-lime-d)] cursor-pointer font-semibold no-underline hover:text-[var(--color-lime)]" onclick="irPara('screen-login')">← Voltar para o login</a>
       </div>
     </div>
 
     <!-- ── TELA: ESQUECI SENHA ── -->
-    <div class="screen" id="screen-forgot">
-      <div class="screen-eyebrow">Recuperação</div>
-      <h1 class="screen-h">Redefinir<br><em style="color:var(--muted);font-style:italic">senha</em></h1>
-      <p class="screen-sub">Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
+    <div class="screen" id="screen-forgot" style="display:none">
+      <div class="screen-eyebrow text-[11px] font-semibold tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-2.5 flex items-center gap-1.5">Recuperação</div>
+      <h1 class="screen-h font-['Fraunces',serif] text-[clamp(28px,4vw,38px)] font-[300] tracking-[-.02em] leading-[1.1] mb-2">Redefinir<br><em class="text-[var(--color-muted)] italic">senha</em></h1>
+      <p class="screen-sub text-[14px] text-[var(--color-muted)] leading-[1.6] mb-8">Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
 
       <div class="alert" id="forgot-alert"></div>
 
-      <div class="field">
-        <label class="field-label">E-mail cadastrado</label>
-        <div class="field-wrap">
-          <input class="field-input" id="forgot-email" type="email"
-            placeholder="seu@email.com" oninput="clearError('forgot-email')"
-            onkeydown="if(event.key==='Enter') enviarReset()">
-          <span class="field-icon">@</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">E-mail cadastrado</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="forgot-email" type="email" placeholder="seu@email.com" oninput="clearError('forgot-email')" onkeydown="if(event.key==='Enter') enviarReset()">
+          <span class="field-icon absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-none">@</span>
         </div>
-        <div class="field-error" id="forgot-email-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="forgot-email-err"></div>
       </div>
 
-      <button class="btn-primary" id="btn-reset" onclick="enviarReset()">
+      <button class="btn-primary w-full bg-[var(--color-lime)] text-[var(--color-lime-l)] border-0 rounded-[10px] py-3.5 text-[15px] font-bold font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[background,transform] active:scale-[.98] disabled:opacity-35 disabled:cursor-default disabled:transform-none mt-1" id="btn-reset" onclick="enviarReset()">
         Enviar link de redefinição
       </button>
 
-      <div class="nav-link">
-        <a onclick="irPara('screen-login')">← Voltar para o login</a>
+      <div class="nav-link text-center text-[13px] text-[var(--color-muted)] mt-[18px]">
+        <a class="text-[var(--color-lime-d)] cursor-pointer font-semibold no-underline hover:text-[var(--color-lime)]" onclick="irPara('screen-login')">← Voltar para o login</a>
       </div>
     </div>
 
     <!-- ── TELA: RESET ENVIADO ── -->
-    <div class="screen" id="screen-reset-sent">
-      <div class="sent-icon">🔑</div>
-      <div class="screen-eyebrow">Link enviado</div>
-      <h1 class="screen-h">Verifique<br><em style="color:var(--muted);font-style:italic">seu e-mail</em></h1>
-      <p class="screen-sub">
+    <div class="screen" id="screen-reset-sent" style="display:none">
+      <div class="sent-icon w-16 h-16 rounded-full bg-[var(--color-lime-t)] border border-[rgba(200,240,96,.2)] flex items-center justify-center text-[28px] mb-5" style="animation:pop .4s cubic-bezier(.34,1.56,.64,1)">🔑</div>
+      <div class="screen-eyebrow text-[11px] font-semibold tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-2.5 flex items-center gap-1.5">Link enviado</div>
+      <h1 class="screen-h font-['Fraunces',serif] text-[clamp(28px,4vw,38px)] font-[300] tracking-[-.02em] leading-[1.1] mb-2">Verifique<br><em class="text-[var(--color-muted)] italic">seu e-mail</em></h1>
+      <p class="screen-sub text-[14px] text-[var(--color-muted)] leading-[1.6] mb-8">
         Enviamos um link de redefinição para <strong id="reset-email-label"></strong>.
         O link expira em 1 hora.
       </p>
 
-      <div class="nav-link">
-        <a onclick="irPara('screen-login')">← Voltar para o login</a>
+      <div class="nav-link text-center text-[13px] text-[var(--color-muted)] mt-[18px]">
+        <a class="text-[var(--color-lime-d)] cursor-pointer font-semibold no-underline hover:text-[var(--color-lime)]" onclick="irPara('screen-login')">← Voltar para o login</a>
       </div>
     </div>
 
-    <!-- ── TELA: NOVA SENHA (pós magic link) ── -->
-    <div class="screen" id="screen-nova-senha">
-      <div class="screen-eyebrow">Nova senha</div>
-      <h1 class="screen-h">Crie uma<br><em style="color:var(--muted);font-style:italic">nova senha</em></h1>
-      <p class="screen-sub">Escolha uma senha segura para sua conta.</p>
+    <!-- ── TELA: NOVA SENHA ── -->
+    <div class="screen" id="screen-nova-senha" style="display:none">
+      <div class="screen-eyebrow text-[11px] font-semibold tracking-[.12em] uppercase text-[var(--color-lime-d)] mb-2.5 flex items-center gap-1.5">Nova senha</div>
+      <h1 class="screen-h font-['Fraunces',serif] text-[clamp(28px,4vw,38px)] font-[300] tracking-[-.02em] leading-[1.1] mb-2">Crie uma<br><em class="text-[var(--color-muted)] italic">nova senha</em></h1>
+      <p class="screen-sub text-[14px] text-[var(--color-muted)] leading-[1.6] mb-8">Escolha uma senha segura para sua conta.</p>
 
       <div class="alert" id="nova-senha-alert"></div>
 
-      <div class="field">
-        <label class="field-label">Nova senha</label>
-        <div class="field-wrap">
-          <input class="field-input" id="ns-senha" type="password"
-            placeholder="Mínimo 8 caracteres"
-            oninput="verificarForca(this.value)">
-          <span class="field-icon btn pass-toggle" onclick="toggleSenha('ns-senha',this)">👁</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">Nova senha</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="ns-senha" type="password" placeholder="Mínimo 8 caracteres" oninput="verificarForca(this.value)">
+          <span class="field-icon btn absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-auto cursor-pointer transition-colors hover:text-[var(--color-muted)] pass-toggle" onclick="toggleSenha('ns-senha',this)">👁</span>
         </div>
-        <div class="strength-wrap visible" id="ns-strength-wrap">
-          <div class="strength-bars">
-            <div class="strength-bar" id="ns-sb1"></div>
-            <div class="strength-bar" id="ns-sb2"></div>
-            <div class="strength-bar" id="ns-sb3"></div>
-            <div class="strength-bar" id="ns-sb4"></div>
+        <div class="strength-wrap visible mt-1.5" id="ns-strength-wrap">
+          <div class="strength-bars flex gap-[3px] mb-1">
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="ns-sb1"></div>
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="ns-sb2"></div>
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="ns-sb3"></div>
+            <div class="strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg" id="ns-sb4"></div>
           </div>
-          <div class="strength-label" id="ns-strength-label"></div>
+          <div class="strength-label text-[11px] text-[var(--color-muted)]"></div>
         </div>
       </div>
 
-      <div class="field">
-        <label class="field-label">Confirmar nova senha</label>
-        <div class="field-wrap">
-          <input class="field-input" id="ns-confirmar" type="password" placeholder="Repita a senha">
-          <span class="field-icon btn pass-toggle" onclick="toggleSenha('ns-confirmar',this)">👁</span>
+      <div class="field mb-4">
+        <label class="field-label text-[11px] font-semibold tracking-[.06em] uppercase text-[var(--color-muted)] mb-[7px] block">Confirmar nova senha</label>
+        <div class="field-wrap relative">
+          <input class="field-input w-full bg-[var(--color-bg2)] border-[1.5px] border-[var(--color-border)] rounded-[10px] py-3 pl-4 pr-11 text-[15px] font-['Syne',sans-serif] text-[var(--color-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--color-faint)] focus:border-[var(--color-lime-d)] focus:shadow-[0_0_0_3px_rgba(200,240,96,.1)]" id="ns-confirmar" type="password" placeholder="Repita a senha">
+          <span class="field-icon btn absolute right-3.5 top-1/2 -translate-y-1/2 text-base text-[var(--color-faint)] pointer-events-auto cursor-pointer transition-colors hover:text-[var(--color-muted)] pass-toggle" onclick="toggleSenha('ns-confirmar',this)">👁</span>
         </div>
-        <div class="field-error" id="ns-confirmar-err"></div>
+        <div class="field-error text-xs text-[var(--color-rust-dark)] mt-1.5 hidden" id="ns-confirmar-err"></div>
       </div>
 
-      <button class="btn-primary" onclick="salvarNovaSenha()">Salvar nova senha</button>
+      <button class="btn-primary w-full bg-[var(--color-lime)] text-[var(--color-lime-l)] border-0 rounded-[10px] py-3.5 text-[15px] font-bold font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[background,transform] active:scale-[.98] disabled:opacity-35 disabled:cursor-default disabled:transform-none mt-1" onclick="salvarNovaSenha()">Salvar nova senha</button>
     </div>
 
   </div><!-- /right -->
@@ -567,16 +360,16 @@ body::after {
 
 <script type="module">
 // ── SUPABASE CLIENT ──────────────────────────────────────────────────────
-// Em produção: substituir pelas variáveis de ambiente reais
-// Pode usar CDN: https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
 // ── HELPERS ──────────────────────────────────────────────────────────────
 window.irPara = (id) => {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+  const target = document.getElementById(id);
+  target.classList.add('active');
+  target.style.display = 'block';
 };
 
 window.toggleSenha = (id, icon) => {
@@ -589,20 +382,20 @@ window.clearError = (id) => {
   const inp = document.getElementById(id);
   const err = document.getElementById(id + '-err');
   inp?.classList.remove('error');
-  if (err) { err.classList.remove('visible'); err.textContent = ''; }
+  if (err) { err.classList.remove('visible'); err.style.display = 'none'; err.textContent = ''; }
 };
 
 function mostrarErro(id, msg) {
   const inp = document.getElementById(id);
   const err = document.getElementById(id + '-err');
   inp?.classList.add('error');
-  if (err) { err.textContent = msg; err.classList.add('visible'); }
+  if (err) { err.textContent = msg; err.classList.add('visible'); err.style.display = 'block'; }
 }
 
 function mostrarAlerta(id, msg, tipo = 'error') {
   const el = document.getElementById(id);
   el.textContent = msg;
-  el.className = `alert ${tipo} visible`;
+  el.className = `alert visible rounded-lg py-2.5 px-3.5 text-[13px] mb-4 leading-[1.5] ${tipo === 'success' ? 'bg-[var(--color-lime-t)] border border-[rgba(200,240,96,.3)] text-[var(--color-lime)]' : 'bg-[var(--color-rust-t)] border border-[rgba(240,96,72,.3)] text-[var(--color-rust-dark)]'}`;
 }
 
 function setLoading(btnId, on) {
@@ -610,12 +403,10 @@ function setLoading(btnId, on) {
   btn.disabled = on;
   if (on) btn.classList.add('loading');
   else    btn.classList.remove('loading');
-  btn.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = on ? '' : btn.dataset.label || ''; });
 }
 
 // ── FORÇA DE SENHA ───────────────────────────────────────────────────────
 window.verificarForca = (senha) => {
-  const prefix = senha.length === 0 ? '' : '';
   const wrap  = document.getElementById('strength-wrap') || document.getElementById('ns-strength-wrap');
   const bars  = ['sb1','sb2','sb3','sb4'].map(id =>
     document.getElementById(id) || document.getElementById('ns-' + id));
@@ -637,7 +428,7 @@ window.verificarForca = (senha) => {
 
   bars.forEach((b, i) => {
     if (!b) return;
-    b.className = 'strength-bar ' + (cls[i] || '');
+    b.className = 'strength-bar flex-1 h-[3px] rounded-[2px] bg-[var(--color-border-dark)] transition-bg ' + (cls[i] || '');
   });
   if (label) label.textContent = labels[score] || '';
 };
@@ -668,7 +459,6 @@ window.fazerLogin = async () => {
     return;
   }
 
-  // Sucesso → verifica se já fez onboarding
   await redirecionarPosLogin(data.session);
 };
 
@@ -714,7 +504,6 @@ window.fazerCadastro = async () => {
     return;
   }
 
-  // Mostra tela de confirmação
   document.getElementById('confirmar-email').textContent = email;
   irPara('screen-confirmar');
 };
@@ -788,7 +577,6 @@ window.salvarNovaSenha = async () => {
 // ── HELPER: redireciona para onboarding ou painel conforme slug ───────────
 async function redirecionarPosLogin(session) {
   if (!session) return;
-  // Verifica se o prestador já preencheu o slug (completou onboarding)
   const { data: prestador } = await supabase
     .from('prestadores')
     .select('slug')
@@ -808,11 +596,11 @@ if (tela === 'nova-senha')  irPara('screen-nova-senha');
 if (tela === 'confirmar')   irPara('screen-confirmar');
 if (params.get('tela') === 'cadastro') irPara('screen-cadastro');
 
-// ── SESSÃO ATIVA → redireciona (verifica onboarding) ─────────────────────
+// ── SESSÃO ATIVA → redireciona ────────────────────────────────────────────
 const { data: { session } } = await supabase.auth.getSession();
 if (session) await redirecionarPosLogin(session);
 
-// ── ESCUTA MUDANÇAS DE AUTH (magic link, OAuth callback) ──────────────────
+// ── ESCUTA MUDANÇAS DE AUTH ───────────────────────────────────────────────
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session) {
     await redirecionarPosLogin(session);
