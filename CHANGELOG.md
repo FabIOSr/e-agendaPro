@@ -1,5 +1,44 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-11] — Migração Auth + Onboarding para Tailwind CSS v4
+
+### 🎨 Auth.html: CSS vanilla → Tailwind CSS v4
+
+**Migração da auth.html de ~336 linhas de CSS vanilla para utilitários Tailwind CSS v4, mantendo JS vanilla intacto (login, cadastro, reset, OAuth).**
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/auth.html` | ~336 linhas CSS inline → ~50 linhas CSS mínimo (@keyframes, pseudo-elementos, sistema de telas) |
+| `src/style.css` | Tokens dark theme adicionados ao `@theme` (--color-bg, --color-bg2, --color-text, etc.) |
+
+**Detalhes técnicos:**
+- JS vanilla preservado: `fazerLogin()`, `fazerCadastro()`, `enviarReset()`, `loginGoogle()`, `salvarNovaSenha()`
+- Layout split dark com grade de fundo decorativa
+- 5 telas: login, cadastro, confirmar, forgot, nova-senha, reset-sent
+- Responsividade com `[@media(max-width:800px)]` inline
+- Build Vite validado: auth.html com assets injetados
+
+### 🎨 Onboarding.html: CSS vanilla → Tailwind CSS v4
+
+**Migração completa do onboarding.html de ~380 linhas de CSS vanilla para utilitários Tailwind CSS v4, mantendo JS vanilla intacto.**
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/onboarding.html` | ~380 → ~56 linhas CSS (apenas @keyframes, pseudo-elementos decorativos, estados controlados por JS) |
+| `src/style.css` | Tokens light theme adicionados ao `@theme` (--color-bg-light, --color-cream, --color-border-light, etc.) |
+
+**Detalhes técnicos:**
+- JS vanilla preservado: steps, slug check com debounce, serviços dinâmicos, disponibilidade, save Supabase
+- 4 steps: identidade, serviços, horários, sucesso
+- Painel lateral escuro fixo com preview em tempo real
+- Elementos dinâmicos (serviços, dias) com classes Tailwind no JS
+- Proteção de rota: redirect para `/painel` se `prestador.slug` já existe (evita re-onboarding)
+- Responsividade com `[@media(max-width:860px)]` inline
+- Correções visuais pós-migração: padding inputs reduzido (py-2.5), slug prefix com separador visual (border-r)
+- Build Vite validado: 19 HTMLs com assets injetados
+
+---
+
 ## [2026-04-11] — Migração Landing Page para Tailwind CSS v4
 
 ### 🎨 Landing Page: CSS vanilla → Tailwind CSS v4
