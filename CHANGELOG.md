@@ -1,5 +1,34 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-11] — Migração clientes.html para Tailwind CSS v4
+
+### 🎨 clientes.html: CSS vanilla → Tailwind CSS v4
+
+**Migração da clientes.html de ~530 linhas de CSS vanilla para utilitários Tailwind CSS v4, mantendo JS vanilla intacto.**
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/clientes.html` | ~530 → ~28 linhas CSS (-95%) |
+| `src/style.css` | Tokens dark theme para painel (bg-dark, bord, teal, amber, faint-dark, etc.) |
+| `supabase/functions/_shared/cors.ts` | Dev origins adicionadas ao HARDCODED_ORIGINS (resolve CORS local 127.0.0.1:5000) |
+
+**Detalhes técnicos:**
+- JS vanilla preservado: CRUD clientes, busca, filtros, sort, drawer, export CSV
+- Topbar sticky com backdrop-blur, badge trial/pro/free
+- Stats cards: total, VIP, ticket médio, receita total
+- Tabela com sort por coluna, hover states, avatar com cor dinâmica
+- Drawer lateral com histórico async, observações, ações (WhatsApp, agenda)
+- Elementos dinâmicos (renderTabela, abrirCliente, freqBadge, histórico) geram HTML com classes Tailwind
+- Responsividade: nav links hidden <900px, stats 2 colunas <700px, padding reduzido <600px, drawer full-width <500px
+- Google Fonts removido do HTML (já importado no style.css) — evita carregamento duplo
+- Build Vite validado: CSS +3KB (tokens dark)
+
+### Fix CORS
+
+Dev origins (`localhost:3000/5173`, `127.0.0.1:3000/5000/5173`) movidas de `getAllowedDevOrigins()` para `HARDCODED_ORIGINS` — resolve erro preflight quando `SENTRY_ENVIRONMENT=production` ignorava dev origins. Deploy de todas as Edge Functions necessário.
+
+---
+
 ## [2026-04-11] — Migração Auth + Onboarding para Tailwind CSS v4
 
 ### 🎨 Auth.html: CSS vanilla → Tailwind CSS v4

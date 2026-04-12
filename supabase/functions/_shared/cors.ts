@@ -12,6 +12,12 @@ const HARDCODED_ORIGINS = [
   "https://e-agendapro.web.app",
   "https://agendapro.com.br",
   "https://www.agendapro.com.br",
+  // Dev origins (sempre permitidos — desabilitar em produção se necessário via env ALLOWED_ORIGINS)
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5000",
+  "http://127.0.0.1:5173",
 ];
 
 function getAllowedOrigins(): string[] {
@@ -28,7 +34,7 @@ function getAllowedDevOrigins(): string[] {
   if (envDev) {
     return envDev.split(",").map((o) => o.trim()).filter(Boolean);
   }
-  return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"];
+  return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000","http://127.0.0.1:5000", "http://127.0.0.1:5173"];
 }
 
 function getAllOrigins(): string[] {

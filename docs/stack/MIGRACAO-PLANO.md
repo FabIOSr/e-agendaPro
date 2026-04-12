@@ -118,8 +118,9 @@ npm run test:e2e   # ✅ 102 testes E2E passando
 
 **Páginas:** `pages/painel.html`, `pages/clientes.html`, `pages/relatorio.html`
 **Complexidade:** Alta — estado complexo, listas, gráficos
+**Progresso:** 1/3 — clientes.html ✅ migrada
 
-### 4.1 Painel Principal (`painel.html`)
+### 4.1 Painel Principal (`painel.html`) — Pendente
 
 | # | Tarefa | Detalhe |
 |---|---|---|
@@ -148,15 +149,17 @@ npm run test:e2e   # ✅ 102 testes E2E passando
 </div>
 ```
 
-### 4.2 Clientes (`clientes.html`)
+### 4.2 Clientes (`clientes.html`) ✅ CONCLUÍDA — 2026-04-11
 
-| # | Tarefa | Detalhe |
+| # | Tarefa | Status |
 |---|---|---|
-| 3.6 | Busca com Alpine | `x-model="query"` + getter `filtrados` |
-| 3.7 | Filtros de segmento | VIP, Regular, Novos — Alpine reatividade |
-| 3.8 | Tailwind nas tabelas/cards | Layout responsivo |
+| 3.6 | Migrar CSS → Tailwind | ✅ Feito — ~530 → ~28 linhas (-95%) |
+| 3.7 | Tokens dark no @theme | ✅ Feito — src/style.css |
+| 3.8 | Responsividade | ✅ Feito — breakpoints 900px, 700px, 600px, 500px |
+| 3.9 | JS dinâmico com Tailwind | ✅ Feito — renderTabela, abrirCliente, freqBadge |
+| 3.10 | Google Fonts | ✅ Removido do HTML (já no style.css) |
 
-### 4.3 Relatórios (`relatorio.html`)
+### 4.3 Relatórios (`relatorio.html`) — Pendente
 
 | # | Tarefa | Detalhe |
 |---|---|---|
@@ -382,7 +385,7 @@ Semana 3:
 - [x] Fase 0: Setup completo, testes passando
 - [x] Fase 1: Landing page migrada
 - [x] Fase 2: Auth + Onboarding migrados
-- [ ] Fase 3: Painel (painel + clientes + relatorio) migrado
+- [ ] Fase 3: Painel (painel + clientes + relatorio) migrado — clientes.html ✅
 - [ ] Fase 4: Página pública migrada
 - [ ] Fase 5: Configurações + Planos migrados
 - [ ] Fase 6: Páginas de token migradas

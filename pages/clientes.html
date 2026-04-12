@@ -8,838 +8,128 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgendaPro — Clientes</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
-    rel="stylesheet">
+
+  <!-- ═══════════════════ CSS MÍNIMO (animações + pseudo-elementos + estados JS) ═══════════════════ -->
   <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    :root {
-      --bg: #0e0d0a;
-      --bg2: #141310;
-      --bg3: #1c1a16;
-      --bg4: #242118;
-      --bord: #2a2724;
-      --bord2: #383430;
-      --text: #f0ede6;
-      --muted: #8a8778;
-      --faint: #3e3c36;
-      --lime: #c8f060;
-      --lime-d: #8ab830;
-      --lime-ink: #1a2a08;
-      --lime-t: rgba(200, 240, 96, .1);
-      --teal: #5DCAA5;
-      --teal-t: rgba(93, 202, 165, .1);
-      --rust: #f06048;
-      --rust-t: rgba(240, 96, 72, .1);
-      --radius: 12px;
-    }
-
-    body {
-      font-family: 'Syne', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ── TOPBAR ── */
-    .topbar {
-      height: 54px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      border-bottom: 1px solid var(--bord);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(14, 13, 10, .92);
-      backdrop-filter: blur(12px);
-    }
-
-    .logo {
-      font-family: 'Fraunces', serif;
-      font-size: 17px;
-      font-weight: 400;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .logo-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--lime);
-      border-radius: 50%;
-      box-shadow: 0 0 8px rgba(200, 240, 96, .5);
-    }
-
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-    }
-
-    .nav-link {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-      padding: 5px 10px;
-      border-radius: 7px;
-      cursor: pointer;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: background .15s, color .15s;
-    }
-
-    .nav-link:hover {
-      background: var(--bg2);
-      color: var(--text);
-    }
-
-    .nav-link.active {
-      background: var(--bg2);
-      color: var(--text);
-    }
-
-    .btn-logout {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 500;
-      font-family: 'DM Sans', sans-serif;
-      padding: 4px 10px;
-      border-radius: 7px;
-      cursor: pointer;
-      transition: border-color .15s, color .15s;
-    }
-
-    .btn-logout:hover {
-      color: var(--text);
-    }
-
-    .plano-badge {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 20px;
-    }
-
-    .plano-badge.pro {
-      background: var(--lime-t);
-      color: var(--lime);
-      border: 1px solid rgba(200, 240, 96, .2);
-    }
-
-    .plano-badge.free {
-      background: var(--bg3);
-      color: var(--muted);
-      border: 1px solid var(--bord);
-    }
-
-    .plano-badge.trial {
-      background: var(--amber-t);
-      color: var(--amber);
-      border: 1px solid rgba(239, 159, 39, .3);
-      animation: pulse-trial 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-trial {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.85; }
-    }
-    }
-
-    .avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: var(--lime-t);
-      color: var(--lime);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    /* ── HEADER ── */
-    .page-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      padding: 28px 24px 0;
-      max-width: 1100px;
-      margin: 0 auto;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .page-title {
-      font-family: 'Fraunces', serif;
-      font-size: 28px;
-      font-weight: 300;
-      letter-spacing: -.02em;
-    }
-
-    .page-sub {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    /* ── FILTROS ── */
-    .filters {
-      display: flex;
-      gap: 10px;
-      padding: 20px 24px 0;
-      max-width: 1100px;
-      margin: 0 auto;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .search-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 11px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 13px;
-      color: var(--faint);
-      pointer-events: none;
-    }
-
-    .search-input {
-      width: 100%;
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      border-radius: 8px;
-      padding: 8px 12px 8px 32px;
-      font-size: 13px;
-      color: var(--text);
-      outline: none;
-      font-family: 'Syne', sans-serif;
-      transition: border-color .2s;
-    }
-
-    .search-input:focus {
-      border-color: var(--bord2);
-    }
-
-    .search-input::placeholder {
-      color: var(--faint);
-    }
-
-    .filter-btn {
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      color: var(--muted);
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: 'Syne', sans-serif;
-      cursor: pointer;
-      transition: all .2s;
-      white-space: nowrap;
-    }
-
-    .filter-btn:hover {
-      border-color: var(--bord2);
-      color: var(--text);
-    }
-
-    .filter-btn.active {
-      background: var(--lime-t);
-      border-color: rgba(200, 240, 96, .3);
-      color: var(--lime);
-    }
-
-    /* ── CONTEÚDO ── */
-    .content {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 20px 24px 80px;
-    }
-
-    /* ── STATS TOPO ── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    @media (max-width:700px) {
-      .stats-row {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    .stat-card {
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .stat-val {
-      font-family: 'Fraunces', serif;
-      font-size: 26px;
-      font-weight: 300;
-      letter-spacing: -.02em;
-    }
-
-    .stat-val.lime {
-      color: var(--lime);
-    }
-
-    .stat-val.teal {
-      color: var(--teal);
-    }
-
-    /* ── TABELA ── */
-    .table-card {
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .table-info {
-      padding: 12px 16px;
-      font-size: 12px;
-      color: var(--muted);
-      border-bottom: 1px solid var(--bord);
-      background: var(--bg2);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    thead th {
-      padding: 10px 14px;
-      text-align: left;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      background: var(--bg2);
-      border-bottom: 1px solid var(--bord);
-    }
-
-    th.sort {
-      cursor: pointer;
-      user-select: none;
-    }
-
-    th.sort:hover {
-      color: var(--text);
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--bord);
-      transition: background .15s;
-      cursor: pointer;
-    }
-
-    tbody tr:last-child {
-      border-bottom: none;
-    }
-
-    tbody tr:hover {
-      background: var(--bg4);
-    }
-
-    td {
-      padding: 12px 14px;
-      font-size: 13px;
-      vertical-align: middle;
-    }
-
-    .client-cell {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .client-av {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .client-name {
-      font-weight: 500;
-    }
-
-    .client-tel {
-      font-size: 11px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      margin-top: 1px;
-    }
-
-    .freq-badge {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 20px;
-      display: inline-block;
-    }
-
-    .freq-vip {
-      background: var(--lime-t);
-      color: var(--lime);
-      border: 1px solid rgba(200, 240, 96, .2);
-    }
-
-    .freq-regular {
-      background: var(--teal-t);
-      color: var(--teal);
-      border: 1px solid rgba(93, 202, 165, .2);
-    }
-
-    .freq-novo {
-      background: var(--bg2);
-      color: var(--muted);
-      border: 1px solid var(--bord);
-    }
-
-    .mono {
-      font-family: 'DM Mono', monospace;
-    }
-
-    .muted {
-      color: var(--muted);
-    }
-
-    .obs-preview {
-      font-size: 11px;
-      color: var(--muted);
-      max-width: 160px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* ── DRAWER ── */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .65);
-      z-index: 100;
-      display: none;
-    }
-
-    .overlay.open {
-      display: block;
-    }
-
-    .drawer {
-      position: fixed;
-      top: 0;
-      right: -440px;
-      bottom: 0;
-      width: 420px;
-      z-index: 101;
-      background: var(--bg2);
-      border-left: 1px solid var(--bord);
-      overflow-y: auto;
-      padding: 28px 24px 80px;
-      transition: right .3s cubic-bezier(.4, 0, .2, 1);
-    }
-
-    .drawer.open {
-      right: 0;
-    }
-
-    .drawer-close {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      color: var(--muted);
-      width: 28px;
-      height: 28px;
-      border-radius: 7px;
-      font-size: 14px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color .2s;
-    }
-
-    .drawer-close:hover {
-      color: var(--text);
-    }
-
-    .drawer-av {
-      width: 58px;
-      height: 58px;
-      border-radius: 50%;
-      font-size: 22px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 12px;
-    }
-
-    .drawer-name {
-      font-family: 'Fraunces', serif;
-      font-size: 22px;
-      font-weight: 300;
-      margin-bottom: 3px;
-    }
-
-    .drawer-tel {
-      font-size: 13px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      margin-bottom: 4px;
-    }
-
-    .drawer-tag {
-      display: inline-block;
-      margin-top: 4px;
-    }
-
-    .drawer-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin: 18px 0;
-    }
-
-    .ds {
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      border-radius: 10px;
-      padding: 12px 10px;
-      text-align: center;
-    }
-
-    .ds-val {
-      font-family: 'Fraunces', serif;
-      font-size: 20px;
-      font-weight: 300;
-      color: var(--lime);
-    }
-
-    .ds-lbl {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .section-lbl {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .09em;
-      color: var(--faint);
-      margin: 16px 0 8px;
-    }
-
-    .hist-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--bord);
-    }
-
-    .hist-row:last-child {
-      border-bottom: none;
-    }
-
-    .hist-info {
-      flex: 1;
-    }
-
-    .hist-servico {
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .hist-data {
-      font-size: 11px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      margin-top: 1px;
-    }
-
-    .hist-val {
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      color: var(--lime-d);
-    }
-
-    .obs-area {
-      width: 100%;
-      background: var(--bg3);
-      border: 1px solid var(--bord);
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 13px;
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      outline: none;
-      resize: vertical;
-      min-height: 72px;
-      transition: border-color .2s;
-      margin-top: 4px;
-    }
-
-    .obs-area:focus {
-      border-color: var(--bord2);
-    }
-
-    .btn-salvar {
-      background: var(--bg3);
-      border: 1px solid var(--bord2);
-      color: var(--lime);
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: 'Syne', sans-serif;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: all .2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn-salvar:hover {
-      background: var(--lime-t);
-    }
-
-    .btn-salvar.saving {
-      opacity: .5;
-      cursor: default;
-    }
-
-    .action-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .btn-action {
-      background: var(--bg3);
-      border: 1px solid var(--bord2);
-      color: var(--muted);
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: 'Syne', sans-serif;
-      cursor: pointer;
-      transition: all .2s;
-    }
-
-    .btn-action:hover {
-      border-color: var(--lime-d);
-      color: var(--lime);
-    }
-
-    /* ── VAZIO / CARREGANDO ── */
-    .empty {
-      text-align: center;
-      padding: 60px 24px;
-      color: var(--muted);
-    }
-
-    .empty-icon {
-      font-size: 32px;
-      margin-bottom: 12px;
-    }
-
-    .empty-title {
-      font-family: 'Fraunces', serif;
-      font-size: 20px;
-      font-weight: 300;
-      margin-bottom: 6px;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 60px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    /* ── EXPORT BTN ── */
-    .btn-export {
-      background: var(--bg3);
-      border: 1px solid var(--bord2);
-      color: var(--muted);
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: 'Syne', sans-serif;
-      cursor: pointer;
-      transition: all .2s;
-    }
-
-    .btn-export:hover {
-      border-color: var(--lime-d);
-      color: var(--lime);
-    }
+    @keyframes pulse-trial { 0%,100%{opacity:1} 50%{opacity:.85} }
+
+    /* Animação do drawer */
+    .drawer { transition: right .3s cubic-bezier(.4,0,.2,1); }
+    .overlay { transition: opacity .3s; }
+
+    /* Estados controlados por JS */
+    .overlay.open { display: block; }
+    .drawer.open { right: 0; }
+    .filter-btn.active { background: var(--color-lime-t); border-color: rgba(200,240,96,.3); color: var(--color-lime); }
+    .plano-badge.pro { background: var(--color-lime-t); color: var(--color-lime); border: 1px solid rgba(200,240,96,.2); }
+    .plano-badge.free { background: var(--color-bg-dark3); color: var(--color-muted); border: 1px solid var(--color-bord); }
+    .plano-badge.trial { background: var(--color-amber-t); color: var(--color-amber); border: 1px solid rgba(239,159,39,.3); animation: pulse-trial 2s ease-in-out infinite; }
+    .btn-salvar.saving { opacity: .5; cursor: default; }
+    .nav-link.active { background: var(--color-bg-dark2); color: var(--color-text); }
+    .freq-badge-vip { background: var(--color-lime-t); color: var(--color-lime); border: 1px solid rgba(200,240,96,.2); }
+    .freq-badge-regular { background: var(--color-teal-t); color: var(--color-teal); border: 1px solid rgba(93,202,165,.2); }
+    .freq-badge-novo { background: var(--color-bg-dark2); color: var(--color-muted); border: 1px solid var(--color-bord); }
+    .hist-row:last-child { border-bottom: none; }
+
+    /* Hover states que Tailwind não cobre bem com ::before */
+    .search-input:focus { border-color: var(--color-bord2); }
+    .obs-area:focus { border-color: var(--color-bord2); }
   </style>
 </head>
 
-<body>
+<body class="font-['Syne',sans-serif] bg-[var(--color-bg-dark)] text-[var(--color-text)] min-h-[100vh] block">
 
-  <div class="topbar">
-    <div class="logo">
-      <div class="logo-dot"></div>AgendaPro
+  <div class="topbar h-[54px] flex items-center justify-between px-6 border-b border-[var(--color-bord)] sticky top-0 z-50 bg-[rgba(14,13,10,.92)] backdrop-blur-md">
+    <div class="logo font-['Fraunces',serif] text-[17px] font-[400] flex items-center gap-[7px]">
+      <div class="logo-dot w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full shadow-[0_0_8px_rgba(200,240,96,.5)]"></div>AgendaPro
     </div>
-    <div class="topbar-right">
-      <nav class="nav-links">
-        <a href="/painel" class="nav-link">📅 Agenda</a>
-        <a href="/clientes" class="nav-link active">👥 Clientes</a>
-        <a href="/relatorio" class="nav-link">📊 Relatórios</a>
-        <a href="/configuracoes" class="nav-link">⚙️ Config</a>
-        <a href="/planos" class="nav-link">⭐ Plano</a>
+    <div class="topbar-right flex items-center gap-[10px]">
+      <nav class="nav-links flex items-center gap-[2px] [@media(max-width:900px)]:hidden">
+        <a href="/painel" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">📅 Agenda</a>
+        <a href="/clientes" class="nav-link active bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">👥 Clientes</a>
+        <a href="/relatorio" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">📊 Relatórios</a>
+        <a href="/configuracoes" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">⚙️ Config</a>
+        <a href="/planos" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">⭐ Plano</a>
       </nav>
-      <div class="plano-badge" id="topbar-plano">—</div>
-      <button class="btn-logout" onclick="fazerLogout()">Sair</button>
-      <div class="avatar" id="topbar-avatar">—</div>
+      <div class="plano-badge text-[10px] font-[700] tracking-[.08em] uppercase py-[3px] px-[10px] rounded-[20px]" id="topbar-plano">—</div>
+      <button class="btn-logout bg-none border border-[var(--color-bord)] text-[var(--color-muted)] text-[12px] font-[500] font-['DM_Sans',sans-serif] py-1 px-2.5 rounded-[7px] cursor-pointer transition-[border-color,color] duration-150 hover:text-[var(--color-text)]" onclick="fazerLogout()">Sair</button>
+      <div class="avatar w-[30px] h-[30px] rounded-full bg-[var(--color-lime-t)] text-[var(--color-lime)] flex items-center justify-center text-[12px] font-[700] cursor-pointer" id="topbar-avatar">—</div>
     </div>
   </div>
 
-  <div class="page-header">
+  <div class="page-header flex items-start justify-between px-6 pt-[28px] pb-0 max-w-[1100px] mx-auto gap-4 flex-wrap [@media(max-width:600px)]:px-4">
     <div>
-      <div class="page-title">Clientes</div>
-      <div class="page-sub" id="page-sub">Carregando…</div>
+      <div class="page-title font-['Fraunces',serif] text-[28px] font-[300] tracking-[-.02em]">Clientes</div>
+      <div class="page-sub text-[13px] text-[var(--color-muted)] mt-1" id="page-sub">Carregando…</div>
     </div>
-    <div class="header-actions">
-      <button class="btn-export" onclick="exportarCSV()">⬇ Exportar CSV</button>
+    <div class="header-actions flex gap-2 items-center flex-wrap">
+      <button class="btn-export bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] leading-none cursor-pointer transition-[border-color,color] duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="exportarCSV()">⬇ Exportar CSV</button>
     </div>
   </div>
 
-  <div class="filters">
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input class="search-input" id="search" placeholder="Buscar por nome, telefone ou email…" oninput="filtrar()">
+  <div class="filters flex gap-[10px] px-6 pt-5 pb-0 max-w-[1100px] mx-auto flex-wrap items-center [@media(max-width:600px)]:px-4">
+    <div class="search-wrap relative flex-1 min-w-[200px]">
+      <span class="search-icon absolute left-[11px] top-1/2 -translate-y-1/2 text-[13px] text-[var(--color-faint-dark)] pointer-events-none">🔍</span>
+      <input class="search-input w-full bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg py-2 pl-8 pr-3 text-[13px] text-[var(--color-text)] outline-none font-['Syne',sans-serif] transition-[border-color] duration-200 placeholder:text-[var(--color-faint-dark)]" id="search" placeholder="Buscar por nome, telefone ou email…" oninput="filtrar()">
     </div>
-    <button class="filter-btn active" id="f-todos" onclick="setFiltro('todos',this)">Todos</button>
-    <button class="filter-btn" id="f-vip" onclick="setFiltro('vip',this)">VIP (8+)</button>
-    <button class="filter-btn" id="f-regular" onclick="setFiltro('regular',this)">Regular</button>
-    <button class="filter-btn" id="f-novo" onclick="setFiltro('novo',this)">Novos</button>
-    <button class="filter-btn" id="f-sem-visita" onclick="setFiltro('sem-visita',this)">Sem visita +60d</button>
+    <button class="filter-btn active bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-todos" onclick="setFiltro('todos',this)">Todos</button>
+    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-vip" onclick="setFiltro('vip',this)">VIP (8+)</button>
+    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-regular" onclick="setFiltro('regular',this)">Regular</button>
+    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-novo" onclick="setFiltro('novo',this)">Novos</button>
+    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-sem-visita" onclick="setFiltro('sem-visita',this)">Sem visita +60d</button>
   </div>
 
   <!-- Gate Pro envolve todo o conteúdo -->
-  <div class="content" id="crm-gate">
+  <div class="content max-w-[1100px] mx-auto px-6 pt-5 pb-20 [@media(max-width:600px)]:px-4" id="crm-gate">
 
-    <div class="stats-row" id="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Total de clientes</div>
-        <div class="stat-val lime" id="s-total">—</div>
+    <div class="stats-row grid grid-cols-4 gap-[10px] mb-5 [@media(max-width:700px)]:grid-cols-2" id="stats-row">
+      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
+        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Total de clientes</div>
+        <div class="stat-val lime font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em] text-[var(--color-lime)]" id="s-total">—</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Clientes VIP</div>
-        <div class="stat-val teal" id="s-vip">—</div>
+      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
+        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Clientes VIP</div>
+        <div class="stat-val teal font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em] text-[var(--color-teal)]" id="s-vip">—</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Ticket médio</div>
-        <div class="stat-val" id="s-ticket">—</div>
+      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
+        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Ticket médio</div>
+        <div class="stat-val font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em]" id="s-ticket">—</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Receita total</div>
-        <div class="stat-val lime" id="s-receita">—</div>
+      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
+        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Receita total</div>
+        <div class="stat-val font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em] text-[var(--color-lime)]" id="s-receita">—</div>
       </div>
     </div>
 
-    <div class="table-card">
-      <div class="table-info" id="table-info">Carregando clientes…</div>
-      <table>
+    <div class="table-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl overflow-hidden">
+      <div class="table-info py-3 px-4 text-[12px] text-[var(--color-muted)] border-b border-[var(--color-bord)] bg-[var(--color-bg-dark2)]" id="table-info">Carregando clientes…</div>
+      <table class="w-full border-collapse">
         <thead>
           <tr>
-            <th>Cliente</th>
-            <th class="sort" onclick="sortBy('total_visitas')">Visitas ↕</th>
-            <th>Último serviço</th>
-            <th class="sort" onclick="sortBy('ultima_visita')">Última visita ↕</th>
-            <th class="sort" onclick="sortBy('total_gasto')">Total gasto ↕</th>
-            <th>Obs.</th>
+            <th class="text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)]">Cliente</th>
+            <th class="sort text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)] cursor-pointer select-none hover:text-[var(--color-text)]" onclick="sortBy('total_visitas')">Visitas ↕</th>
+            <th class="text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)]">Último serviço</th>
+            <th class="sort text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)] cursor-pointer select-none hover:text-[var(--color-text)]" onclick="sortBy('ultima_visita')">Última visita ↕</th>
+            <th class="sort text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)] cursor-pointer select-none hover:text-[var(--color-text)]" onclick="sortBy('total_gasto')">Total gasto ↕</th>
+            <th class="text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)]">Obs.</th>
           </tr>
         </thead>
-        <tbody id="tbody"></tbody>
+        <tbody id="tbody" class="[&_tr]:border-b [&_tr]:border-[var(--color-bord)] [&_tr]:transition-[background] [&_tr]:duration-150 [&_tr]:cursor-pointer [&_tr:last-child]:border-b-0 [&_tr:hover]:bg-[var(--color-bg-dark4)] [&_td]:py-3 [&_td]:px-3.5 [&_td]:text-[13px] [&_td]:align-middle"></tbody>
       </table>
-      <div class="loading" id="loading">Carregando…</div>
-      <div class="empty" id="empty" style="display:none">
-        <div class="empty-icon">👥</div>
-        <div class="empty-title">Nenhum cliente encontrado</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:6px">Tente ajustar os filtros.</div>
+      <div class="loading text-center py-[60px] text-[var(--color-muted)] text-[14px]" id="loading">Carregando…</div>
+      <div class="empty text-center py-[60px] px-6 text-[var(--color-muted)] hidden" id="empty">
+        <div class="empty-icon text-[32px] mb-3">👥</div>
+        <div class="empty-title font-['Fraunces',serif] text-[20px] font-[300] mb-1.5">Nenhum cliente encontrado</div>
+        <div class="text-[13px] text-[var(--color-muted)] mt-1.5">Tente ajustar os filtros.</div>
       </div>
     </div>
 
   </div>
 
   <!-- DRAWER -->
-  <div class="overlay" id="overlay" onclick="fecharDrawer()"></div>
-  <div class="drawer" id="drawer">
-    <button class="drawer-close" onclick="fecharDrawer()">✕</button>
+  <div class="overlay fixed inset-0 bg-[rgba(0,0,0,.65)] z-[100] hidden" id="overlay" onclick="fecharDrawer()"></div>
+  <div class="drawer fixed top-0 right-[-440px] bottom-0 w-[420px] z-[101] bg-[var(--color-bg-dark2)] border-l border-[var(--color-bord)] overflow-y-auto py-7 px-6 pb-20 [@media(max-width:500px)]:w-full [@media(max-width:500px)]:right-[-100%]" id="drawer">
+    <button class="drawer-close absolute top-5 right-5 bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] w-7 h-7 rounded-lg text-[14px] cursor-pointer flex items-center justify-center transition-colors duration-200 hover:text-[var(--color-text)]" onclick="fecharDrawer()">✕</button>
     <div id="drawer-body"></div>
   </div>
 
@@ -1027,7 +317,7 @@
         const msg = q
           ? `Nenhum cliente encontrado para "<strong>${q}</strong>"<br>Tente buscar por nome, telefone ou email.`
           : 'Nenhum cliente cadastrado.';
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px 24px;color:var(--muted);font-size:14px;line-height:1.6">${msg}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 px-6 text-[var(--color-muted)] text-[14px] leading-relaxed">${msg}</td></tr>`;
         return;
       }
 
@@ -1044,19 +334,19 @@
 
         return `<tr onclick="abrirCliente('${(c.telefone || '').replace(/'/g, "\\'")}')">
       <td>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:50%;background:${cor}22;color:${cor};font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini}</div>
+        <div class="flex items-center gap-[10px]">
+          <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-[600] text-[13px]" style="background:${cor}22;color:${cor}">${ini}</div>
           <div>
-            <div style="font-weight:500;font-size:13px">${c.nome || '—'}</div>
-            <div style="font-size:11px;color:var(--muted)">${c.telefone || ''}</div>
+            <div class="font-[500] text-[13px]">${c.nome || '—'}</div>
+            <div class="text-[11px] text-[var(--color-muted)]">${c.telefone || ''}</div>
           </div>
         </div>
       </td>
-      <td style="font-size:12px">${vis}x</td>
-      <td style="font-size:12px;color:var(--muted)">${c.ultimo_servico || '—'}</td>
-      <td style="font-size:12px;color:var(--muted)">${dtFmt}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${total}</td>
-      <td style="font-size:12px;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.observacoes || ''}</td>
+      <td class="text-[12px]">${vis}x</td>
+      <td class="text-[12px] text-[var(--color-muted)]">${c.ultimo_servico || '—'}</td>
+      <td class="text-[12px] text-[var(--color-muted)]">${dtFmt}</td>
+      <td class="font-['DM_Mono',monospace] text-[12px]">${total}</td>
+      <td class="text-[12px] text-[var(--color-muted)] max-w-[160px] truncate">${c.observacoes || ''}</td>
     </tr>`;
       }).join('');
     }
@@ -1076,9 +366,9 @@
     // Badge de frequência
     function freqBadge(visitas) {
       const v = visitas || 0;
-      if (v >= 8) return '<span class="freq-badge freq-vip">VIP</span>';
-      if (v >= 3) return '<span class="freq-badge freq-regular">Regular</span>';
-      return '<span class="freq-badge freq-novo">Novo</span>';
+      if (v >= 8) return '<span class="freq-badge-vip text-[10px] font-[600] py-0.5 px-2 rounded-full inline-block">VIP</span>';
+      if (v >= 3) return '<span class="freq-badge-regular text-[10px] font-[600] py-0.5 px-2 rounded-full inline-block">Regular</span>';
+      return '<span class="freq-badge-novo text-[10px] font-[600] py-0.5 px-2 rounded-full inline-block">Novo</span>';
     }
 
     // Carregar histórico de forma assíncrona
@@ -1101,30 +391,39 @@
       const ticket = c.total_visitas > 0 ? Math.round((c.total_gasto ?? 0) / c.total_visitas) : 0;
 
       document.getElementById('drawer-body').innerHTML = `
-        <div class="drawer-av" style="background:${c2}22;color:${c2}">${c.nome[0]}</div>
-        <div class="drawer-name">${c.nome}</div>
-        <div class="drawer-tel">${c.telefone}</div>
-        <div class="drawer-tag">${freqBadge(c.total_visitas)}</div>
+        <div class="w-[58px] h-[58px] rounded-full text-[22px] font-[700] flex items-center justify-center mb-3" style="background:${c2}22;color:${c2}">${c.nome[0]}</div>
+        <div class="font-['Fraunces',serif] text-[22px] font-[300] mb-1">${c.nome}</div>
+        <div class="text-[13px] text-[var(--color-muted)] font-['DM_Mono',monospace] mb-1">${c.telefone}</div>
+        <div class="inline-block mt-1">${freqBadge(c.total_visitas)}</div>
 
-        <div class="drawer-stats">
-          <div class="ds"><div class="ds-val">${c.total_visitas}</div><div class="ds-lbl">visitas</div></div>
-          <div class="ds"><div class="ds-val" style="font-size:16px">R${ticket}</div><div class="ds-lbl">ticket médio</div></div>
-          <div class="ds"><div class="ds-val" style="color:var(--teal);font-size:16px">R${(c.total_gasto ?? 0).toLocaleString('pt-BR')}</div><div class="ds-lbl">total gasto</div></div>
+        <div class="grid grid-cols-3 gap-2 my-[18px]">
+          <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3 px-2.5 text-center">
+            <div class="font-['Fraunces',serif] text-[20px] font-[300] text-[var(--color-lime)]">${c.total_visitas}</div>
+            <div class="text-[10px] text-[var(--color-muted)] mt-1">visitas</div>
+          </div>
+          <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3 px-2.5 text-center">
+            <div class="font-['Fraunces',serif] text-[16px] font-[300]">R$${ticket}</div>
+            <div class="text-[10px] text-[var(--color-muted)] mt-1">ticket médio</div>
+          </div>
+          <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3 px-2.5 text-center">
+            <div class="font-['Fraunces',serif] text-[16px] font-[300] text-[var(--color-teal)]">R$${(c.total_gasto ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</div>
+            <div class="text-[10px] text-[var(--color-muted)] mt-1">total gasto</div>
+          </div>
         </div>
 
-        <div class="section-lbl">Histórico</div>
-        <div id="hist-loading" style="font-size:13px;color:var(--muted);padding:12px 0">Carregando…</div>
+        <div class="section-lbl text-[10px] font-[700] uppercase tracking-[.09em] text-[var(--color-faint-dark)] mt-4 mb-2">Histórico</div>
+        <div id="hist-loading" class="text-[13px] text-[var(--color-muted)] py-3">Carregando…</div>
         <div id="hist-list"></div>
 
-        <div class="section-lbl">Observações</div>
-        <textarea class="obs-area" id="obs-${tel}" placeholder="Preferências, alergias, observações…">${c.observacoes ?? ''}</textarea>
-        <button class="btn-salvar" id="btn-salvar-${tel}"
+        <div class="section-lbl text-[10px] font-[700] uppercase tracking-[.09em] text-[var(--color-faint-dark)] mt-4 mb-2">Observações</div>
+        <textarea class="obs-area w-full bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg py-2.5 px-3 text-[13px] text-[var(--color-text)] outline-none font-['Syne',sans-serif] resize-y min-h-[72px] transition-[border-color] duration-200 mt-1" id="obs-${tel}" placeholder="Preferências, alergias, observações…">${c.observacoes ?? ''}</textarea>
+        <button class="btn-salvar bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-lime)] rounded-lg py-2 px-4 text-[12px] font-[600] cursor-pointer mt-2 transition-all duration-200 flex items-center gap-1.5 hover:bg-[var(--color-lime-t)]" id="btn-salvar-${tel}"
           onclick="window._salvarObs('${tel}', this)">💾 Salvar</button>
 
-        <div class="section-lbl">Ações</div>
-        <div class="action-row">
-          <button class="btn-action" onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}')">💬 WhatsApp</button>
-          <button class="btn-action" onclick="window.location.href='/painel'">📅 Ver na agenda</button>
+        <div class="section-lbl text-[10px] font-[700] uppercase tracking-[.09em] text-[var(--color-faint-dark)] mt-4 mb-2">Ações</div>
+        <div class="action-row flex gap-2 flex-wrap mt-4">
+          <button class="btn-action bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg py-2 px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}')">💬 WhatsApp</button>
+          <button class="btn-action bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg py-2 px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="window.location.href='/painel'">📅 Ver na agenda</button>
         </div>
       `;
 
@@ -1135,19 +434,19 @@
       const hist = await carregarHistorico(tel);
       const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
       const histHtml = hist.length === 0
-        ? '<div style="font-size:13px;color:var(--muted);padding:12px 0">Nenhum atendimento ainda.</div>'
+        ? '<div class="text-[13px] text-[var(--color-muted)] py-3">Nenhum atendimento ainda.</div>'
         : hist.map(h => {
             const dt = new Date(h.data_hora);
             const dtF = `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}`;
             const val = Number(h.servicos?.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const statusDot = h.status === 'concluido' ? '🟢' : h.status === 'confirmado' ? '🟡' : '🔴';
             return `
-              <div class="hist-row">
-                <div class="hist-info">
-                  <div class="hist-servico">${h.servicos?.nome || '—'} ${statusDot}</div>
-                  <div class="hist-data">${dtF}</div>
+              <div class="hist-row flex items-center gap-[10px] py-2.5 border-b border-[var(--color-bord)]">
+                <div class="hist-info flex-1">
+                  <div class="hist-servico text-[13px] font-[500]">${h.servicos?.nome || '—'} ${statusDot}</div>
+                  <div class="hist-data text-[11px] text-[var(--color-muted)] font-['DM_Mono',monospace] mt-1">${dtF}</div>
                 </div>
-                <div class="hist-val">${val}</div>
+                <div class="hist-val font-['DM_Mono',monospace] text-[13px] text-[var(--color-lime-d)]">${val}</div>
               </div>
             `;
           }).join('');

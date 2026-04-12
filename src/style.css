@@ -3,6 +3,10 @@
 
 @import "tailwindcss";
 
+/* ── Reset básico (Preflight do Tailwind não aplica em entry point separado) ── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
 /* Escaneia todos os HTMLs para gerar as classes utility */
 @source "../pages/**/*.html";
 
@@ -50,6 +54,22 @@
   --color-lime-l-light: #eef6d8;
   --color-rust-light: #c84830;
   --color-rust-l: #fdf0ed;
+
+  /* Dark theme (painel.html, clientes.html, relatorio.html) */
+  --color-bg-dark: #0e0d0a;
+  --color-bg-dark2: #141310;
+  --color-bg-dark3: #1c1a16;
+  --color-bg-dark4: #242118;
+  --color-bord: #2a2724;
+  --color-bord2: #383430;
+  --color-text: #f0ede6;
+  --color-teal: #5DCAA5;
+  --color-teal-t: rgba(93,202,165,.1);
+  --color-amber: #EF9F27;
+  --color-amber-t: rgba(239,159,39,.12);
+  --color-lime-t: rgba(200,240,96,.1);
+  --color-rust-t: rgba(240,96,72,.1);
+  --color-faint-dark: #3e3c36;
 }
 
 /* ── [x-cloak] para Alpine.js ── */
