@@ -70,6 +70,20 @@ html, body { margin: 0; padding: 0; }
   --color-lime-t: rgba(200,240,96,.1);
   --color-rust-t: rgba(240,96,72,.1);
   --color-faint-dark: #3e3c36;
+
+  /* Painel-specific (agenda grid, sidebar, modal) */
+  --color-panel-bg: #0f0f0f;
+  --color-panel-bg2: #181818;
+  --color-panel-bg3: #222222;
+  --color-panel-border: #2e2e2e;
+  --color-panel-border2: #3a3a3a;
+  --color-panel-faint: #444;
+  --color-panel-accent: #c8f060;
+  --color-panel-accent2: #7dd3a8;
+  --color-panel-warn: #f0a060;
+  --color-panel-danger: #f06060;
+  --color-panel-blue: #60b0f0;
+  --color-panel-purple: #b060f0;
 }
 
 /* ── [x-cloak] para Alpine.js ── */

@@ -12,712 +12,191 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda — Ana Cabelos</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+@keyframes slide-down { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
 
-:root {
-  --bg:        #0f0f0f;
-  --bg2:       #181818;
-  --bg3:       #222222;
-  --border:    #2e2e2e;
-  --border2:   #3a3a3a;
-  --text:      #f0ede8;
-  --muted:     #888;
-  --faint:     #444;
-  --accent:    #c8f060;
-  --accent2:   #7dd3a8;
-  --warn:      #f0a060;
-  --danger:    #f06060;
-  --blue:      #60b0f0;
-  --purple:    #b060f0;
-  --hour-h:    64px;
-  --sidebar-w: 240px;
-}
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── TOPBAR ── */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  height: 56px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.logo {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -.3px;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.logo-dot {
-  width: 8px; height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: .5; transform: scale(.75); }
-}
-
-.topbar-center {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.date-nav button {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color .15s, color .15s;
-}
-.date-nav button:hover { border-color: var(--border2); color: var(--text); }
-.date-label {
-  font-size: 14px;
-  font-weight: 500;
-  min-width: 180px;
-  text-align: center;
-  cursor: pointer;
-}
-.date-label .weekday { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 5px; }
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.nav-link {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
-  padding: 5px 10px;
-  border-radius: 7px;
-  cursor: pointer;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background .15s, color .15s;
-}
-.nav-link:hover { background: var(--bg3); color: var(--text); }
-.nav-link.active { background: var(--bg3); color: var(--text); }
-.btn-logout {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
-  padding: 4px 10px;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: border-color .15s, color .15s;
-}
-.btn-logout:hover { border-color: var(--border2); color: var(--text); }
-.avatar {
-  width: 32px; height: 32px;
-  background: var(--accent);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600; color: #0f0f0f;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.btn-new {
-  background: var(--accent);
-  color: #0f0f0f;
-  border: none;
-  border-radius: 8px;
-  padding: 0 14px;
-  height: 32px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 5px;
-  transition: opacity .15s;
-}
-.btn-new:hover { opacity: .85; }
-
-/* ── LAYOUT ── */
-.layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  height: calc(100vh - 56px);
-}
-
-/* ── SIDEBAR ── */
-.sidebar {
-  width: var(--sidebar-w);
-  border-right: 1px solid var(--border);
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-.sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
-.sidebar-section:last-child { border-bottom: none; }
-
-.sidebar-label {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin-bottom: 10px;
-}
-
-/* mini calendário */
-.mini-cal { font-size: 12px; }
-.mini-cal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 8px; color: var(--muted);
-}
-.mini-cal-grid {
-  display: grid; grid-template-columns: repeat(7, 1fr);
-  gap: 1px; text-align: center;
-}
-.mini-cal-grid .day-name {
-  font-size: 10px; color: var(--faint); padding: 3px 0;
-}
-.mini-cal-grid .day {
-  padding: 4px 0; border-radius: 5px; cursor: pointer;
-  color: var(--muted); transition: background .1s, color .1s;
-  font-variant-numeric: tabular-nums;
-}
-.mini-cal-grid .day:hover { background: var(--bg3); color: var(--text); }
-.mini-cal-grid .day.today { background: var(--accent); color: #0f0f0f; font-weight: 600; }
-.mini-cal-grid .day.selected { background: var(--bg3); color: var(--text); outline: 1px solid var(--border2); }
-.mini-cal-grid .day.has-event::after {
-  content: ''; display: block; width: 3px; height: 3px;
-  background: var(--accent2); border-radius: 50%; margin: 1px auto 0;
-}
-
-/* stats */
-.stats { display: flex; flex-direction: column; gap: 8px; }
-.stat {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.stat-label { font-size: 12px; color: var(--muted); }
-.stat-val { font-size: 15px; font-weight: 600; font-family: 'DM Mono', monospace; }
-.stat-val.green { color: var(--accent2); }
-.stat-val.yellow { color: var(--accent); }
-
-/* serviços */
-.servicos-list { display: flex; flex-direction: column; gap: 6px; }
-.servico-item {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; color: var(--muted); cursor: pointer;
-  padding: 4px 0;
-}
-.servico-dot {
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-}
-.servico-item:hover .servico-item-name { color: var(--text); }
-.servico-item-name { flex: 1; }
-.servico-item-dur { font-family: 'DM Mono', monospace; font-size: 11px; }
-
-/* ── AGENDA PRINCIPAL ── */
-.agenda-wrap {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-}
-
-.agenda-grid {
-  display: flex;
-  position: relative;
-  padding-bottom: 32px;
-}
-
-/* coluna de horas */
-.time-col {
-  width: 52px;
-  flex-shrink: 0;
-  position: sticky;
-  left: 0;
-  background: var(--bg);
-  z-index: 10;
-}
-.time-slot {
-  height: var(--hour-h);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding-right: 10px;
-  padding-top: 6px;
-}
-.time-label {
-  font-size: 11px;
-  font-family: 'DM Mono', monospace;
-  color: var(--faint);
-}
-.time-label.now { color: var(--accent); }
-
-/* coluna de eventos */
-.events-col {
-  flex: 1;
-  position: relative;
-  min-width: 0;
-}
-
-/* linhas de hora */
-.hour-line {
-  position: absolute;
-  left: 0; right: 0;
-  border-top: 1px solid var(--border);
-  pointer-events: none;
-  z-index: 0;
-}
-.hour-line.half {
-  border-top: 1px dashed var(--faint);
-  opacity: .4;
-}
-
-/* linha do horário atual */
-.now-line {
-  position: absolute;
-  left: -4px; right: 0;
-  z-index: 20;
-  pointer-events: none;
-}
+/* now-line pseudo-elementos */
 .now-line::before {
-  content: '';
-  position: absolute;
-  left: 0; top: -3px;
-  width: 6px; height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
+  content:'';position:absolute;left:0;top:-3px;width:6px;height:6px;
+  background:var(--color-panel-accent);border-radius:50%;
 }
 .now-line::after {
-  content: '';
-  position: absolute;
-  left: 6px; right: 0;
-  top: -0.5px;
-  height: 1px;
-  background: var(--accent);
+  content:'';position:absolute;left:6px;right:0;top:-.5px;height:1px;
+  background:var(--color-panel-accent);
 }
 
-/* bloqueios */
-.bloqueio {
-  position: absolute;
-  left: 6px; right: 6px;
-  border-radius: 6px;
-  background: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 4px,
-    rgba(255,255,255,.03) 4px,
-    rgba(255,255,255,.03) 8px
-  );
-  border: 1px solid var(--border2);
-  display: flex;
-  align-items: center;
-  padding: 6px 10px;
-  gap: 7px;
-  cursor: default;
-  overflow: hidden;
-  z-index: 1;
-}
-.bloqueio-icon { font-size: 13px; flex-shrink: 0; }
-.bloqueio-nome { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bloqueio-dur  { font-size: 10px; color: var(--faint); font-family: 'DM Mono', monospace; white-space: nowrap; }
-
-/* agendamentos */
-.agendamento {
-  position: absolute;
-  left: 6px; right: 6px;
-  border-radius: 8px;
-  border-left: 3px solid;
-  padding: 8px 10px;
-  cursor: pointer;
-  overflow: hidden;
-  z-index: 5;
-  transition: filter .15s, transform .1s;
-}
-.agendamento:hover { filter: brightness(1.15); transform: translateX(1px); }
-
-.ag-service { font-size: 12px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ag-client  { font-size: 11px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ag-time    { font-size: 10px; font-family: 'DM Mono', monospace; opacity: .6; margin-top: 3px; }
-.ag-badge   { position: absolute; top: 7px; right: 8px; font-size: 10px; font-weight: 600; background: rgba(0,0,0,.3); border-radius: 4px; padding: 1px 5px; }
-
-/* cores por categoria */
-.ag-corte    { background: #1a2d1a; border-color: var(--accent2); color: #b0e8cc; }
-.ag-tintura  { background: #2a1a2d; border-color: var(--purple);  color: #d0a0f0; }
-.ag-escova   { background: #1a2330; border-color: var(--blue);    color: #90c8f0; }
-.ag-barba    { background: #2d1f1a; border-color: var(--warn);    color: #f0c098; }
-
-/* tooltip / modal de detalhe */
-.detail-panel {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(.95);
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 14px;
-  width: 320px;
-  padding: 20px;
-  z-index: 200;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s, transform .2s;
-  box-shadow: 0 24px 64px rgba(0,0,0,.6);
-}
-.detail-panel.open {
-  opacity: 1;
-  pointer-events: all;
-  transform: translate(-50%, -50%) scale(1);
-}
-.detail-overlay {
-  position: fixed; inset: 0;
-  z-index: 199;
-  display: none;
-}
-.detail-overlay.open { display: block; }
-
-.detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-.detail-title { font-size: 16px; font-weight: 600; }
-.detail-close {
-  background: var(--bg3); border: none; color: var(--muted);
-  width: 26px; height: 26px; border-radius: 6px; font-size: 15px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: color .15s;
-}
-.detail-close:hover { color: var(--text); }
-
-.detail-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; }
-.detail-row-icon { font-size: 14px; margin-top: 1px; }
-.detail-row-label { font-size: 11px; color: var(--muted); }
-.detail-row-val   { font-size: 13px; font-weight: 500; }
-
-.detail-actions { display: flex; gap: 8px; margin-top: 18px; }
-.btn-cancel {
-  flex: 1; padding: 9px; border-radius: 8px;
-  background: rgba(240,96,96,.12); border: 1px solid rgba(240,96,96,.3);
-  color: var(--danger); font-size: 13px; font-weight: 500;
-  cursor: pointer; transition: background .15s; font-family: 'DM Sans', sans-serif;
-}
-.btn-cancel:hover { background: rgba(240,96,96,.22); }
-.btn-conclude {
-  flex: 1; padding: 9px; border-radius: 8px;
-  background: rgba(200,240,96,.12); border: 1px solid rgba(200,240,96,.3);
-  color: var(--accent); font-size: 13px; font-weight: 500;
-  cursor: pointer; transition: background .15s; font-family: 'DM Sans', sans-serif;
-}
-.btn-conclude:hover { background: rgba(200,240,96,.22); }
-
-/* bloqueio modal */
-.btn-bloqueio {
-  width: 100%; padding: 9px; border-radius: 8px; margin-top: 8px;
-  background: var(--bg3); border: 1px solid var(--border2);
-  color: var(--muted); font-size: 13px; font-weight: 500;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-  font-family: 'DM Sans', sans-serif;
-  transition: border-color .15s, color .15s;
-}
-.btn-bloqueio:hover { border-color: var(--border2); color: var(--text); }
-
-.empty-day {
-  position: absolute; left: 0; right: 0; top: 50%;
-  transform: translateY(-50%);
-  text-align: center;
-  pointer-events: none;
-}
-.empty-day p { font-size: 13px; color: var(--faint); }
-
-/* ── RESPONSIVO ─────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .layout { flex-direction: column; }
-  .sidebar {
-    width: 100%;
-    height: auto;
-    max-height: 35vh;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    order: -1;
-  }
-  .agenda-scroll { overflow: visible; }
-  .agenda-grid { min-width: 100%; }
-  .agenda-row { min-height: 50px; }
-  .agenda-col-time { width: 45px; font-size: 10px; }
-  .agenda-col-events { flex: 1; }
-  .event-card { padding: 3px 5px; font-size: 11px; }
-  .event-card .event-time { display: none; }
-  .topbar { padding: 0 12px; }
-  .topbar-center { display: none; }
-  .logo { font-size: 14px; }
-  .btn-new { padding: 8px 12px; font-size: 13px; }
-  .topbar-right { gap: 8px; }
+/* Bloqueio pattern */
+.bloqueio-pattern {
+  background:repeating-linear-gradient(-45deg,transparent,transparent 4px,rgba(255,255,255,.03) 4px,rgba(255,255,255,.03) 8px);
 }
 
-@media (max-width: 480px) {
-  :root { --hour-h: 36px; }
-  .sidebar { max-height: 30vh; }
-  .sidebar-section { padding: 10px; }
-  .mini-cal-grid .day { padding: 3px; font-size: 10px; }
-  .agenda-row { min-height: 36px; }
-  .event-card { font-size: 10px; padding: 2px 4px; }
+/* Mini-cal day.has-event::after */
+.has-event::after {
+  content:'';display:block;width:3px;height:3px;
+  background:var(--color-panel-accent2);border-radius:50%;margin:1px auto 0;
 }
 
-/* ── BANNER FREE (Pro-only feature promo) ── */
-.banner-free {
-  background: var(--lime-t);
-  border: 1.5px solid rgba(200, 240, 96, .3);
-  color: var(--text);
-  margin: 16px auto 0;
-  max-width: 1400px;
-  border-radius: 12px;
-  animation: slide-down 0.4s ease-out;
-}
-@keyframes slide-down {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* Agendamento hover */
+.agendamento:hover { filter:brightness(1.15);transform:translateX(1px); }
 
-.banner-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-}
+/* Servico hover */
+.servico-item:hover .servico-item-name { color:var(--color-text); }
 
-.banner-text strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
+/* Day today/selected overrides */
+.day-today { background:var(--color-panel-accent) !important;color:var(--color-panel-bg) !important;font-weight:600 !important; }
+.day-selected { background:var(--color-panel-bg3) !important;color:var(--color-text) !important;outline:1px solid var(--color-panel-border2); }
 
-.banner-text p {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
-}
+/* Detail panel open state (controlado por JS) */
+.detail-panel-open { opacity:1 !important;pointer-events:all !important;transform:translate(-50%,-50%) scale(1) !important; }
+.detail-overlay-open { display:block !important; }
 
-.banner-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.btn-banner {
-  background: var(--lime);
-  color: var(--lime-ink);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: 'Syne', sans-serif;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all .2s;
-  white-space: nowrap;
-}
-
-.btn-banner:hover {
-  background: #b8e050;
-}
-
-.btn-banner-close {
-  background: transparent;
-  color: var(--muted);
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  transition: all .2s;
-}
-
-.btn-banner-close:hover {
-  background: rgba(200, 240, 96, .1);
-  color: var(--text);
-}
-
-@media (max-width: 768px) {
-  .banner-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
-  }
-  .banner-actions {
-    width: 100%;
-    justify-content: center;
-  }
-}
+/* Banner free animation */
+.banner-free { animation:slide-down .4s ease-out; }
 </style>
 </head>
-<body>
+<body class="bg-[var(--color-panel-bg)] text-[var(--color-text)] font-['DM_Sans',sans-serif] min-h-screen flex flex-col">
 
 <!-- TOPBAR -->
-<div class="topbar">
-  <div class="logo">
-    <div class="logo-dot"></div>
+<div class="topbar flex items-center justify-between px-6 h-14 border-b border-[var(--color-panel-border)] bg-[var(--color-panel-bg)] sticky top-0 z-[100] [@media(max-width:768px)]:px-3">
+  <div class="logo text-[15px] font-semibold tracking-[-.3px] text-[var(--color-text)] flex items-center gap-2 [@media(max-width:768px)]:text-[14px]">
+    <div class="logo-dot w-2 h-2 bg-[var(--color-panel-accent)] rounded-full" style="animation:pulse-dot 2s ease-in-out infinite"></div>
     AgendaPro
   </div>
-  <div class="topbar-center">
-    <div class="date-nav" style="display:flex;align-items:center;gap:6px">
-      <button onclick="mudarDia(-1)">‹</button>
-      <div class="date-label" id="date-label">
+  <div class="topbar-center flex items-center gap-2 [@media(max-width:768px)]:!hidden">
+    <div class="date-nav flex items-center gap-1.5">
+      <button onclick="mudarDia(-1)" class="bg-transparent border border-[var(--color-panel-border)] text-[var(--color-muted)] w-7 h-7 rounded-md cursor-pointer text-[13px] flex items-center justify-center transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)]">‹</button>
+      <div class="date-label text-[14px] font-medium min-w-[180px] text-center cursor-pointer" id="date-label">
         <span id="date-text"></span>
-        <span class="weekday" id="weekday-text"></span>
+        <span class="weekday text-[var(--color-muted)] text-[12px] font-normal ml-1.5" id="weekday-text"></span>
       </div>
-      <button onclick="mudarDia(1)">›</button>
+      <button onclick="mudarDia(1)" class="bg-transparent border border-[var(--color-panel-border)] text-[var(--color-muted)] w-7 h-7 rounded-md cursor-pointer text-[13px] flex items-center justify-center transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)]">›</button>
     </div>
   </div>
-  <div class="topbar-right">
-    <nav class="nav-links">
-      <a href="/painel" class="nav-link active">📅 Agenda</a>
-      <a href="/clientes" class="nav-link">👥 Clientes</a>
-      <a href="/relatorio" class="nav-link">📊 Relatórios</a>
-      <a href="/configuracoes" class="nav-link">⚙️ Config</a>
-      <a href="/planos" class="nav-link">⭐ Plano</a>
+  <div class="topbar-right flex items-center gap-2.5 [@media(max-width:768px)]:gap-2">
+    <nav class="nav-links flex items-center gap-0.5 [@media(max-width:900px)]:!hidden">
+      <a href="/painel" class="nav-link active bg-[var(--color-panel-bg3)] text-[var(--color-text)] no-underline text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">📅 Agenda</a>
+      <a href="/clientes" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">👥 Clientes</a>
+      <a href="/relatorio" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">📊 Relatórios</a>
+      <a href="/configuracoes" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">⚙️ Config</a>
+      <a href="/planos" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">⭐ Plano</a>
     </nav>
-    <button class="btn-new" onclick="abrirNovoAgendamento()">+ Novo</button>
-    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
-    <div class="avatar" id="avatar-initials" title="Meu perfil">AC</div>
+    <button class="btn-new bg-[var(--color-panel-accent)] text-[var(--color-panel-bg)] border-none rounded-lg px-3.5 h-8 text-[13px] font-semibold flex items-center gap-1 cursor-pointer transition-opacity hover:opacity-85" onclick="abrirNovoAgendamento()">+ Novo</button>
+    <button class="btn-logout bg-transparent border border-[var(--color-panel-border)] text-[var(--color-muted)] text-[12px] font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)] font-['DM_Sans',sans-serif]" onclick="fazerLogout()">Sair</button>
+    <div class="avatar w-8 h-8 bg-[var(--color-panel-accent)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-panel-bg)] cursor-pointer flex-shrink-0" id="avatar-initials" title="Meu perfil">AC</div>
   </div>
 </div>
 
 <!-- BANNER FREE (Pro-only feature promo) -->
-<div class="banner-free" id="banner-free" style="display: none;">
-  <div class="banner-content">
+<div class="banner-free bg-[var(--color-lime-t)] border border-[rgba(200,240,96,.3)] text-[var(--color-text)] mx-auto mt-4 max-w-[1400px] rounded-xl mx-4" id="banner-free" style="display:none;animation:slide-down .4s ease-out">
+  <div class="banner-content flex items-center justify-between gap-4 p-4 [@media(max-width:768px)]:flex-col [@media(max-width:768px)]:text-center">
     <div class="banner-text">
-      <strong>📱 WhatsApp automático disponível no plano Pro!</strong>
-      <p>Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
+      <strong class="block text-[14px] font-semibold mb-1">📱 WhatsApp automático disponível no plano Pro!</strong>
+      <p class="text-[13px] text-[var(--color-muted)] m-0">Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
     </div>
-    <div class="banner-actions">
-      <a href="/planos" class="btn-banner">Ver planos</a>
-      <button class="btn-banner-close" onclick="fecharBannerFree()">×</button>
+    <div class="banner-actions flex items-center gap-2 flex-shrink-0 [@media(max-width:768px)]:w-full [@media(max-width:768px)]:justify-center">
+      <a href="/planos" class="btn-banner bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-4 py-2 text-[13px] font-semibold cursor-pointer no-underline transition-all hover:bg-[#b8e050] whitespace-nowrap font-['Syne',sans-serif]">Ver planos</a>
+      <button class="btn-banner-close bg-transparent text-[var(--color-muted)] border-none text-[20px] cursor-pointer p-1 w-7 h-7 rounded-lg transition-all hover:bg-[rgba(200,240,96,.1)] hover:text-[var(--color-text)]" onclick="fecharBannerFree()">×</button>
     </div>
   </div>
 </div>
 
 <!-- BADGE PERIODICIDADE PRO -->
-<div id="badge-pro-periodicidade" style="display:none;text-align:center;padding:8px;background:var(--bg2);border-bottom:1px solid var(--bord);font-size:12px;color:var(--muted)">
-  <span style="color:var(--lime)">✓</span> Plano Pro <span id="pro-periodicidade-text"></span> ativo
+<div id="badge-pro-periodicidade" style="display:none;text-align:center;padding:8px;background:var(--color-panel-bg2);border-bottom:1px solid var(--color-panel-border);font-size:12px;color:var(--color-muted)">
+  <span style="color:var(--color-panel-accent)">✓</span> Plano Pro <span id="pro-periodicidade-text"></span> ativo
 </div>
 
 <!-- LAYOUT -->
-<div class="layout">
+<div class="layout flex flex-1 overflow-hidden h-[calc(100vh-56px)] [@media(max-width:768px)]:flex-col">
 
   <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-label" id="sidebar-mes-label">—</div>
-      <div class="mini-cal">
-        <div class="mini-cal-header">
-          <span style="cursor:pointer;padding:2px 6px" onclick="mudarMesCal(-1)">‹</span>
-          <span style="color:var(--text);font-weight:500" id="mini-cal-mes-label">—</span>
-          <span style="cursor:pointer;padding:2px 6px" onclick="mudarMesCal(1)">›</span>
+  <div class="sidebar w-[240px] border-r border-[var(--color-panel-border)] bg-[var(--color-panel-bg)] flex flex-col overflow-y-auto flex-shrink-0 [@media(max-width:768px)]:w-full [@media(max-width:768px)]:max-h-[35vh] [@media(max-width:768px)]:border-r-0 [@media(max-width:768px)]:border-b [@media(max-width:768px)]:order-[-1] [@media(max-width:480px)]:max-h-[30vh]">
+    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] [@media(max-width:480px)]:p-2.5">
+      <div class="sidebar-label text-[10px] font-medium tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5" id="sidebar-mes-label">—</div>
+      <div class="mini-cal text-[12px]">
+        <div class="mini-cal-header flex justify-between items-center mb-2 text-[var(--color-muted)]">
+          <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-text)]" onclick="mudarMesCal(-1)">‹</span>
+          <span class="text-[var(--color-text)] font-medium" id="mini-cal-mes-label">—</span>
+          <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-text)]" onclick="mudarMesCal(1)">›</span>
         </div>
-        <div class="mini-cal-grid" id="mini-cal"></div>
+        <div class="mini-cal-grid grid grid-cols-7 gap-px text-center" id="mini-cal"></div>
       </div>
     </div>
 
-    <div class="sidebar-section">
-      <div class="sidebar-label">Hoje</div>
-      <div class="stats">
-        <div class="stat">
-          <span class="stat-label">Agendamentos</span>
-          <span class="stat-val yellow" id="stat-count">—</span>
+    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] [@media(max-width:480px)]:p-2.5">
+      <div class="sidebar-label text-[10px] font-medium tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Hoje</div>
+      <div class="stats flex flex-col gap-2">
+        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border)] rounded-lg">
+          <span class="stat-label text-[12px] text-[var(--color-muted)]">Agendamentos</span>
+          <span class="stat-val text-[15px] font-semibold font-['DM_Mono',monospace] text-[var(--color-panel-accent)]" id="stat-count">—</span>
         </div>
-        <div class="stat">
-          <span class="stat-label">Receita prevista</span>
-          <span class="stat-val green" id="stat-receita">—</span>
+        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border)] rounded-lg">
+          <span class="stat-label text-[12px] text-[var(--color-muted)]">Receita prevista</span>
+          <span class="stat-val text-[15px] font-semibold font-['DM_Mono',monospace] text-[var(--color-panel-accent2)]" id="stat-receita">—</span>
         </div>
-        <div class="stat">
-          <span class="stat-label">Próximo horário</span>
-          <span class="stat-val" id="stat-proximo" style="font-size:13px">—</span>
+        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border)] rounded-lg">
+          <span class="stat-label text-[12px] text-[var(--color-muted)]">Próximo horário</span>
+          <span class="stat-val text-[15px] font-semibold font-['DM_Mono',monospace] text-[13px]" id="stat-proximo">—</span>
         </div>
       </div>
     </div>
 
-    <div class="sidebar-section">
-      <div class="sidebar-label">Serviços</div>
-      <div class="servicos-list">
-        <div class="servico-item"><div class="servico-dot" style="background:var(--accent2)"></div><span class="servico-item-name">Corte + escova</span><span class="servico-item-dur">60min</span></div>
-        <div class="servico-item"><div class="servico-dot" style="background:var(--purple)"></div><span class="servico-item-name">Tintura</span><span class="servico-item-dur">120min</span></div>
-        <div class="servico-item"><div class="servico-dot" style="background:var(--blue)"></div><span class="servico-item-name">Escova progressiva</span><span class="servico-item-dur">90min</span></div>
-        <div class="servico-item"><div class="servico-dot" style="background:var(--warn)"></div><span class="servico-item-name">Corte masculino</span><span class="servico-item-dur">30min</span></div>
+    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] [@media(max-width:480px)]:p-2.5">
+      <div class="sidebar-label text-[10px] font-medium tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Serviços</div>
+      <div class="servicos-list flex flex-col gap-1.5">
+        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
+          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-accent2)"></div>
+          <span class="servico-item-name flex-1">Corte + escova</span>
+          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">60min</span>
+        </div>
+        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
+          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-purple)"></div>
+          <span class="servico-item-name flex-1">Tintura</span>
+          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">120min</span>
+        </div>
+        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
+          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-blue)"></div>
+          <span class="servico-item-name flex-1">Escova progressiva</span>
+          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">90min</span>
+        </div>
+        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
+          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-warn)"></div>
+          <span class="servico-item-name flex-1">Corte masculino</span>
+          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">30min</span>
+        </div>
       </div>
     </div>
 
-    <div class="sidebar-section">
-      <button class="btn-bloqueio" onclick="abrirNovoBloqueio()">
+    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] last:border-b-0 [@media(max-width:480px)]:p-2.5">
+      <button class="btn-bloqueio w-full py-2 rounded-lg bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-muted)] text-[13px] font-medium cursor-pointer flex items-center justify-center gap-1.5 font-['DM_Sans',sans-serif] transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)]" onclick="abrirNovoBloqueio()">
         <span>⛔</span> Adicionar bloqueio
       </button>
     </div>
   </div>
 
   <!-- AGENDA -->
-  <div class="agenda-wrap" id="agenda-wrap">
-    <div class="agenda-grid" id="agenda-grid">
+  <div class="agenda-wrap flex-1 overflow-y-auto overflow-x-hidden relative" id="agenda-wrap">
+    <div class="agenda-grid flex relative pb-8" id="agenda-grid">
 
       <!-- coluna de horas -->
-      <div class="time-col" id="time-col"></div>
+      <div class="time-col w-[52px] flex-shrink-0 sticky left-0 bg-[var(--color-panel-bg)] z-[10]" id="time-col"></div>
 
       <!-- coluna de eventos -->
-      <div class="events-col" id="events-col"></div>
+      <div class="events-col flex-1 relative min-w-0" id="events-col"></div>
 
     </div>
   </div>
 </div>
 
 <!-- DETAIL PANEL -->
-<div class="detail-overlay" id="overlay" onclick="fecharDetalhe()"></div>
-<div class="detail-panel" id="detail-panel">
-  <div class="detail-header">
-    <div class="detail-title" id="dp-title"></div>
-    <button class="detail-close" onclick="fecharDetalhe()">✕</button>
+<div class="detail-overlay fixed inset-0 z-[199] hidden" id="overlay" onclick="fecharDetalhe()"></div>
+<div class="detail-panel fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[.95] bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border2)] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
+  <div class="detail-header flex justify-between items-start mb-4">
+    <div class="detail-title text-[16px] font-semibold" id="dp-title"></div>
+    <button class="detail-close bg-[var(--color-panel-bg3)] border-none text-[var(--color-muted)] w-[26px] h-[26px] rounded-md text-[15px] cursor-pointer flex items-center justify-center transition-colors hover:text-[var(--color-text)]" onclick="fecharDetalhe()">✕</button>
   </div>
   <div id="dp-body"></div>
-  <div class="detail-actions" id="dp-actions"></div>
+  <div class="detail-actions flex gap-2 mt-[18px]" id="dp-actions"></div>
 </div>
 
 <script type="module">
@@ -884,10 +363,10 @@ async function renderAgenda() {
   eventscol.innerHTML = '';
   eventscol.style.height = (HORAS * HOUR_H) + 'px';
 
-  // Loading overlay por cima (não dentro do eventscol para não atrapalhar as linhas)
+  // Loading overlay
   const loadingEl = document.createElement('div');
   loadingEl.id = 'agenda-loading';
-  loadingEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;background:var(--bg);z-index:5;pointer-events:none';
+  loadingEl.className = 'absolute inset-0 flex items-center justify-center text-[var(--color-muted)] text-[13px] bg-[var(--color-panel-bg)] z-5 pointer-events-none';
   loadingEl.textContent = 'Carregando…';
   eventscol.style.position = 'relative';
   eventscol.appendChild(loadingEl);
@@ -897,19 +376,19 @@ async function renderAgenda() {
     const h = HORA_INICIO + i;
     const y = i * HOUR_H;
     const lbl = document.createElement('div');
-    lbl.className = 'time-slot';
+    lbl.className = 'time-slot flex items-start justify-end pr-2.5 pt-1.5';
     lbl.style.height = HOUR_H + 'px';
     const isNowHour = (new Date().getHours() === h) && isToday();
-    lbl.innerHTML = `<span class="time-label${isNowHour?' now':''}">${String(h).padStart(2,'0')}:00</span>`;
+    lbl.innerHTML = `<span class="time-label text-[11px] font-['DM_Mono',monospace] ${isNowHour?'text-[var(--color-panel-accent)]':'text-[var(--color-panel-faint)]'}">${String(h).padStart(2,'0')}:00</span>`;
     timecol.appendChild(lbl);
 
     if (i < HORAS) {
       const line = document.createElement('div');
-      line.className = 'hour-line';
+      line.className = 'hour-line absolute left-0 right-0 border-t border-[var(--color-panel-border)] pointer-events-none z-0';
       line.style.top = y + 'px';
       eventscol.appendChild(line);
       const half = document.createElement('div');
-      half.className = 'hour-line half';
+      half.className = 'hour-line absolute left-0 right-0 border-t border-dashed border-[var(--color-panel-faint)] pointer-events-none z-0 opacity-40';
       half.style.top = (y + HOUR_H/2) + 'px';
       eventscol.appendChild(half);
     }
@@ -921,7 +400,7 @@ async function renderAgenda() {
     const minutos = (now.getHours() - HORA_INICIO) * 60 + now.getMinutes();
     if (minutos >= 0 && minutos <= HORAS * 60) {
       const nl = document.createElement('div');
-      nl.className = 'now-line';
+      nl.className = 'now-line absolute left-[-4px] right-0 z-[20] pointer-events-none';
       nl.style.top = (minutos / 60 * HOUR_H) + 'px';
       eventscol.appendChild(nl);
       setTimeout(() => {
@@ -936,7 +415,7 @@ async function renderAgenda() {
   // Busca dados reais
   const dados = await buscarDadosDia(diaAtual);
 
-  // Remove loading overlay
+  // Remove loading
   document.getElementById('agenda-loading')?.remove();
 
   // Bloqueios
@@ -944,31 +423,37 @@ async function renderAgenda() {
     const top = (bl.hora - HORA_INICIO) * HOUR_H;
     const h   = (bl.dur / 60) * HOUR_H;
     const el  = document.createElement('div');
-    el.className = 'bloqueio';
+    el.className = 'bloqueio absolute left-1.5 right-1.5 rounded-lg border border-[var(--color-panel-border2)] flex items-center px-2.5 py-1.5 gap-[7px] cursor-default overflow-hidden z-1 bloqueio-pattern';
     el.style.cssText = `top:${top}px;height:${h - 3}px`;
     el.innerHTML = `
-      <span class="bloqueio-icon">${bl.icon}</span>
-      <span class="bloqueio-nome">${bl.nome}</span>
-      <span class="bloqueio-dur">${bl.dur}min</span>
+      <span class="bloqueio-icon text-[13px] flex-shrink-0">${bl.icon}</span>
+      <span class="bloqueio-nome text-[11px] font-medium text-[var(--color-muted)] whitespace-nowrap overflow-hidden text-ellipsis">${bl.nome}</span>
+      <span class="bloqueio-dur text-[10px] text-[var(--color-panel-faint)] font-['DM_Mono',monospace] whitespace-nowrap">${bl.dur}min</span>
     `;
     eventscol.appendChild(el);
   });
 
   // Agendamentos
-  const cores = ['accent2','purple','blue','warn','green'];
   dados.ag.forEach((ag, idx) => {
     const top    = (ag.hora - HORA_INICIO) * HOUR_H;
     const h      = (ag.dur / 60) * HOUR_H;
     const horaFim = ag.hora + ag.dur / 60;
     const el     = document.createElement('div');
-    el.className = `agendamento ag-${ag.cat}`;
+    el.className = `agendamento absolute left-1.5 right-1.5 rounded-lg border-l-[3px] p-2 cursor-pointer overflow-hidden z-5 transition-all`;
+    // Cores por categoria
+    const catClasses = {
+      corte:  'bg-[#1a2d1a] border-l-[var(--color-panel-accent2)] text-[#b0e8cc]',
+      tintura:'bg-[#2a1a2d] border-l-[var(--color-panel-purple)] text-[#d0a0f0]',
+      escova: 'bg-[#1a2330] border-l-[var(--color-panel-blue)] text-[#90c8f0]',
+      barba:  'bg-[#2d1f1a] border-l-[var(--color-panel-warn)] text-[#f0c098]',
+    };
+    el.classList.add(...(catClasses[ag.cat] || catClasses.corte).split(' '));
     el.style.cssText = `top:${top + 2}px;height:${h - 5}px`;
-    el.style.animationDelay = (idx * 0.05) + 's';
     el.innerHTML = `
-      <div class="ag-service">${ag.servico}</div>
-      <div class="ag-client">${ag.cliente}</div>
-      ${h > 50 ? `<div class="ag-time">${fmtHora(ag.hora)} – ${fmtHora(horaFim)}</div>` : ''}
-      ${h > 50 ? `<div class="ag-badge">R$${ag.preco}</div>` : ''}
+      <div class="ag-service text-[12px] font-semibold mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">${ag.servico}</div>
+      <div class="ag-client text-[11px] opacity-75 whitespace-nowrap overflow-hidden text-ellipsis">${ag.cliente}</div>
+      ${h > 50 ? `<div class="ag-time text-[10px] font-['DM_Mono',monospace] opacity-60 mt-1">${fmtHora(ag.hora)} – ${fmtHora(horaFim)}</div>` : ''}
+      ${h > 50 ? `<div class="ag-badge absolute top-[7px] right-2 text-[10px] font-semibold bg-black/30 rounded px-1.5 py-0.5">R$${ag.preco}</div>` : ''}
     `;
     el.onclick = () => abrirDetalhe(ag);
     eventscol.appendChild(el);
@@ -977,8 +462,8 @@ async function renderAgenda() {
   // Nenhum agendamento
   if (dados.ag.length === 0 && dados.bl.length === 0) {
     const vazio = document.createElement('div');
-    vazio.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted);font-size:13px;pointer-events:none';
-    vazio.innerHTML = '<div style="font-size:28px;margin-bottom:8px">📭</div>Nenhum agendamento para este dia';
+    vazio.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none text-[var(--color-muted)] text-[13px]';
+    vazio.innerHTML = '<div class="text-[28px] mb-2">📭</div>Nenhum agendamento para este dia';
     eventscol.appendChild(vazio);
   }
 
@@ -1003,29 +488,29 @@ window.abrirDetalhe = function(ag) {
   const horaFim = ag.hora + ag.dur / 60;
   document.getElementById('dp-title').textContent = ag.servico;
   document.getElementById('dp-body').innerHTML = `
-    <div class="detail-row">
-      <div class="detail-row-icon">👤</div>
-      <div><div class="detail-row-label">Cliente</div><div class="detail-row-val">${ag.cliente}</div></div>
+    <div class="detail-row flex gap-2 items-start mb-2.5">
+      <div class="detail-row-icon text-[14px] mt-0.5">👤</div>
+      <div><div class="detail-row-label text-[11px] text-[var(--color-muted)]">Cliente</div><div class="detail-row-val text-[13px] font-medium">${ag.cliente}</div></div>
     </div>
-    <div class="detail-row">
-      <div class="detail-row-icon">📞</div>
-      <div><div class="detail-row-label">Telefone</div><div class="detail-row-val">${ag.tel || '—'}</div></div>
+    <div class="detail-row flex gap-2 items-start mb-2.5">
+      <div class="detail-row-icon text-[14px] mt-0.5">📞</div>
+      <div><div class="detail-row-label text-[11px] text-[var(--color-muted)]">Telefone</div><div class="detail-row-val text-[13px] font-medium">${ag.tel || '—'}</div></div>
     </div>
-    <div class="detail-row">
-      <div class="detail-row-icon">🕐</div>
-      <div><div class="detail-row-label">Horário</div><div class="detail-row-val">${fmtHora(ag.hora)} – ${fmtHora(horaFim)} (${ag.dur}min)</div></div>
+    <div class="detail-row flex gap-2 items-start mb-2.5">
+      <div class="detail-row-icon text-[14px] mt-0.5">🕐</div>
+      <div><div class="detail-row-label text-[11px] text-[var(--color-muted)]">Horário</div><div class="detail-row-val text-[13px] font-medium">${fmtHora(ag.hora)} – ${fmtHora(horaFim)} (${ag.dur}min)</div></div>
     </div>
-    <div class="detail-row">
-      <div class="detail-row-icon">💰</div>
-      <div><div class="detail-row-label">Valor</div><div class="detail-row-val">R$${Number(ag.preco).toFixed(2)}</div></div>
+    <div class="detail-row flex gap-2 items-start mb-2.5">
+      <div class="detail-row-icon text-[14px] mt-0.5">💰</div>
+      <div><div class="detail-row-label text-[11px] text-[var(--color-muted)]">Valor</div><div class="detail-row-val text-[13px] font-medium">R$${Number(ag.preco).toFixed(2)}</div></div>
     </div>
   `;
   document.getElementById('dp-actions').innerHTML = `
-    <button class="btn-cancel"   onclick="fecharDetalhe()">✕ Fechar</button>
-    <button class="btn-conclude" onclick="marcarConcluido('${ag.id}')">✓ Concluir</button>
+    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(240,96,96,.12)] border border-[rgba(240,96,96,.3)] text-[var(--color-panel-danger)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(240,96,96,.22)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">✕ Fechar</button>
+    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(200,240,96,.12)] border border-[rgba(200,240,96,.3)] text-[var(--color-panel-accent)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,240,96,.22)] font-['DM_Sans',sans-serif]" onclick="marcarConcluido('${ag.id}')">✓ Concluir</button>
   `;
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('detail-overlay-open');
+  document.getElementById('detail-panel').classList.add('detail-panel-open');
 };
 
 window.marcarConcluido = async function(agId) {
@@ -1038,47 +523,47 @@ window.marcarConcluido = async function(agId) {
 };
 
 window.fecharDetalhe = function() {
-  document.getElementById('overlay').classList.remove('open');
-  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('detail-overlay-open');
+  document.getElementById('detail-panel').classList.remove('detail-panel-open');
 };
 
-const inputStyle = "width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none";
-const monoStyle  = "width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none";
+const inputCls = "w-full bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] rounded-md px-2.5 py-2 text-[var(--color-text)] text-[13px] font-['DM_Sans',sans-serif] outline-none";
+const monoCls  = "w-full bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] rounded-md px-2.5 py-2 text-[var(--color-text)] text-[13px] font-['DM_Mono',monospace] outline-none";
 
 window.abrirNovoAgendamento = function() {
   document.getElementById('dp-title').textContent = 'Novo agendamento';
   document.getElementById('dp-body').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="flex flex-col gap-2.5">
       <div>
-        <div class="detail-row-label" style="margin-bottom:4px">Cliente</div>
-        <input id="novo-cliente" placeholder="Nome do cliente" style="${inputStyle}">
+        <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Cliente</div>
+        <input id="novo-cliente" placeholder="Nome do cliente" class="${inputCls}">
       </div>
       <div>
-        <div class="detail-row-label" style="margin-bottom:4px">Telefone</div>
-        <input id="novo-tel" placeholder="(11) 99999-0000" style="${inputStyle}">
+        <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Telefone</div>
+        <input id="novo-tel" placeholder="(11) 99999-0000" class="${inputCls}">
       </div>
       <div>
-        <div class="detail-row-label" style="margin-bottom:4px">Serviço</div>
-        <select id="novo-servico" onchange="carregarSlotsNoModal()" style="${inputStyle}">
+        <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Serviço</div>
+        <select id="novo-servico" onchange="carregarSlotsNoModal()" class="${inputCls}">
           <option value="">Carregando serviços…</option>
         </select>
       </div>
       <div>
-        <div class="detail-row-label" style="margin-bottom:4px">Horário disponível</div>
-        <select id="novo-hora" style="${monoStyle}">
+        <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Horário disponível</div>
+        <select id="novo-hora" class="${monoCls}">
           <option value="">← Selecione o serviço primeiro</option>
         </select>
-        <div id="novo-slots-loading" style="font-size:11px;color:var(--muted);margin-top:4px;display:none">Carregando horários…</div>
+        <div id="novo-slots-loading" class="text-[11px] text-[var(--color-muted)] mt-1 hidden">Carregando horários…</div>
       </div>
-      <div id="novo-erro" style="color:#e05;font-size:12px;display:none"></div>
+      <div id="novo-erro" class="text-[#e05] text-[12px] hidden"></div>
     </div>
   `;
   document.getElementById('dp-actions').innerHTML = `
-    <button class="btn-cancel"   onclick="fecharDetalhe()">Cancelar</button>
-    <button class="btn-conclude" onclick="salvarNovoAgendamento()">Confirmar</button>
+    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(240,96,96,.12)] border border-[rgba(240,96,96,.3)] text-[var(--color-panel-danger)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(240,96,96,.22)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">Cancelar</button>
+    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(200,240,96,.12)] border border-[rgba(200,240,96,.3)] text-[var(--color-panel-accent)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,240,96,.22)] font-['DM_Sans',sans-serif]" onclick="salvarNovoAgendamento()">Confirmar</button>
   `;
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('detail-overlay-open');
+  document.getElementById('detail-panel').classList.add('detail-panel-open');
   carregarServicosNoSelect();
 };
 
@@ -1298,29 +783,29 @@ window.salvarNovoAgendamento = async function() {
 window.abrirNovoBloqueio = function() {
   document.getElementById('dp-title').textContent = 'Novo bloqueio';
   document.getElementById('dp-body').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="flex flex-col gap-2.5">
       <div>
-        <div class="detail-row-label" style="margin-bottom:4px">Motivo</div>
-        <input id="bl-motivo" placeholder="Ex: Almoço, Férias, Reunião..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Motivo</div>
+        <input id="bl-motivo" placeholder="Ex: Almoço, Férias, Reunião..." class="${inputCls}">
       </div>
-      <div style="display:flex;gap:8px">
-        <div style="flex:1">
-          <div class="detail-row-label" style="margin-bottom:4px">Início</div>
-          <input type="time" id="bl-inicio" value="12:00" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace;outline:none">
+      <div class="flex gap-2">
+        <div class="flex-1">
+          <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Início</div>
+          <input type="time" id="bl-inicio" value="12:00" class="${monoCls}">
         </div>
-        <div style="flex:1">
-          <div class="detail-row-label" style="margin-bottom:4px">Fim</div>
-          <input type="time" id="bl-fim" value="13:00" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <div class="flex-1">
+          <div class="detail-row-label text-[11px] text-[var(--color-muted)] mb-1">Fim</div>
+          <input type="time" id="bl-fim" value="13:00" class="${inputCls}">
         </div>
       </div>
     </div>
   `;
   document.getElementById('dp-actions').innerHTML = `
-    <button class="btn-cancel"   onclick="fecharDetalhe()">Cancelar</button>
-    <button class="btn-conclude" onclick="salvarBloqueio()">Salvar bloqueio</button>
+    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(240,96,96,.12)] border border-[rgba(240,96,96,.3)] text-[var(--color-panel-danger)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(240,96,96,.22)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">Cancelar</button>
+    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(200,240,96,.12)] border border-[rgba(200,240,96,.3)] text-[var(--color-panel-accent)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,240,96,.22)] font-['DM_Sans',sans-serif]" onclick="salvarBloqueio()">Salvar bloqueio</button>
   `;
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('detail-overlay-open');
+  document.getElementById('detail-panel').classList.add('detail-panel-open');
 };
 
 window.salvarBloqueio = async function() {
@@ -1378,14 +863,13 @@ function renderMiniCal() {
   const dias = ['D','S','T','Q','Q','S','S'];
   dias.forEach(d => {
     const el = document.createElement('div');
-    el.className = 'day-name';
+    el.className = 'day-name text-[10px] text-[var(--color-panel-faint)] py-[3px]';
     el.textContent = d;
     cal.appendChild(el);
   });
   const mesesCurtos  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const mesesLongos  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-  // Atualiza os dois labels pelo ID (sem querySelector frágil)
   const sidebarLabel  = document.getElementById('sidebar-mes-label');
   const miniCalLabel  = document.getElementById('mini-cal-mes-label');
   if (sidebarLabel) sidebarLabel.textContent = `${mesesLongos[calMes]} ${calAno}`;
@@ -1397,11 +881,11 @@ function renderMiniCal() {
   for (let i = 0; i < primeiroDia; i++) cal.appendChild(document.createElement('div'));
   for (let d = 1; d <= totalDias; d++) {
     const el = document.createElement('div');
-    el.className = 'day';
+    el.className = 'day py-1 rounded-sm cursor-pointer text-[var(--color-muted)] transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)] tabular-nums';
     el.textContent = d;
     const dataD = new Date(calAno, calMes, d);
-    if (dataD.toDateString() === hoje.toDateString()) el.classList.add('today');
-    if (dataD.toDateString() === diaAtual.toDateString()) el.classList.add('selected');
+    if (dataD.toDateString() === hoje.toDateString()) el.classList.add('day-today');
+    if (dataD.toDateString() === diaAtual.toDateString()) el.classList.add('day-selected');
     el.onclick = () => {
       diaAtual = new Date(calAno, calMes, d);
       renderAgenda();

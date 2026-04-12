@@ -1,5 +1,30 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-11] — Migração painel.html para Tailwind CSS v4
+
+### 🎨 painel.html: CSS vanilla → Tailwind CSS v4
+
+**Migração da painel.html de ~570 linhas de CSS vanilla para ~30 linhas (apenas @keyframes, pseudo-elementos, estados JS), mantendo JS vanilla intacto.**
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/painel.html` | ~570 → ~30 linhas CSS (-95%) |
+| `src/style.css` | Tokens painel adicionados (--color-panel-bg, --panel-bg2, --panel-border, --panel-accent, --panel-accent2, --panel-warn, --panel-danger, --panel-blue, --panel-purple, --panel-faint) |
+
+**Detalhes técnicos:**
+- JS vanilla preservado: agenda grid, navegação de data, mini-calendário, CRUD agendamentos, bloqueios, modal detalhe
+- Topbar sticky com date-nav, nav-links, badge trial/pro/free, botão "+ Novo", avatar
+- Sidebar: mini-calendário interativo, stats (agendamentos, receita, próximo), lista de serviços, botão bloqueio
+- Agenda grid: coluna de horas, linhas de hora (sólida + tracejada), now-line com pseudo-elementos, cards de agendamento por categoria (corte, tintura, escova, barba), bloqueios com pattern
+- Modal de detalhe: painel com overlay, inputs dinâmicos para novo agendamento/bloqueio, botões concluir/cancelar
+- Banner free (promo Pro): slide-down animation, link para /planos
+- Elementos dinâmicos (renderAgenda, abrirDetalhe, abrirNovoAgendamento, abrirNovoBloqueio, renderMiniCal) geram HTML com classes Tailwind
+- Responsividade: layout flex-col <768px, sidebar w-full + order -1 <768px, topbar-center hidden <768px, nav-links hidden <900px, padding reduzido <480px, sidebar max-h <480px
+- Google Fonts removido do HTML (já importado no style.css)
+- Build Vite validado: CSS +6KB (tokens painel)
+
+---
+
 ## [2026-04-11] — Migração clientes.html para Tailwind CSS v4
 
 ### 🎨 clientes.html: CSS vanilla → Tailwind CSS v4

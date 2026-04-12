@@ -118,36 +118,20 @@ npm run test:e2e   # ✅ 102 testes E2E passando
 
 **Páginas:** `pages/painel.html`, `pages/clientes.html`, `pages/relatorio.html`
 **Complexidade:** Alta — estado complexo, listas, gráficos
-**Progresso:** 1/3 — clientes.html ✅ migrada
+**Progresso:** 2/3 — clientes.html ✅, painel.html ✅
 
-### 4.1 Painel Principal (`painel.html`) — Pendente
+### 4.1 Painel Principal (`painel.html`) ✅ CONCLUÍDA — 2026-04-11
 
-| # | Tarefa | Detalhe |
+| # | Tarefa | Status |
 |---|---|---|
-| 3.1 | Tailwind no layout | Sidebar, header, grid de cards |
-| 3.2 | Alpine para dados | `x-data="painelPrestador()"` com `init()` async |
-| 3.3 | Lista de agendamentos | `x-for` com paginação |
-| 3.4 | Status badges | Classes condicionais (`x-bind:class`) |
-| 3.5 | Manter `painel-init.js` | `requireAuth()`, `watchSession()`, `exigirPro()` |
+| 3.1 | Migrar CSS → Tailwind (topbar, sidebar, agenda grid, modal, banner) | ✅ Feito — ~570 → ~30 linhas (-95%) |
+| 3.2 | Tokens painel no @theme | ✅ Feito — src/style.css (--panel-bg, --panel-border, --panel-accent, etc.) |
+| 3.3 | Responsividade | ✅ Feito — breakpoints 900px, 768px, 480px |
+| 3.4 | JS dinâmico com Tailwind | ✅ Feito — renderAgenda, abrirDetalhe, abrirNovoAgendamento, abrirNovoBloqueio, renderMiniCal |
+| 3.5 | Google Fonts | ✅ Removido do HTML (já no style.css) |
+| 3.6 | Manter `painel-init.js` | ✅ Preservado — requireAuth(), watchSession(), exigirPro() |
 
-```html
-<div x-data="painelData()" x-init="init()">
-  <div x-show="loading" class="text-text-muted">Carregando...</div>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="bg-bg-3 border border-bord rounded-card p-6">
-      <div class="text-text-muted text-xs uppercase">Hoje</div>
-      <div class="text-3xl font-bold text-text" x-text="hojeCount"></div>
-    </div>
-  </div>
-  <template x-for="ag in agendamentos" :key="ag.id">
-    <div class="border border-bord rounded-btn p-4"
-         :class="ag.status === 'confirmado' ? 'border-l-2 border-lime' : ''">
-      <span x-text="ag.cliente_nome"></span>
-      <span x-text="formatarHora(ag.data_hora)" class="font-mono text-text-muted"></span>
-    </div>
-  </template>
-</div>
-```
+**Nota:** Alpine.js não foi adicionado nesta fase — JS vanilla preservado. Migração para Alpine será considerada na fase de otimização (Fase 8).
 
 ### 4.2 Clientes (`clientes.html`) ✅ CONCLUÍDA — 2026-04-11
 
@@ -385,7 +369,7 @@ Semana 3:
 - [x] Fase 0: Setup completo, testes passando
 - [x] Fase 1: Landing page migrada
 - [x] Fase 2: Auth + Onboarding migrados
-- [ ] Fase 3: Painel (painel + clientes + relatorio) migrado — clientes.html ✅
+- [ ] Fase 3: Painel (painel + clientes + relatorio) migrado — clientes.html ✅, painel.html ✅
 - [ ] Fase 4: Página pública migrada
 - [ ] Fase 5: Configurações + Planos migrados
 - [ ] Fase 6: Páginas de token migradas
