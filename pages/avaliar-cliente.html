@@ -499,6 +499,7 @@
             .insert({
               prestador_id:   AGENDAMENTO.prestadores.id,
               agendamento_id: AGENDAMENTO.id,
+              cliente_nome:   AGENDAMENTO.cliente_nome || 'Cliente',
               nota:           notaSelecionada,
               comentario:     comentario || null
             });

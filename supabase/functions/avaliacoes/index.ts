@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
         `<html><body style="font-family:sans-serif;text-align:center;padding:60px 20px">
           <h2>Link inválido ou expirado</h2>
         </body></html>`,
-        { status: 404, headers: { "Content-Type": "text/html" } }
+        { status: 404, headers: { ...cors, "Content-Type": "text/html" } }
       );
     }
 
@@ -198,12 +198,12 @@ Deno.serve(async (req: Request) => {
           <h2>✅ Você já avaliou este atendimento</h2>
           <p style="color:#888;margin-top:8px">Obrigado pelo feedback!</p>
         </body></html>`,
-        { headers: { "Content-Type": "text/html" } }
+        { headers: { ...cors, "Content-Type": "text/html" } }
       );
     }
 
     return new Response(paginaAvaliacao(ag, token), {
-      headers: { "Content-Type": "text/html" },
+      headers: { ...cors, "Content-Type": "text/html" },
     });
   }
 

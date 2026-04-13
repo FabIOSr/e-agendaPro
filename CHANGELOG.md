@@ -1,5 +1,66 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-12] — 🐛 Fix: CORS na Edge Function `avaliacoes` + fallback `cliente_nome`
+
+### Bug 1: CORS bloqueado em respostas HTML
+
+**Problema:** GET `?token=xxx` retornava HTML sem headers `Access-Control-Allow-Origin`, bloqueando fetch cross-origin de `127.0.0.1:5000`.
+
+**Causa:** 3 respostas `Response` (token inválido, já avaliou, página HTML) não incluíam `...cors` nos headers.
+
+**Correção:**
+```diff
+- { status: 404, headers: { "Content-Type": "text/html" } }
++ { status: 404, headers: { ...cors, "Content-Type": "text/html" } }
+```
+
+### Bug 2: `cliente_nome` NULL no fallback direto
+
+**Problema:** Quando Edge Function falhava, fallback Supabase omitia `cliente_nome` (`NOT NULL`).
+
+**Correção:**
+```diff
+  .insert({
+    prestador_id:   AGENDAMENTO.prestadores.id,
+    agendamento_id: AGENDAMENTO.id,
++   cliente_nome:   AGENDAMENTO.cliente_nome || 'Cliente',
+    nota:           notaSelecionada,
+    comentario:     comentario || null
+  });
+```
+
+| Arquivo | Mudança |
+|---|---|
+| `supabase/functions/avaliacoes/index.ts` | `...cors` em 3 respostas HTML (GET `?token=`) |
+| `pages/avaliar-cliente.html` | `cliente_nome` no fallback `supabase.insert()` |
+
+---
+
+## [2026-04-12] — ⭐ Planejamento de Melhorias no Sistema de Avaliações
+
+### 📋 5 Oportunidades Identificadas
+
+**`ROADMAP-OPORTUNIDADES.md` — Nova seção "Melhorias no Sistema de Avaliações":**
+
+| # | Feature | Impacto | Esforço | Status |
+|---|---------|---------|---------|--------|
+| A-1 | Multi-canal (WhatsApp + Email) | 🔴 Alta | 2h | 📋 Planejado |
+| A-2 | Moderação de avaliações | 🔴 Alta | 6h | 📋 Planejado |
+| A-3 | Resposta do profissional | 🟡 Média | 4h | 📋 Planejado |
+| A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | 📋 Planejado |
+| A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | 📋 Planejado |
+
+**Investimento total:** 20h
+**ROI esperado:** +40-60% de avaliações recebidas, controle total de conteúdo
+
+**Detalhes técnicos completos no roadmap:**
+- Migrations SQL prontas (36-39)
+- Código TypeScript para edge functions
+- UI mockups para painel e página pública
+- Matriz de priorização
+
+---
+
 ## [2026-04-13] — F-1: Tempo Médio por Serviço + F-2: Avaliações Públicas
 
 ### ⏱️ F-1: Tempo Médio por Serviço
