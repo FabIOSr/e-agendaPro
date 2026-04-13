@@ -1715,17 +1715,17 @@ O sistema de avaliações funciona assim:
 
 ### Limitações Identificadas
 
-| # | Limitação | Impacto | Severidade |
-|---|-----------|---------|------------|
-| A-1 | Só WhatsApp — clientes sem WhatsApp não recebem | Perda de 15-30% de avaliações | 🔴 Alta |
-| A-2 | Sem moderação — avaliações entram direto, sem aprovação | Risco de avaliações ofensivas/spam | 🔴 Alta |
-| A-3 | Sem resposta do profissional | Perda de engajamento e reputação | 🟡 Média |
-| A-4 | Sem analytics de taxa de resposta | Profissional não sabe performance | 🟡 Média |
-| A-5 | Sem lembrete de segunda chance | Clientes que ignoram não são recontatados | 🟢 Baixa |
+| # | Limitação | Impacto | Severidade | Status |
+|---|-----------|---------|------------|--------|
+| A-1 | Só WhatsApp — clientes sem WhatsApp não recebem | Perda de 15-30% de avaliações | 🔴 Alta | ✅ Implementado |
+| A-2 | Sem moderação — avaliações entram direto, sem aprovação | Risco de avaliações ofensivas/spam | 🔴 Alta | ⏳ Pendente |
+| A-3 | Sem resposta do profissional | Perda de engajamento e reputação | 🟡 Média | ⏳ Pendente |
+| A-4 | Sem analytics de taxa de resposta | Profissional não sabe performance | 🟡 Média | ⏳ Pendente |
+| A-5 | Sem lembrete de segunda chance | Clientes que ignoram não são recontatados | 🟢 Baixa | ⏳ Pendente |
 
 ---
 
-### A-1: Multi-canal de Solicitação (WhatsApp + Email)
+### A-1: Multi-canal de Solicitação (WhatsApp + Email) — ✅ IMPLEMENTADO
 
 **Problema:**
 - Apenas clientes com WhatsApp recebem solicitação

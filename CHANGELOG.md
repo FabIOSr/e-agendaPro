@@ -36,6 +36,28 @@
 
 ---
 
+## [2026-04-12] — ⭐ A-1: Multi-canal de Solicitação de Avaliações (WhatsApp + Email)
+
+### ⭐ A-1: Multi-canal de Solicitação (WhatsApp + Email) — ✅ IMPLEMENTADO
+
+**`supabase/functions/solicitar-avaliacao-batch/index.ts` — Função `enviarEmail()` + fallback:**
+- Nova função `enviarEmail(destinatario, nome, link, nomePrestador)` via SendGrid
+- HTML responsivo com avatar, CTA e nome do profissional
+- Se WhatsApp falha **e** tem `cliente_email` → tenta email
+- **Marca sempre** `avaliacao_solicitada = true` (evita retry infinito)
+- Error tracking com contexto (tel, email)
+
+| Arquivo | Mudança |
+|---|---|
+| `supabase/functions/solicitar-avaliacao-batch/index.ts` | `enviarEmail()` + fallback + marca sempre flag |
+| `ROADMAP-OPORTUNIDADES.md` | Status A-1 → ✅ Implementado |
+
+**Impacto esperado:** +15-30% de avaliações (clientes sem WhatsApp agora são alcançados)
+
+**Variável de ambiente:** `SENDGRID_API_KEY` (opcional — sem ela, email é silently skipped)
+
+---
+
 ## [2026-04-12] — ⭐ Planejamento de Melhorias no Sistema de Avaliações
 
 ### 📋 5 Oportunidades Identificadas
@@ -44,11 +66,11 @@
 
 | # | Feature | Impacto | Esforço | Status |
 |---|---------|---------|---------|--------|
-| A-1 | Multi-canal (WhatsApp + Email) | 🔴 Alta | 2h | 📋 Planejado |
-| A-2 | Moderação de avaliações | 🔴 Alta | 6h | 📋 Planejado |
-| A-3 | Resposta do profissional | 🟡 Média | 4h | 📋 Planejado |
-| A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | 📋 Planejado |
-| A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | 📋 Planejado |
+| A-1 | Multi-canal (WhatsApp + Email) | 🔴 Alta | 2h | ✅ Implementado |
+| A-2 | Moderação de avaliações | 🔴 Alta | 6h | ⏳ Pendente |
+| A-3 | Resposta do profissional | 🟡 Média | 4h | ⏳ Pendente |
+| A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | ⏳ Pendente |
+| A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | ⏳ Pendente |
 
 **Investimento total:** 20h
 **ROI esperado:** +40-60% de avaliações recebidas, controle total de conteúdo
