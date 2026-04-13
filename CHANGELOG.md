@@ -1,5 +1,33 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-11] — Migração relatorio.html para Tailwind CSS v4
+
+### 🎨 relatorio.html: CSS vanilla → Tailwind CSS v4
+
+**Migração da relatorio.html de ~420 linhas de CSS vanilla para ~44 linhas (apenas @keyframes, pseudo-elementos, estados JS), mantendo JS vanilla e Chart.js intactos.**
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/relatorio.html` | ~420 → ~44 linhas CSS (-90%) |
+
+**Detalhes técnicos:**
+- JS vanilla preservado: KPIs, gráficos Chart.js (4 charts), tabs, filtros, export CSV, drawer cliente
+- Chart.js não tocado — biblioteca externa com canvas dedicado
+- Topbar sticky backdrop-blur, nav-links, badge trial/pro/free
+- Tabs Receita/Clientes com fade animation
+- KPI cards com barras coloridas (::before pseudo-element), deltas comparativos
+- Charts grid: receita mensal (line), por serviço (doughnut), por dia (bar), horários pico (bar)
+- Filtros Pro: status, serviço, limpar — queries Supabase dinâmicas
+- Top 10 clientes: grid cards com rank (🥇🥈🥉), stats, receita
+- Drawer lateral: histórico, observações, ações rápidas (WhatsApp, agenda)
+- Paywall dinâmico: Free vê versão simplificada, Pro vê charts completos
+- Elementos dinâmicos (renderTopClients, abrirDrawer, carregarTopServicos, setPeriod, abrirTab) geram HTML com classes Tailwind
+- Responsividade: KPIs 4→2→1 cols <900px/<500px, charts grid 2→1 col <860px, top-clients <700px, drawer full <500px
+- Google Fonts removido do HTML (já importado no style.css)
+- Build Vite validado: CSS +3KB (utilities relatorio)
+
+---
+
 ## [2026-04-11] — Migração painel.html para Tailwind CSS v4
 
 ### 🎨 painel.html: CSS vanilla → Tailwind CSS v4

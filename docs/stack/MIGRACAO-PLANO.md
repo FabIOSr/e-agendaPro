@@ -143,42 +143,19 @@ npm run test:e2e   # ✅ 102 testes E2E passando
 | 3.9 | JS dinâmico com Tailwind | ✅ Feito — renderTabela, abrirCliente, freqBadge |
 | 3.10 | Google Fonts | ✅ Removido do HTML (já no style.css) |
 
-### 4.3 Relatórios (`relatorio.html`) — Pendente
+### 4.3 Relatórios (`relatorio.html`) ✅ CONCLUÍDA — 2026-04-11
 
-| # | Tarefa | Detalhe |
+| # | Tarefa | Status |
 |---|---|---|
-| 3.9 | Chart.js com Alpine | `x-init` para inicializar gráfico |
-| 3.10 | Tailwind no layout | Grid de gráficos |
-
-```html
-<div x-data="relatorioData()" x-init="initCharts()">
-  <canvas id="chart-receita"></canvas>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script>
-function relatorioData() {
-  return {
-    receitaMensal: [],
-    initCharts() {
-      // Carregar dados do Supabase
-      // Criar Chart.js
-    }
-  };
-}
-</script>
-```
-
-### Critério de conclusão
-
-- [ ] Todos os testes E2E do painel passando
-- [ ] Gráficos renderizando corretamente
-- [ ] Busca de clientes funcionando em tempo real
-- [ ] Proteção de rotas (`requireAuth`) intacta
+| 3.9 | Migrar CSS → Tailwind (topbar, tabs, KPIs, charts, tabela, drawer, paywall) | ✅ Feito — ~420 → ~44 linhas (-90%) |
+| 3.10 | Chart.js preservado | ✅ Mantido — 4 charts (line, doughnut, bar x2) intactos |
+| 3.11 | Responsividade | ✅ Feito — breakpoints 900px, 860px, 700px, 500px |
+| 3.12 | JS dinâmico com Tailwind | ✅ Feito — renderTopClients, abrirDrawer, carregarTopServicos, setPeriod, abrirTab |
+| 3.13 | Google Fonts | ✅ Removido do HTML (já no style.css) |
 
 ---
 
-## 5. Fase 4 — Página Pública do Profissional (3-4 dias)
+## 5. Fase 4 — Página Pública do Salão (2-3 dias)
 
 **Página:** `pages/pagina-cliente.html`
 **Complexidade:** Alta — fluxo de 5 steps, cor dinâmica, galeria
@@ -369,7 +346,7 @@ Semana 3:
 - [x] Fase 0: Setup completo, testes passando
 - [x] Fase 1: Landing page migrada
 - [x] Fase 2: Auth + Onboarding migrados
-- [ ] Fase 3: Painel (painel + clientes + relatorio) migrado — clientes.html ✅, painel.html ✅
+- [ ] Fase 3: Painel (painel + clientes + relatorio) migrado — clientes.html ✅, painel.html ✅, relatorio.html ✅
 - [ ] Fase 4: Página pública migrada
 - [ ] Fase 5: Configurações + Planos migrados
 - [ ] Fase 6: Páginas de token migradas
