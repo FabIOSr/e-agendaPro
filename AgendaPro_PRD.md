@@ -7,7 +7,7 @@
 
 ## 1. Visão do Produto
 
-AgendaPro é uma plataforma SaaS de agendamento online voltada para profissionais autônomos brasileiros — cabeleireiros, esteticistas, personal trainers, tatuadores, terapeutas e similares. O produto permite que esses profissionais recebam agendamentos online através de uma página pública personalizada, sem depender de WhatsApp manual ou agenda em papel.
+AgendaPro é uma plataforma SaaS de agendamento online voltada para profissionais de beleza brasileiros — manicures, extensionistas de cílios, designers de sobrancelha, esteticistas, cabeleireiros, depiladoras e massagistas. O produto permite que esses profissionais recebam agendamentos online através de uma página pública personalizada, sem depender de WhatsApp manual ou agenda em papel.
 
 ### Proposta de valor central
 - **Para o profissional:** agenda online profissional em minutos, sem conhecimento técnico

@@ -257,8 +257,8 @@
   <div class="right-panel ml-[380px] flex-1 min-h-[100vh] pb-[80px] flex flex-col [@media(max-width:860px)]:ml-0">
     <div class="right-top p-[32px_48px_0] flex justify-end">
       <button
-        class="skip-btn bg-none border-none text-[13px] text-[var(--color-faint)] cursor-pointer font-['Syne',sans-serif] transition-colors duration-200 hover:text-[var(--color-muted)]"
-        onclick="pularOnboarding()">Pular configuração →</button>
+        class="skip-btn bg-none border-none text-[13px] text-[var(--color-faint)] cursor-pointer font-['Syne',sans-serif] transition-colors duration-200 hover:text-[var(--color-muted)] hidden"
+        id="skip-btn" onclick="pularOnboarding()">Pular configuração →</button>
     </div>
 
     <!-- STEP 1: IDENTIDADE -->
@@ -309,8 +309,8 @@
            </div>
            <div
              class="categoria-item bg-[var(--color-cream)] border-[1.5px] border-[var(--color-border-light)] rounded-xl p-4 text-center cursor-pointer transition-all duration-200 hover:border-[var(--color-border-light2)] hover:bg-[var(--color-bg-light2)]"
-             onclick="selecionarCat(this,'Sobrancelha','🪡')">
-             <div class="cat-icon text-[22px] mb-[6px]">🪡</div>
+             onclick="selecionarCat(this,'Sobrancelha','👁️')">
+             <div class="cat-icon text-[22px] mb-[6px]">👁️</div>
              <div class="cat-label text-[12px] font-[600] text-[var(--color-muted)]">Sobrancelha</div>
            </div>
            <div
@@ -412,7 +412,7 @@
       <div class="step-nav flex gap-[10px] items-center mt-auto pt-10 max-w-[480px]">
         <button
           class="btn-next flex-1 bg-[var(--color-ink)] text-[var(--color-bg-light)] border-none rounded-[10px] py-[14px] px-6 text-[15px] font-[600] font-['Syne',sans-serif] cursor-pointer flex items-center justify-center gap-2 transition-[transform,background] duration-150 hover:-translate-y-[1px] hover:bg-[#2a2820] disabled:opacity-35 disabled:cursor-default disabled:transform-none"
-          id="btn-next-1" onclick="irPara(2)">
+          id="btn-next-1" disabled onclick="irPara(2)">
           Próximo — Serviços →
         </button>
       </div>
@@ -596,6 +596,11 @@
       state.step = n;
       document.getElementById('step-' + n)?.classList.add('active');
       atualizarSidebarSteps();
+
+      // Botão "Pular" só aparece a partir do step 2
+      const skipBtn = document.getElementById('skip-btn');
+      if (skipBtn) skipBtn.classList.toggle('hidden', n < 2);
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     window.irPara = irPara;
@@ -614,10 +619,69 @@
       }
     }
 
-    window.pularOnboarding = function () {
+    window.pularOnboarding = async function () {
+      // Salva o que ja tem preenchido antes de pular
+      state.nome = state.nome || document.getElementById('input-nome')?.value.trim() || '';
+      state.bio = document.getElementById('input-bio')?.value.trim() || state.bio || null;
+      state.wpp = document.getElementById('input-wpp')?.value.trim() || state.wpp || null;
+
+      // Se tem nome mas nao tem slug, gera automatico
+      if (state.nome && !state.slug) {
+        state.slug = state.nome.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9-]/g, '-')
+          .replace(/-+/g, '-').replace(/^-|-$/g, '') || 'meu-perfil';
+      }
+
+      // Se tem dados minimos, salva no banco
+      if (state.nome && state.slug) {
+        try {
+          const { error: errP } = await supabase
+            .from('prestadores')
+            .update({
+              nome: state.nome,
+              slug: state.slug,
+              bio: state.bio,
+              whatsapp: state.wpp || null,
+              categoria: state.cat || null,
+              foto_url: state.fotoUrl || null,
+            })
+            .eq('id', userId);
+
+          if (!errP) {
+            // Insere disponibilidade padrao se nao definiu nenhuma
+            if (state.diasAtivos.size > 0) {
+              await supabase
+                .from('disponibilidade')
+                .insert(Array.from(state.diasAtivos).map(dia => ({
+                  prestador_id: userId,
+                  dia_semana: dia,
+                  hora_inicio: state.horaInicio || '09:00',
+                  hora_fim: state.horaFim || '18:00',
+                })));
+            }
+          }
+        } catch (e) {
+          console.warn('Erro ao salvar dados pulados:', e);
+        }
+      }
+
+      document.getElementById('link-final').textContent = state.slug
+        ? `${appDomain}/${state.slug}`
+        : `${appDomain}/meu-perfil`;
       irPara(4);
-      document.getElementById('link-final').textContent = `${appDomain}/meu-perfil`;
     };
+
+    // ── VALIDAÇÃO STEP 1 ─────────────────────────────────────────────────────
+    function validarStep1() {
+      const nome = (document.getElementById('input-nome')?.value.trim() || '').length >= 2;
+      const slug = (state.slug || '').length >= 3 && state.slugOk;
+      const wpp = (document.getElementById('input-wpp')?.value.replace(/\D/g, '') || '').length >= 10;
+      const cat = !!state.cat;
+      const btn = document.getElementById('btn-next-1');
+      if (!btn) return;
+      btn.disabled = !(nome && slug && wpp && cat);
+    }
 
     // ── STEP 1 — PERFIL ───────────────────────────────────────────────────────
     window.previewFoto = async function (input) {
@@ -709,6 +773,7 @@
         sug.forEach(s => adicionarServico(s.nome, s.dur, s.preco));
         atualizarPreviewServicos();
       }
+      validarStep1();
     };
 
     window.mascaraTel = function (el) {
@@ -717,6 +782,7 @@
       else if (v.length >= 3) v = '(' + v.slice(0, 2) + ') ' + v.slice(2);
       else if (v.length >= 1) v = '(' + v;
       el.value = v;
+      validarStep1();
     };
 
     // ── SLUG ─────────────────────────────────────────────────────────────────
@@ -768,6 +834,7 @@
           el.classList.add('ok');
           state.slugOk = true;
         }
+        validarStep1();
       }, 700);
     };
 
@@ -790,6 +857,7 @@
         prevAv.style.background = '#dde8c8';
         prevAv.style.color = '#4a6a20';
       }
+      validarStep1();
     };
 
     // ── STEP 2 — SERVIÇOS ─────────────────────────────────────────────────────

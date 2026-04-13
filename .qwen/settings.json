@@ -6,7 +6,8 @@
       "Bash(npm run *)",
       "Bash(firebase *)",
       "Bash(npx *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(findstr *)"
     ]
   },
   "$version": 3
