@@ -1718,7 +1718,7 @@ O sistema de avaliações funciona assim:
 | # | Limitação | Impacto | Severidade | Status |
 |---|-----------|---------|------------|--------|
 | A-1 | Só WhatsApp — clientes sem WhatsApp não recebem | Perda de 15-30% de avaliações | 🔴 Alta | ✅ Implementado |
-| A-2 | Sem moderação — avaliações entram direto, sem aprovação | Risco de avaliações ofensivas/spam | 🔴 Alta | ⏳ Pendente |
+| A-2 | Sem moderação — avaliações entram direto, sem aprovação | Risco de avaliações ofensivas/spam | 🔴 Alta | ✅ Implementado |
 | A-3 | Sem resposta do profissional | Perda de engajamento e reputação | 🟡 Média | ⏳ Pendente |
 | A-4 | Sem analytics de taxa de resposta | Profissional não sabe performance | 🟡 Média | ⏳ Pendente |
 | A-5 | Sem lembrete de segunda chance | Clientes que ignoram não são recontatados | 🟢 Baixa | ⏳ Pendente |
@@ -1790,7 +1790,7 @@ if (!ok && ag.cliente_email) {
 
 ---
 
-### A-2: Moderação de Avaliações
+### A-2: Moderação de Avaliações — ✅ IMPLEMENTADO
 
 **Problema:**
 - Avaliações entram direto, sem filtro

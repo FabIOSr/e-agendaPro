@@ -59,6 +59,7 @@
     <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-text)] rounded-lg px-4 py-2 text-[13px] font-medium flex items-center gap-1.5 transition-all font-['Syne',sans-serif]" id="tab-receita" onclick="abrirTab('receita')">📈 Receita</button>
     <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-clientes" onclick="abrirTab('clientes')">👥 Clientes</button>
     <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-tempo-medio" onclick="abrirTab('tempo-medio')">⏱️ Tempo Médio</button>
+    <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-avaliacoes" onclick="abrirTab('avaliacoes')">⭐ Avaliações</button>
   </div>
   <div class="flex gap-2">
     <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)] font-['Syne',sans-serif]" onclick="exportar('csv')" id="btn-export-csv">⬇ CSV</button>
@@ -224,6 +225,55 @@
 
   </div>
 
+  <!-- ══════════ PAINEL AVALIAÇÕES ══════════ -->
+  <div class="panel-hidden" id="panel-avaliacoes">
+
+    <div class="flex items-center justify-between py-5 mb-4 [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:items-start [@media(max-width:700px)]:gap-3">
+      <div>
+        <div class="font-['Fraunces',serif] text-[22px] font-light tracking-[-.02em]">⭐ Moderação de Avaliações</div>
+        <div class="text-[12px] text-[var(--color-muted)] mt-1 font-['Syne',sans-serif]">Aprovar ou rejeitar avaliações pendentes</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)] font-['Syne',sans-serif]" onclick="carregarAvaliacoesPendentes()">🔄 Atualizar</button>
+      </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <div class="bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] border border-[var(--color-bord)]">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Pendentes</div>
+        <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-amber)]" id="avaliacoes-pendentes-count">0</div>
+      </div>
+      <div class="bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] border border-[var(--color-bord)]">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Aprovadas</div>
+        <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-teal)]" id="avaliacoes-aprovadas-count">0</div>
+      </div>
+      <div class="bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] border border-[var(--color-bord)]">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Rejeitadas</div>
+        <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-rust)]" id="avaliacoes-rejeitadas-count">0</div>
+      </div>
+    </div>
+
+    <!-- Lista de avaliações pendentes -->
+    <div id="avaliacoes-pendentes-container">
+      <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-muted)] font-['Syne',sans-serif]">Avaliações Pendentes</h3>
+      <div id="avaliacoes-pendentes-list" class="flex flex-col gap-3">
+        <div class="text-center py-8 col-span-full">
+          <div class="text-[40px] mb-3">⏳</div>
+          <div class="text-[var(--color-muted)] text-[13px]">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sem avaliações pendentes -->
+    <div id="avaliacoes-empty" class="hidden text-center py-12">
+      <div class="text-[40px] mb-3">✨</div>
+      <div class="text-[var(--color-muted)] text-[13px] mb-2">Nenhuma avaliação pendente</div>
+      <div class="text-[var(--color-muted)] text-[11px]">Todas as avaliações foram moderadas.</div>
+    </div>
+
+  </div>
+
 </div>
 </div><!-- /conteudo-pro -->
 
@@ -333,7 +383,7 @@ async function init() {
     }
   }
 
-  const paineis = ['panel-receita', 'panel-clientes', 'panel-tempo-medio'];
+  const paineis = ['panel-receita', 'panel-clientes', 'panel-tempo-medio', 'panel-avaliacoes'];
   paineis.forEach(id => {
     const panel = document.getElementById(id);
     const gateExistente = panel?.querySelector('.paywall-gate');
@@ -465,10 +515,10 @@ function calcOcupacao(ags) {
 // ── TABS ──────────────────────────────────────────────────────────────────
 window.abrirTab = function(tab) {
   tabAtual = tab;
-  document.querySelectorAll('#panel-receita,#panel-clientes,#panel-tempo-medio').forEach(p => {
+  document.querySelectorAll('#panel-receita,#panel-clientes,#panel-tempo-medio,#panel-avaliacoes').forEach(p => {
     p.className = 'panel-hidden';
   });
-  document.querySelectorAll('#tab-receita,#tab-clientes,#tab-tempo-medio').forEach(b => {
+  document.querySelectorAll('#tab-receita,#tab-clientes,#tab-tempo-medio,#tab-avaliacoes').forEach(b => {
     b.className = 'bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-[\'Syne\',sans-serif]';
   });
   document.getElementById('panel-'+tab)?.setAttribute('class', 'panel-active');
@@ -480,6 +530,8 @@ window.abrirTab = function(tab) {
   if (bc) bc.style.display = d;
   // Carregar dados da aba tempo médio quando aberta
   if (tab === 'tempo-medio') carregarTempoMedio();
+  // Carregar avaliações pendentes quando aberta
+  if (tab === 'avaliacoes') carregarAvaliacoesPendentes();
 };
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -707,6 +759,100 @@ async function carregarTempoMedio() {
     `;
   }).join('');
 }
+
+// ── MODERAÇÃO DE AVALIAÇÕES ───────────────────────────────────────────────────
+window.carregarAvaliacoesPendentes = async function() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  const listEl = document.getElementById('avaliacoes-pendentes-list');
+  const emptyEl = document.getElementById('avaliacoes-empty');
+  const containerEl = document.getElementById('avaliacoes-pendentes-container');
+  const countPendentes = document.getElementById('avaliacoes-pendentes-count');
+  const countAprovadas = document.getElementById('avaliacoes-aprovadas-count');
+  const countRejeitadas = document.getElementById('avaliacoes-rejeitadas-count');
+
+  if (!listEl) return;
+
+  listEl.innerHTML = '<div class="text-center py-8 col-span-full"><div class="text-[40px] mb-3">⏳</div><div class="text-[var(--color-muted)] text-[13px]">Carregando...</div></div>';
+
+  // Buscar avaliações pendentes
+  const { data: pendentes, error: errPendentes } = await supabase
+    .from('avaliacoes')
+    .select('id, nota, comentario, cliente_nome, created_at')
+    .eq('prestador_id', userId)
+    .eq('status', 'pendente')
+    .order('created_at', { ascending: false });
+
+  // Buscar contagens
+  const [aprovadas, rejeitadas] = await Promise.all([
+    supabase.from('avaliacoes').select('id', { count: 'exact', head: true }).eq('prestador_id', userId).eq('status', 'aprovada'),
+    supabase.from('avaliacoes').select('id', { count: 'exact', head: true }).eq('prestador_id', userId).eq('status', 'rejeitada')
+  ]);
+
+  if (countPendentes) countPendentes.textContent = pendentes?.length || 0;
+  if (countAprovadas) countAprovadas.textContent = aprovadas.count || 0;
+  if (countRejeitadas) countRejeitadas.textContent = rejeitadas.count || 0;
+
+  if (errPendentes) {
+    console.error('Erro ao carregar avaliações:', errPendentes);
+    listEl.innerHTML = '<div class="text-center py-8 col-span-full"><div class="text-[40px] mb-3">⚠️</div><div class="text-[var(--color-muted)] text-[13px]">Erro ao carregar</div></div>';
+    return;
+  }
+
+  if (!pendentes || pendentes.length === 0) {
+    containerEl?.classList.add('hidden');
+    emptyEl?.classList.remove('hidden');
+    return;
+  }
+
+  containerEl?.classList.remove('hidden');
+  emptyEl?.classList.add('hidden');
+
+  listEl.innerHTML = pendentes.map(av => {
+    const stars = '★'.repeat(av.nota) + '☆'.repeat(5 - av.nota);
+    const dataFmt = new Date(av.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    const corEstrela = av.nota >= 4 ? 'text-[var(--color-lime)]' : av.nota >= 3 ? 'text-[var(--color-amber)]' : 'text-[var(--color-rust)]';
+    const inicial = av.cliente_nome?.charAt(0) || '?';
+
+    return `
+      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[var(--color-bg-dark4)] rounded-full flex items-center justify-center text-[14px] font-semibold text-[var(--color-muted)]">${inicial}</div>
+            <div>
+              <div class="font-semibold text-[14px] text-[var(--color-text)]">${av.cliente_nome || 'Cliente'}</div>
+              <div class="text-[11px] text-[var(--color-muted)]">${dataFmt}</div>
+            </div>
+          </div>
+          <div class="text-[18px] ${corEstrela}">${stars}</div>
+        </div>
+        ${av.comentario ? `<div class="text-[13px] text-[var(--color-text)] bg-[var(--color-bg-dark4)] rounded-lg p-3 mb-3 italic">"${av.comentario}"</div>` : '<div class="text-[12px] text-[var(--color-muted)] mb-3">Sem comentário</div>'}
+        <div class="flex gap-2">
+          <button onclick="moderarAvaliacao('${av.id}', 'aprovar')" class="flex-1 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-0 rounded-lg px-4 py-2 text-[12px] font-semibold cursor-pointer transition-all hover:opacity-90 font-['Syne',sans-serif]">✅ Aprovar</button>
+          <button onclick="moderarAvaliacao('${av.id}', 'rejeitar')" class="flex-1 bg-[var(--color-bg-dark4)] text-[var(--color-rust)] border border-[var(--color-bord)] rounded-lg px-4 py-2 text-[12px] font-semibold cursor-pointer transition-all hover:border-[var(--color-rust)] font-['Syne',sans-serif]">❌ Rejeitar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.moderarAvaliacao = async function(avaliacaoId, acao) {
+  const motivo = acao === 'rejeitar' ? prompt('Motivo da rejeição (opcional):') : null;
+
+  const { error } = await supabase.functions.invoke('moderar-avaliacao', {
+    body: { avaliacao_id: avaliacaoId, acao, motivo }
+  });
+
+  if (error) {
+    toast('Erro ao moderar avaliação', 'error');
+    console.error(error);
+    return;
+  }
+
+  toast(acao === 'aprovar' ? 'Avaliação aprovada ✓' : 'Avaliação rejeitada');
+  carregarAvaliacoesPendentes();
+};
 
 function renderTopClients(lista) {
   const grid = document.getElementById('top-clients-grid');

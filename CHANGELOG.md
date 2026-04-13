@@ -36,6 +36,43 @@
 
 ---
 
+## [2026-04-12] — ⭐ A-2: Moderação de Avaliações
+
+### ⭐ A-2: Moderação de Avaliações — ✅ IMPLEMENTADO
+
+**`migrations/36_moderacao_avaliacoes.sql` — Nova migration:**
+- Colunas `status` (pendente/aprovada/rejeitada), `moderada_em`, `motivo_rejeicao`
+- Constraint `chk_avaliacoes_status` com `DO $$` idempotente
+- Índices: `status` + `prestador_id, status`
+- Função `auto_aprovar_avaliacoes()` — auto-aprova após 24h
+- **Migração de existentes:** avaliações antigas → `aprovada` (evita sumir da página)
+
+**`supabase/functions/moderar-avaliacao/index.ts` — Nova Edge Function:**
+- `POST` { avaliacao_id, acao, motivo } → aprovar/rejeitar
+- `GET` → lista avaliações pendentes do prestador
+- Auth JWT + ownership check (só modera as suas)
+- Idempotência: rejeita se já moderada
+
+**`supabase/functions/avaliacoes/index.ts` — Filtro:**
+- GET `?prestador_slug=` agora filtra `.eq("status", "aprovada")`
+
+**`pages/relatorio.html` — Nova aba "Avaliações":**
+- Stats: pendentes, aprovadas, rejeitadas (cards com cores semânticas)
+- Lista de avaliações pendentes com avatar, estrelas, comentário
+- Botões Aprovar ✅ / Rejeitar ❌ por avaliação
+- Empty state quando não há pendentes
+- Auto-load ao abrir a aba
+- Chama edge function via `supabase.functions.invoke()`
+
+| Arquivo | Mudança |
+|---|---|
+| `migrations/36_moderacao_avaliacoes.sql` | Nova migration completa |
+| `supabase/functions/moderar-avaliacao/index.ts` | Nova edge function |
+| `supabase/functions/avaliacoes/index.ts` | Filtro `status='aprovada'` no GET público |
+| `pages/relatorio.html` | Aba "Avaliações" + UI moderação + `carregarAvaliacoesPendentes()` + `moderarAvaliacao()` |
+
+---
+
 ## [2026-04-12] — ⭐ A-1: Multi-canal de Solicitação de Avaliações (WhatsApp + Email)
 
 ### ⭐ A-1: Multi-canal de Solicitação (WhatsApp + Email) — ✅ IMPLEMENTADO
@@ -67,7 +104,7 @@
 | # | Feature | Impacto | Esforço | Status |
 |---|---------|---------|---------|--------|
 | A-1 | Multi-canal (WhatsApp + Email) | 🔴 Alta | 2h | ✅ Implementado |
-| A-2 | Moderação de avaliações | 🔴 Alta | 6h | ⏳ Pendente |
+| A-2 | Moderação de avaliações | 🔴 Alta | 6h | ✅ Implementado |
 | A-3 | Resposta do profissional | 🟡 Média | 4h | ⏳ Pendente |
 | A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | ⏳ Pendente |
 | A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | ⏳ Pendente |

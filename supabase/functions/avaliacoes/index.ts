@@ -154,6 +154,7 @@ Deno.serve(async (req: Request) => {
       .from("avaliacoes")
       .select("nota, comentario, cliente_nome, created_at")
       .eq("prestador_id", prestador.id)
+      .eq("status", "aprovada")
       .order("created_at", { ascending: false })
       .limit(20);
 
