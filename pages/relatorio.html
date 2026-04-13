@@ -254,6 +254,17 @@
       </div>
     </div>
 
+    <!-- Analytics -->
+    <div class="mb-6">
+      <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-muted)] font-['Syne',sans-serif]">📊 Desempenho</h3>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3" id="avaliacoes-analytics">
+        <div class="text-center py-8 col-span-full">
+          <div class="text-[40px] mb-3">⏳</div>
+          <div class="text-[var(--color-muted)] text-[13px]">Carregando analytics...</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Lista de avaliações pendentes -->
     <div id="avaliacoes-pendentes-container">
       <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-muted)] font-['Syne',sans-serif]">Avaliações Pendentes</h3>
@@ -531,7 +542,10 @@ window.abrirTab = function(tab) {
   // Carregar dados da aba tempo médio quando aberta
   if (tab === 'tempo-medio') carregarTempoMedio();
   // Carregar avaliações pendentes quando aberta
-  if (tab === 'avaliacoes') carregarAvaliacoesPendentes();
+  if (tab === 'avaliacoes') {
+    carregarAvaliacoesPendentes();
+    carregarAnalyticsAvaliacoes();
+  }
 };
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -853,6 +867,76 @@ window.moderarAvaliacao = async function(avaliacaoId, acao) {
   toast(acao === 'aprovar' ? 'Avaliação aprovada ✓' : 'Avaliação rejeitada');
   carregarAvaliacoesPendentes();
 };
+
+// ── ANALYTICS DE AVALIAÇÕES ───────────────────────────────────────────────────
+async function carregarAnalyticsAvaliacoes() {
+  const grid = document.getElementById('avaliacoes-analytics');
+  if (!grid) return;
+
+  const trintaDiasAtras = new Date();
+  trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+  // Buscar dados do banco
+  const [avaliacoes30dias, totalAgendamentosConcluidos] = await Promise.all([
+    supabase
+      .from('avaliacoes')
+      .select('nota, status, created_at')
+      .eq('prestador_id', userId)
+      .gte('created_at', trintaDiasAtras.toISOString()),
+    supabase
+      .from('agendamentos')
+      .select('id', { count: 'exact', head: true })
+      .eq('prestador_id', userId)
+      .eq('status', 'concluido')
+      .gte('data_hora', trintaDiasAtras.toISOString())
+  ]);
+
+  const avs = avaliacoes30dias.data || [];
+  const totalConcluidos = totalAgendamentosConcluidos.count || 0;
+  const totalAvaliacoes = avs.length;
+  const taxaResposta = totalConcluidos > 0 ? Math.round((totalAvaliacoes / totalConcluidos) * 100) : 0;
+
+  // Calcular distribuição de notas
+  const distribuicao = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  avs.filter(a => a.status === 'aprovada').forEach(a => {
+    if (distribuicao[a.nota] !== undefined) distribuicao[a.nota]++;
+  });
+
+  // Nota média
+  const notasAprovadas = avs.filter(a => a.status === 'aprovada').map(a => a.nota);
+  const media = notasAprovadas.length > 0
+    ? (notasAprovadas.reduce((a, b) => a + b, 0) / notasAprovadas.length).toFixed(1)
+    : '—';
+
+  // NPS (Net Promoter Score simplificado)
+  const promoters = distribuicao[5] + distribuicao[4];
+  const detractors = distribuicao[1] + distribuicao[2];
+  const nps = totalAvaliacoes > 0 ? Math.round(((promoters - detractors) / totalAvaliacoes) * 100) : null;
+
+  // Renderizar cards
+  grid.innerHTML = `
+    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">Avaliações (30d)</div>
+      <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-text)]">${totalAvaliacoes}</div>
+      <div class="text-[11px] text-[var(--color-muted)] mt-1">de ${totalConcluidos} concluídos</div>
+    </div>
+    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">Taxa de resposta</div>
+      <div class="font-['Fraunces',serif] text-[28px] font-light ${taxaResposta >= 50 ? 'text-[var(--color-lime)]' : 'text-[var(--color-amber)]'}">${taxaResposta}%</div>
+      <div class="text-[11px] text-[var(--color-muted)] mt-1">${taxaResposta >= 50 ? '👍 Bom' : '📈 Precisa melhorar'}</div>
+    </div>
+    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">Nota média</div>
+      <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-teal)]">${media}</div>
+      <div class="text-[11px] text-[var(--color-muted)] mt-1">★ média das avaliações</div>
+    </div>
+    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">NPS</div>
+      <div class="font-['Fraunces',serif] text-[28px] font-light ${nps !== null && nps >= 50 ? 'text-[var(--color-lime)]' : nps !== null ? 'text-[var(--color-amber)]' : 'text-[var(--color-muted)]'}">${nps !== null ? nps : '—'}</div>
+      <div class="text-[11px] text-[var(--color-muted)] mt-1">${nps !== null ? (nps >= 50 ? '🌟 Excelente' : nps >= 0 ? '👍 Bom' : '⚠️ Atenção') : 'aguarde dados'}</div>
+    </div>
+  `;
+}
 
 function renderTopClients(lista) {
   const grid = document.getElementById('top-clients-grid');

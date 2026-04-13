@@ -36,6 +36,26 @@
 
 ---
 
+## [2026-04-12] — ⭐ A-4: Analytics de Avaliações
+
+### ⭐ A-4: Analytics de Taxa de Resposta — ✅ IMPLEMENTADO
+
+**`pages/relatorio.html` — Analytics na aba "Avaliações":**
+- 4 KPI cards: avaliações (30d), taxa de resposta, nota média, NPS
+- Taxa de resposta: `(avaliações / concluídos) × 100` com cor dinâmica
+  - ≥ 50% → verde/lime, < 50% → amarelo/amber
+- Nota média das avaliações aprovadas (respeita moderação A-2)
+- NPS simplificado: `(promotores - detratores) / total × 100`
+  - ≥ 50 → 🌟 Excelente, ≥ 0 → 👍 Bom, < 0 → ⚠️ Atenção
+- Auto-load ao abrir aba `avaliacoes` via `carregarAnalyticsAvaliacoes()`
+- Queries diretas no Supabase (sem RPC/migration extra)
+
+| Arquivo | Mudança |
+|---|---|
+| `pages/relatorio.html` | Seção analytics + `carregarAnalyticsAvaliacoes()` |
+
+---
+
 ## [2026-04-12] — ⭐ A-2: Moderação de Avaliações
 
 ### ⭐ A-2: Moderação de Avaliações — ✅ IMPLEMENTADO
@@ -106,7 +126,7 @@
 | A-1 | Multi-canal (WhatsApp + Email) | 🔴 Alta | 2h | ✅ Implementado |
 | A-2 | Moderação de avaliações | 🔴 Alta | 6h | ✅ Implementado |
 | A-3 | Resposta do profissional | 🟡 Média | 4h | ⏳ Pendente |
-| A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | ⏳ Pendente |
+| A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | ✅ Implementado |
 | A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | ⏳ Pendente |
 
 **Investimento total:** 20h
