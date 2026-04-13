@@ -36,7 +36,7 @@ AgendaPro é uma plataforma SaaS de agendamento online voltada para profissionai
 ## 3. Arquitetura de Planos
 
 ### Plano Free
-- Até **10 agendamentos por mês**
+- Até **30 agendamentos por mês**
 - Página pública funcional (serviços → calendário → slots → formulário → confirmação)
 - Avatar/foto, nome e bio
 - Localização no hero (cidade ou `local_exibicao`)
@@ -87,7 +87,7 @@ O grace period de 3 dias evita que o Pro perca acesso imediatamente após vencim
 
 **Features adicionais da página:**
 - Lista de espera: quando não há slots disponíveis, cliente pode entrar em lista com preferência de horário (exato, período ou qualquer)
-- Limite free: consulta contagem de agendamentos do mês, exibe banner se ≥ 10
+- Limite free: consulta contagem de agendamentos do mês, exibe banner se ≥ 30
 - Horário de funcionamento: lê tabela `disponibilidade`, agrupa dias consecutivos com mesmo horário, exibe como `Seg–Sex 9h–18h · Sáb 9h–13h`
 
 **CTA de upgrade (para o dono logado Free):**
@@ -187,7 +187,7 @@ Clientes que querem ser notificados se um horário surgir.
 | Função | Descrição |
 |--------|-----------|
 | `horarios-disponiveis` | Retorna slots livres para um serviço/data. Considera agendamentos, bloqueios e buffer entre atendimentos |
-| `criar-agendamento` | Valida disponibilidade e cria agendamento. Aplica limite free (10/mês) |
+| `criar-agendamento` | Valida disponibilidade e cria agendamento. Aplica limite free (30/mês) |
 | `lembretes-whatsapp` | Envia confirmações e lembretes via Evolution API |
 | `avaliacoes` | Retorna média, total e lista de avaliações de um prestador |
 | `lista-espera` | Gerencia entrada e notificação da lista de espera |
@@ -210,7 +210,7 @@ const fimDia    = new Date(`${_sds}T23:59:59-03:00`);
 ```
 
 ### Limite Free
-- 10 agendamentos por mês (não cancelados)
+- 30 agendamentos por mês (não cancelados)
 - Verificação no frontend (UX) e no backend (proteção real via `criar-agendamento`)
 - Ao atingir, exibe banner com botão WhatsApp do prestador
 

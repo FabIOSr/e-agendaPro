@@ -2776,7 +2776,7 @@
           .lte('data_hora', fimMes)
           .neq('status', 'cancelado');
         const uso = count ?? 0;
-        const pct = Math.min((uso / 10) * 100, 100);
+        const pct = Math.min((uso / 30) * 100, 100);
         const cor = pct >= 100 ? '#c84830' : pct >= 70 ? '#d4a820' : 'var(--lime-d)';
 
         body.innerHTML = `
@@ -2786,14 +2786,14 @@
             <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:300">Grátis</div>
             <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:var(--bg3);color:var(--muted);border:1px solid var(--bord)">Free</div>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin-top:3px">Até 10 agendamentos por mês</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">Até 30 agendamentos por mês</div>
         </div>
         <button class="btn-upgrade" onclick="window.location.href='/planos'">Fazer upgrade →</button>
       </div>
       <div style="margin-top:16px">
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px">
           <span>Agendamentos este mês</span>
-          <span><strong>${uso}</strong> / 10</span>
+          <span><strong>${uso}</strong> / 30</span>
         </div>
         <div style="background:var(--bg2);height:8px;border-radius:4px;overflow:hidden">
           <div style="width:${pct}%;height:100%;border-radius:4px;background:${cor};transition:width .5s ease"></div>

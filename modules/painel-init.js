@@ -245,7 +245,7 @@ function mostrarPaywallAgendamentos() {
     ">
       <span style="font-size:18px">🚀</span>
       <div style="flex:1;min-width:200px">
-        <div style="font-size:14px;font-weight:600;color:#c8f060;margin-bottom:2px">Você usou os 10 agendamentos do mês</div>
+        <div style="font-size:14px;font-weight:600;color:#c8f060;margin-bottom:2px">Você usou os 30 agendamentos do mês</div>
         <div style="font-size:12px;color:#4a6a20;line-height:1.5">Assine o Pro para agendamentos ilimitados + WhatsApp automático</div>
       </div>
       <button onclick="window.location.href='/planos'"

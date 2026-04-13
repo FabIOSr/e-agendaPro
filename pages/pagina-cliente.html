@@ -1439,7 +1439,7 @@
           .gte('data_hora', inicioMes)
           .lte('data_hora', fimMes)
           .neq('status', 'cancelado');
-        if ((count ?? 0) >= 10) mostrarBannerLimite();
+        if ((count ?? 0) >= 30) mostrarBannerLimite();
       }
 
       return true;

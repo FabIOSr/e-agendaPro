@@ -40,8 +40,8 @@ test('normalizarResultadoCriacaoAgendamento preserva payload de limite', () => {
     ok: false,
     erro: 'limite_atingido',
     http_status: 403,
-    count: 10,
-    limite: 10,
+    count: 30,
+    limite: 30,
     whatsapp: '5511999999999',
   });
 
@@ -50,8 +50,8 @@ test('normalizarResultadoCriacaoAgendamento preserva payload de limite', () => {
     status: 403,
     body: {
       erro: 'limite_atingido',
-      count: 10,
-      limite: 10,
+      count: 30,
+      limite: 30,
       whatsapp: '5511999999999',
     },
   });

@@ -209,7 +209,7 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
   <div class="paywall" id="paywall" style="display:none">
     <div class="paywall-icon">🚀</div>
     <div class="paywall-title">Você usou todos os agendamentos do mês</div>
-    <p class="paywall-desc">No plano grátis você tem até 10 agendamentos por mês. Assine o Pro e tenha agendamentos ilimitados + WhatsApp automático.</p>
+    <p class="paywall-desc">No plano grátis você tem até 30 agendamentos por mês. Assine o Pro e tenha agendamentos ilimitados + WhatsApp automático.</p>
     <div class="paywall-valor">R$39</div>
     <div class="paywall-periodo">/mês · cancele quando quiser</div>
     <button class="btn-assinar lime" onclick="mostrarUpgrade()">✦ Assinar Pro agora</button>
@@ -402,7 +402,7 @@ const PRESTADOR = {
   trial_ends_at: null,
   trial_usado: false,
   agendamentos_mes: 0,
-  limite_free: 10,
+  limite_free: 30,
   nome: '',
   assinatura_periodicidade: null,
 };
@@ -551,7 +551,7 @@ function renderStatus() {
       <div class="status-card free">
         <div class="status-badge free"><div class="dot"></div> Plano Grátis</div>
         <div class="status-name">Grátis para sempre</div>
-        <div class="status-desc">Até 10 agendamentos por mês, sem WhatsApp automático</div>
+        <div class="status-desc">Até 30 agendamentos por mês, sem WhatsApp automático</div>
         <div class="uso-wrap">
           <div class="uso-label">
             <span>Agendamentos este mês</span>

@@ -153,7 +153,7 @@ export async function getAgendamentosMes(prestadorId) {
 export async function limiteFreeAtingido(prestador) {
   if (prestador.plano === 'pro') return false;
   const total = await getAgendamentosMes(prestador.id);
-  return total >= 10;
+  return total >= 30;
 }
 
 // ── LOGOUT ────────────────────────────────────────────────────────────────
