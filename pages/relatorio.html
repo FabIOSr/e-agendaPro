@@ -58,6 +58,7 @@
   <div class="flex gap-1">
     <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-text)] rounded-lg px-4 py-2 text-[13px] font-medium flex items-center gap-1.5 transition-all font-['Syne',sans-serif]" id="tab-receita" onclick="abrirTab('receita')">📈 Receita</button>
     <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-clientes" onclick="abrirTab('clientes')">👥 Clientes</button>
+    <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-tempo-medio" onclick="abrirTab('tempo-medio')">⏱️ Tempo Médio</button>
   </div>
   <div class="flex gap-2">
     <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)] font-['Syne',sans-serif]" onclick="exportar('csv')" id="btn-export-csv">⬇ CSV</button>
@@ -196,6 +197,33 @@
 
   </div>
 
+  <!-- ══════════ PAINEL TEMPO MÉDIO ══════════ -->
+  <div class="panel-hidden" id="panel-tempo-medio">
+
+    <div class="flex items-center justify-between py-5 mb-4 [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:items-start [@media(max-width:700px)]:gap-3">
+      <div>
+        <div class="font-['Fraunces',serif] text-[22px] font-light tracking-[-.02em]">⏱️ Tempo Médio por Serviço</div>
+        <div class="text-[12px] text-[var(--color-muted)] mt-1 font-['Syne',sans-serif]">Compare o tempo configurado com o tempo real de atendimento</div>
+      </div>
+    </div>
+
+    <!-- Cards de análise -->
+    <div id="tempo-medio-grid" class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+      <div class="text-center py-12 col-span-full">
+        <div class="text-[40px] mb-3">⏳</div>
+        <div class="text-[var(--color-muted)] text-[13px]">Carregando análise...</div>
+      </div>
+    </div>
+
+    <!-- Sem dados -->
+    <div id="tempo-medio-empty" class="hidden text-center py-12">
+      <div class="text-[40px] mb-3">📊</div>
+      <div class="text-[var(--color-muted)] text-[13px] mb-2">Nenhum agendamento concluído ainda</div>
+      <div class="text-[var(--color-muted)] text-[11px]">Os dados aparecerão aqui após você completar atendimentos.</div>
+    </div>
+
+  </div>
+
 </div>
 </div><!-- /conteudo-pro -->
 
@@ -305,7 +333,7 @@ async function init() {
     }
   }
 
-  const paineis = ['panel-receita', 'panel-clientes'];
+  const paineis = ['panel-receita', 'panel-clientes', 'panel-tempo-medio'];
   paineis.forEach(id => {
     const panel = document.getElementById(id);
     const gateExistente = panel?.querySelector('.paywall-gate');
@@ -437,10 +465,10 @@ function calcOcupacao(ags) {
 // ── TABS ──────────────────────────────────────────────────────────────────
 window.abrirTab = function(tab) {
   tabAtual = tab;
-  document.querySelectorAll('#panel-receita,#panel-clientes').forEach(p => {
+  document.querySelectorAll('#panel-receita,#panel-clientes,#panel-tempo-medio').forEach(p => {
     p.className = 'panel-hidden';
   });
-  document.querySelectorAll('#tab-receita,#tab-clientes').forEach(b => {
+  document.querySelectorAll('#tab-receita,#tab-clientes,#tab-tempo-medio').forEach(b => {
     b.className = 'bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-[\'Syne\',sans-serif]';
   });
   document.getElementById('panel-'+tab)?.setAttribute('class', 'panel-active');
@@ -450,6 +478,8 @@ window.abrirTab = function(tab) {
   const bc = document.getElementById('btn-export-csv');
   if (bp) bp.style.display = d;
   if (bc) bc.style.display = d;
+  // Carregar dados da aba tempo médio quando aberta
+  if (tab === 'tempo-medio') carregarTempoMedio();
 };
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -595,6 +625,87 @@ function initCharts() {
 async function carregarClientes() {
   const {data} = await supabase.from('crm_clientes').select('*').eq('prestador_id', userId).order('total_gasto',{ascending:false}).limit(10);
   todosClients = data || []; renderTopClients(todosClients);
+}
+
+// ── TEMPO MÉDIO POR SERVIÇO ───────────────────────────────────────────────────
+async function carregarTempoMedio() {
+  const grid = document.getElementById('tempo-medio-grid');
+  const empty = document.getElementById('tempo-medio-empty');
+  if (!grid) return;
+
+  grid.innerHTML = '<div class="text-center py-12 col-span-full"><div class="text-[40px] mb-3">⏳</div><div class="text-[var(--color-muted)] text-[13px]">Carregando análise...</div></div>';
+
+  const { data, error } = await supabase.rpc('tempo_medio_servicos', {
+    p_prestador_id: userId
+  });
+
+  if (error) {
+    console.error('Erro ao carregar tempo médio:', error);
+    grid.innerHTML = '<div class="text-center py-12 col-span-full"><div class="text-[40px] mb-3">⚠️</div><div class="text-[var(--color-muted)] text-[13px]">Erro ao carregar dados</div></div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    grid.classList.add('hidden');
+    empty?.classList.remove('hidden');
+    return;
+  }
+
+  grid.classList.remove('hidden');
+  empty?.classList.add('hidden');
+
+  grid.innerHTML = data.map(s => {
+    const diferenca = Math.round(s.diferenca_minutos);
+    const economiza = diferenca < -5;
+    const acima = diferenca > 5;
+    const colorClass = economiza ? 'border-[rgba(200,240,96,.3)] bg-[rgba(200,240,96,.05)]' :
+                        acima ? 'border-[rgba(239,159,39,.3)] bg-[rgba(239,159,39,.05)]' :
+                        'border-[var(--color-bord)] bg-[var(--color-bg-dark3)]';
+    const textColor = economiza ? 'text-[var(--color-lime)]' :
+                       acima ? 'text-[var(--color-amber)]' :
+                       'text-[var(--color-muted)]';
+    const setaIcon = economiza ? '⬇️' : acima ? '⬆️' : '➡️';
+    const dica = economiza ? `💡 Dica: Reduza para ${Math.round(s.duracao_media)}min e ganhe mais slots!` :
+               acima ? '⚠️ Está levando mais que o configurado' :
+               '';
+
+    return `
+      <div class="relative rounded-xl p-5 border ${colorClass}">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <div class="font-['Fraunces',serif] text-[18px] font-semibold text-[var(--color-text)]">${s.servico_nome}</div>
+            <div class="text-[11px] text-[var(--color-muted)] mt-0.5">${s.total_agendamentos} agendamento${s.total_agendamentos > 1 ? 's' : ''}</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 mb-4">
+          <div class="text-center">
+            <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-1">Configurado</div>
+            <div class="font-['DM_Mono',monospace] text-[20px] font-semibold text-[var(--color-text)]">${s.duracao_configurada}min</div>
+          </div>
+          <div class="text-[20px] text-[var(--color-muted)]">${setaIcon}</div>
+          <div class="text-center">
+            <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-1">Média real</div>
+            <div class="font-['DM_Mono',monospace] text-[20px] font-semibold ${textColor}">${Math.round(s.duracao_media)}min</div>
+          </div>
+        </div>
+
+        ${diferenca !== 0 ? `
+          <div class="flex items-center gap-2 py-2 px-3 rounded-lg ${economiza ? 'bg-[rgba(200,240,96,.1)]' : acima ? 'bg-[rgba(239,159,39,.1)]' : 'bg-[var(--color-bg-dark)]'}">
+            <span class="text-[12px] font-semibold ${economiza ? 'text-[var(--color-lime)]' : acima ? 'text-[var(--color-amber)]' : 'text-[var(--color-muted)]'}">
+              ${diferenca > 0 ? '+' : ''}${diferenca}min
+            </span>
+          </div>
+        ` : ''}
+
+        ${dica ? `
+          <div class="mt-3 pt-3 border-t border-[var(--color-bord)]">
+            <div class="text-[11px] text-[var(--color-muted)] leading-relaxed">${dica}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 function renderTopClients(lista) {

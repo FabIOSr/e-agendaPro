@@ -8,16 +8,19 @@
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
 -- Criar job que chama a edge function via HTTP
--- Nota: Substitua <SUPABASE_URL> pela URL real do projeto
 SELECT cron.schedule(
   'reverter-descontos-expirados',       -- nome do job
   '0 3 * * *',                          -- diariamente às 03:00 UTC
   $$
-  SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url') || '/functions/v1/reverter-desconto',
-    headers := '{"Content-Type": "application/json"}'::jsonb,
-    body := '{}'::jsonb
-  ) AS request_id;
+    SELECT net.http_post(
+      url     := 'https://kevqgxmcoxmzbypdjhru.supabase.co/functions/v1/reverter-desconto',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDEzNzc1OCwiZXhwIjoyMDg5NzEzNzU4fQ.Kc0mrEDrvw1JERmdbmL7MJzEa6c1yRr0rFO7Z894mEQ'
+      ),
+      body    := '{}'::jsonb,
+      timeout_milliseconds := 30000
+    );
   $$
 );
 

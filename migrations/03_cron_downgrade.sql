@@ -33,15 +33,19 @@ SELECT cron.schedule(
   $$
 );
 
--- 3. Cron lembrete D-1 (WhatsApp) - Substitua SEU_SERVICE_ROLE_KEY
+-- 3. Cron lembrete D-1 (WhatsApp)
 SELECT cron.schedule(
   'lembrete-d1',
   '0 21 * * *',
   $$
   SELECT net.http_post(
     url     := 'https://kevqgxmcoxmzbypdjhru.supabase.co/functions/v1/lembretes-whatsapp',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer SEU_SERVICE_ROLE_KEY"}'::jsonb,
-    body    := '{"tipo":"lembrete_d1"}'::jsonb
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnFneG1jb3htemJ5cGRqaHJ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDEzNzc1OCwiZXhwIjoyMDg5NzEzNzU4fQ.Kc0mrEDrvw1JERmdbmL7MJzEa6c1yRr0rFO7Z894mEQ'
+    ),
+    body    := '{"tipo":"lembrete_d1"}'::jsonb,
+    timeout_milliseconds := 30000
   );
   $$
 );

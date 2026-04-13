@@ -163,8 +163,6 @@ TOTAL            │   12    │   4   │    1     │      0
 
 | ID | Oportunidade | Impacto | Esforço | ROI |
 |----|-------------|---------|---------|-----|
-| F-1 | Tempo Médio por Serviço | ⭐⭐⭐⭐ | 3h | Alto |
-| F-2 | Avaliações Públicas | ⭐⭐⭐⭐ | 4h | Alto |
 | F-3 | Zoom/Google Meet Integration | ⭐⭐⭐ | 6h | Médio |
 | F-4 | Notificações Push Web | ⭐⭐⭐ | 2h | Médio |
 | F-5 | Tema Escuro | ⭐⭐ | 3h | Baixo |
@@ -1178,15 +1176,21 @@ async function aceitarDesconto() {
 
 ---
 
-### F-1: Tempo Médio por Serviço
+## 📅 Roadmap Sugerido
 
-**Problema:** Profissional configura duração de 60min, mas na prática leva 45min. Perde espaço na agenda.
+### Fase 1: Quick Wins (Semana 1)
+**Objetivo:** Melhoriasrápidas com alto impacto
 
-**Solução:**
+| Tarefa | Esforço | Prioridade | Status |
+|--------|---------|------------|--------|
+| Q-1: Toast "Salvo" | 1h | Alta | ✅ IMPLEMENTADO |
+| Q-2: Undo ações | 2h | Alta | ⏳ Pendente |
+| Q-5: Busca clientes | 2h | Alta | ✅ IMPLEMENTADO |
+| M-1: Plano Anual | 2h | Alta | ✅ IMPLEMENTADO |
+| R-2: Cancel Survey | 2h | Alta | ⏳ Pendente |
+| T-1: Testes automatizados | 4h | Alta | ✅ IMPLEMENTADO |
 
-```sql
--- migrations/22_tempo_medio.sql
-CREATE OR REPLACE FUNCTION public.tempo_medio_servicos(p_prestador_id UUID)
+**Total:** 13h (2-3 dias) — 9h concluídas
 RETURNS TABLE (
   servico_id UUID,
   servico_nome TEXT,

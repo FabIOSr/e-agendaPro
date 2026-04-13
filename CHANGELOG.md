@@ -1,5 +1,42 @@
 # 🚀 Changelog — AgendaPro
 
+## [2026-04-13] — F-1: Tempo Médio por Serviço + F-2: Avaliações Públicas
+
+### ⏱️ F-1: Tempo Médio por Serviço
+
+**`migrations/35_tempo_medio_servicos.sql` — Nova Função RPC:**
+- `tempo_medio_servicos(p_prestador_id)` retorna análise por serviço
+- Mostra duração configurada, total de agendamentos concluídos
+- Ordenado por popularidade (mais agendamentos primeiro)
+
+**`pages/relatorio.html` — Nova Aba "Tempo Médio":**
+- Terceira aba ao lado de "Receita" e "Clientes"
+- Cards de análise por serviço com visualização clara
+- Integração com paywall (Pro only)
+
+| Arquivo | Mudança |
+|---|---|
+| `migrations/35_tempo_medio_servicos.sql` | Função RPC + permissões |
+| `pages/relatorio.html` | Aba "Tempo Médio" + painel + `carregarTempoMedio()` |
+
+---
+
+### ⭐ F-2: Avaliações Públicas (Já existente)
+
+**Status:** ✅ JÁ IMPLEMENTADO — Descoberto durante auditoria
+
+**`supabase/functions/avaliacoes/index.ts`:**
+- `GET ?prestador_slug=xx` — retorna avaliações públicas (JSON)
+- `GET ?token=xxx` — página HTML de avaliação
+- `POST` — salva avaliação (nota 1-5 + comentário)
+
+**`pages/pagina-cliente.html`:**
+- Avaliações exibidas no hero (estrelas + média)
+- Seção com cards de avaliações
+- Função `loadAvaliacoes()` já implementada
+
+---
+
 ## [2026-04-11] — Migração relatorio.html para Tailwind CSS v4
 
 ### 🎨 relatorio.html: CSS vanilla → Tailwind CSS v4
