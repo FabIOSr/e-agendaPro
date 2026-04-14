@@ -94,3 +94,7 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 70px;
 }
+
+/* ── Novo Layout: Importar CSS do design system e layout ── */
+@import "./css/design-system.css";
+@import "./css/layout.css";

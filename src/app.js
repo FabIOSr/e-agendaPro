@@ -15,3 +15,9 @@ console.log(
   'color: #c8f060; font-weight: bold; font-size: 12px;',
   `| ${import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development'}`
 );
+
+/* ── Novo Layout: Importar JS do layout e componentes ── */
+import './js/layout.js';
+import './js/components/topbar.js';
+import './js/components/sidebar.js';
+import './js/components/mobile-nav.js';

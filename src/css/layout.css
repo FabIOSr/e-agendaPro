@@ -182,3 +182,81 @@ aside#sidebar {
 .toast {
   z-index: var(--z-toast);
 }
+
+/* ==========================================
+   BANNER FREE (WhatsApp paywall)
+   Posicionamento flutuante SEM alterar o width original
+   ========================================== */
+
+.banner-free {
+  position: fixed !important;
+  top: 60px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 95 !important;
+
+  /* NÃO mexer no width - respeitar max-w-[1400px] e mx-4 do HTML */
+  width: auto !important;
+  max-width: 1400px !important;
+  margin-left: 1rem !important;
+  margin-right: 1rem !important;
+
+  /* Background: cor sólida mais visível */
+  background-color: #1c1a16 !important;
+  border: 1px solid #8ab830 !important;
+
+  /* Animação: slide-down sem conflitar com transform */
+  animation: banner-slide-down 0.4s ease-out !important;
+}
+
+@keyframes banner-slide-down {
+  from {
+    opacity: 0;
+    margin-top: -20px;
+  }
+  to {
+    opacity: 1;
+    margin-top: 0;
+  }
+}
+
+/* Título - verde escuro legível */
+.banner-free .banner-text strong {
+  color: #c8f060 !important;
+  font-weight: 600 !important;
+}
+
+/* Subtítulo - cor clara legível */
+.banner-free .banner-text p {
+  color: #a8a49a !important;
+}
+
+/* Botão "Ver planos" */
+.banner-free .btn-banner {
+  background-color: #8ab830 !important;
+  color: #1a2a08 !important;
+  border: none !important;
+}
+
+.banner-free .btn-banner:hover {
+  background-color: #c8f060 !important;
+}
+
+/* Botão de fechar */
+.banner-free .btn-banner-close {
+  color: #a8a49a !important;
+}
+
+.banner-free .btn-banner-close:hover {
+  background-color: rgba(200, 240, 96, 0.15) !important;
+  color: #f0ede6 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .banner-free {
+    top: 56px !important;
+    margin-left: 0.5rem !important;
+    margin-right: 0.5rem !important;
+  }
+}

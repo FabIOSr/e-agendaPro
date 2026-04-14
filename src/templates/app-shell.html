@@ -34,16 +34,11 @@
     }
   </script>
 
-  <!-- Design System CSS -->
-  <link rel="stylesheet" href="/src/css/design-system.css">
-
-  <!-- Layout CSS -->
-  <link rel="stylesheet" href="/src/css/layout.css">
-
-  <!-- NOTA: Em produção, substituir /src/ por /dist/ ou usar build do Vite -->
-
-  <!-- Tailwind CSS v4 -->
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- ⚡ CSS/JS do novo layout serão injetados automaticamente pelo Vite -->
+  <!-- Durante o build, o plugin copyAndInjectHtml vai inserir:
+       - /assets/style-[hash].css (inclui Tailwind v4 + design-system.css + layout.css)
+       - /assets/app-[hash].js (inclui Alpine.js + layout.js + componentes)
+  -->
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -278,7 +273,10 @@
   <!-- ==========================================
        JAVASCRIPT
        ========================================== -->
-  <script src="/src/js/layout.js"></script>
+  <!-- ⚡ Scripts do novo layout serão injetados automaticamente pelo Vite -->
+  <!-- Durante o build, o plugin copyAndInjectHtml vai inserir:
+       - /assets/app-[hash].js (inclui Alpine.js + layout.js + componentes)
+  -->
 
   <!-- Seus scripts específicos da página -->
   <!-- <script src="/js/sua-pagina.js"></script> -->
