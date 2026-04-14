@@ -12,7 +12,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda — Ana Cabelos</title>
+
+<!-- ⚡ CRÍTICO: FOUC Prevention - Executa ANTES do carregamento -->
+<script>
+  // Tema - aplicar explicitamente para evitar FOUC
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    // Garantir que o light theme seja aplicado (remove data-theme)
+    document.documentElement.removeAttribute('data-theme');
+  }
+
+  // Sidebar colapsada
+  const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+  if (sidebarCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  }
+</script>
 <style>
+/* ==========================================
+   ALIASES PARA VARIÁVEIS ANTIGAS DO PAINEL
+   Mantém compatibilidade com JS existente
+   ========================================== */
+:root {
+  --color-panel-bg: rgb(var(--bg-primary));
+  --color-panel-bg2: rgb(var(--bg-secondary));
+  --color-panel-bg3: rgb(var(--bg-tertiary));
+  --color-panel-border: rgb(var(--color-bord));
+  --color-panel-border2: rgb(var(--color-bord2));
+  --color-panel-text: rgb(var(--color-text));
+  --color-panel-faint: rgb(var(--color-faint));
+  --color-panel-muted: rgb(var(--color-faint));
+  --color-panel-accent: rgb(var(--color-lime));
+  --color-panel-accent2: #7dd3a8;
+  --color-panel-danger: rgb(var(--color-rust));
+}
+
+[data-theme="dark"] {
+  --color-panel-bg: rgb(var(--bg-primary));
+  --color-panel-bg2: rgb(var(--bg-secondary));
+  --color-panel-bg3: rgb(var(--bg-tertiary));
+  --color-panel-border: rgb(var(--color-bord));
+  --color-panel-border2: rgb(var(--color-bord2));
+  --color-panel-text: rgb(var(--color-text));
+  --color-panel-faint: rgb(var(--color-faint));
+  --color-panel-muted: rgb(var(--color-faint));
+  --color-panel-accent: rgb(var(--color-lime));
+  --color-panel-accent2: #7dd3a8;
+  --color-panel-danger: rgb(var(--color-rust));
+}
+
 @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
 @keyframes slide-down { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
 
@@ -41,11 +91,11 @@
 .agendamento:hover { filter:brightness(1.15);transform:translateX(1px); }
 
 /* Servico hover */
-.servico-item:hover .servico-item-name { color:var(--color-text); }
+.servico-item:hover .servico-item-name { color:var(--color-panel-text); }
 
 /* Day today/selected overrides */
-.day-today { background:var(--color-panel-accent) !important;color:var(--color-panel-bg) !important;font-weight:600 !important; }
-.day-selected { background:var(--color-panel-bg3) !important;color:var(--color-text) !important;outline:1px solid var(--color-panel-border2); }
+.day-today { background:var(--color-panel-accent) !important;color:var(--color-lime-ink) !important;font-weight:600 !important; }
+.day-selected { background:var(--color-panel-bg3) !important;color:var(--color-panel-text) !important;outline:1px solid var(--color-panel-border2); }
 
 /* Detail panel open state (controlado por JS) */
 .detail-panel-open { opacity:1 !important;pointer-events:all !important;transform:translate(-50%,-50%) scale(1) !important; }
@@ -55,37 +105,146 @@
 .banner-free { animation:slide-down .4s ease-out; }
 </style>
 </head>
-<body class="bg-[var(--color-panel-bg)] text-[var(--color-text)] font-['DM_Sans',sans-serif] min-h-screen flex flex-col">
+<body class="bg-[rgb(var(--bg-primary))] text-[rgb(var(--color-text))] font-sans min-h-screen">
 
-<!-- TOPBAR -->
-<div class="topbar flex items-center justify-between px-6 h-14 border-b border-[var(--color-panel-border)] bg-[var(--color-panel-bg)] sticky top-0 z-[100] [@media(max-width:768px)]:px-3">
-  <div class="logo text-[15px] font-semibold tracking-[-.3px] text-[var(--color-text)] flex items-center gap-2 [@media(max-width:768px)]:text-[14px]">
-    <div class="logo-dot w-2 h-2 bg-[var(--color-panel-accent)] rounded-full" style="animation:pulse-dot 2s ease-in-out infinite"></div>
-    AgendaPro
+<!-- TOPBAR UNIFICADA -->
+<div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[rgb(var(--bg-secondary))] border-b border-[rgb(var(--color-bord))]">
+  <!-- Topbar Left -->
+  <div class="flex items-center gap-4">
+    <button
+      onclick="toggleSidebar()"
+      id="sidebarToggle"
+      class="p-2 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer"
+      aria-label="Toggle sidebar"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M3 10h18M3 14h18"/>
+      </svg>
+    </button>
+    <a href="/painel" class="font-fraunces text-[18px] font-normal flex items-center gap-2 no-underline text-[rgb(var(--color-text))]">
+      <div class="w-[7px] h-[7px] bg-[rgb(var(--color-lime))] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5); animation:pulse-dot 2s ease-in-out infinite"></div>
+      AgendaPro
+    </a>
   </div>
-  <div class="topbar-center flex items-center gap-2 [@media(max-width:768px)]:!hidden">
-    <div class="date-nav flex items-center gap-1.5">
-      <button onclick="mudarDia(-1)" class="bg-transparent border border-[var(--color-panel-border)] text-[var(--color-muted)] w-7 h-7 rounded-md cursor-pointer text-[13px] flex items-center justify-center transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)]">‹</button>
-      <div class="date-label text-[14px] font-medium min-w-[180px] text-center cursor-pointer" id="date-label">
-        <span id="date-text"></span>
-        <span class="weekday text-[var(--color-muted)] text-[12px] font-normal ml-1.5" id="weekday-text"></span>
+
+  <!-- Topbar Center - Date Navigation -->
+  <div class="flex items-center gap-2 hide-mobile">
+    <button onclick="mudarDia(-1)" class="px-2 py-1 bg-transparent border border-[rgb(var(--color-bord))] rounded-md text-[rgb(var(--color-faint))] hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200" aria-label="Dia anterior">
+      ‹
+    </button>
+    <div class="text-[14px] font-medium min-w-[180px] text-center cursor-pointer" id="date-label">
+      <span id="date-text"></span>
+      <span class="text-[rgb(var(--color-faint))] text-[12px] font-normal ml-1.5" id="weekday-text"></span>
+    </div>
+    <button onclick="mudarDia(1)" class="px-2 py-1 bg-transparent border border-[rgb(var(--color-bord))] rounded-md text-[rgb(var(--color-faint))] hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200" aria-label="Próximo dia">
+      ›
+    </button>
+  </div>
+
+  <!-- Topbar Right -->
+  <div class="flex items-center gap-3">
+    <button
+      onclick="toggleTheme()"
+      id="themeToggle"
+      class="p-2 text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+      title="Alternar tema"
+      aria-label="Alternar tema claro/escuro"
+    >
+      🌙
+    </button>
+    <span id="badge-pro-topbar" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))]" style="display:none;">
+      Pro
+    </span>
+    <button class="px-3.5 py-2 bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--color-lime-d))]" onclick="abrirNovoAgendamento()">
+      + Novo
+    </button>
+    <!-- Avatar com dropdown -->
+    <div class="relative">
+      <div class="w-8 h-8 bg-[rgb(var(--color-lime))] rounded-full flex items-center justify-center text-[12px] font-semibold text-[rgb(var(--color-lime-ink))] cursor-pointer hover:scale-105 transition-transform duration-200" id="avatar-initials" title="Meu perfil" onclick="toggleUserMenu()">
+        AC
       </div>
-      <button onclick="mudarDia(1)" class="bg-transparent border border-[var(--color-panel-border)] text-[var(--color-muted)] w-7 h-7 rounded-md cursor-pointer text-[13px] flex items-center justify-center transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)]">›</button>
+      <!-- Dropdown menu -->
+      <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-lg shadow-lg py-1 hidden" style="z-index: 200;">
+        <div class="px-4 py-2 border-b border-[rgb(var(--color-bord))]">
+          <div class="text-[11px] text-[rgb(var(--color-faint))]">Logado como</div>
+          <div class="text-[13px] font-medium text-[rgb(var(--color-text))] truncate" id="user-menu-name">Profissional</div>
+        </div>
+        <button onclick="fazerLogout()" class="w-full text-left px-4 py-2 text-[13px] text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-secondary))] hover:text-[rgb(var(--color-text))] transition-colors cursor-pointer border-none bg-transparent">
+          Sair
+        </button>
+      </div>
     </div>
   </div>
-  <div class="topbar-right flex items-center gap-2.5 [@media(max-width:768px)]:gap-2">
-    <nav class="nav-links flex items-center gap-0.5 [@media(max-width:900px)]:!hidden">
-      <a href="/painel" class="nav-link active bg-[var(--color-panel-bg3)] text-[var(--color-text)] no-underline text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">📅 Agenda</a>
-      <a href="/clientes" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">👥 Clientes</a>
-      <a href="/relatorio" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">📊 Relatórios</a>
-      <a href="/configuracoes" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">⚙️ Config</a>
-      <a href="/planos" class="nav-link bg-transparent border-none text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg cursor-pointer no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)]">⭐ Plano</a>
-    </nav>
-    <button class="btn-new bg-[var(--color-panel-accent)] text-[var(--color-panel-bg)] border-none rounded-lg px-3.5 h-8 text-[13px] font-semibold flex items-center gap-1 cursor-pointer transition-opacity hover:opacity-85" onclick="abrirNovoAgendamento()">+ Novo</button>
-    <button class="btn-logout bg-transparent border border-[var(--color-panel-border)] text-[var(--color-muted)] text-[12px] font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)] font-['DM_Sans',sans-serif]" onclick="fazerLogout()">Sair</button>
-    <div class="avatar w-8 h-8 bg-[var(--color-panel-accent)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-panel-bg)] cursor-pointer flex-shrink-0" id="avatar-initials" title="Meu perfil">AC</div>
-  </div>
 </div>
+
+<!-- Script para dropdown do avatar -->
+<script>
+window.toggleUserMenu = function() {
+  const menu = document.getElementById('user-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const avatar = document.getElementById('avatar-initials');
+  if (menu && !menu.classList.contains('hidden') && !avatar?.contains(e.target) && !menu?.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+// Layout functions (toggleSidebar e toggleTheme)
+window.toggleSidebar = function() {
+  const layout = document.getElementById('appLayout');
+  if (!layout) return;
+
+  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
+
+  // Sincronizar data attribute
+  if (isCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  } else {
+    document.documentElement.removeAttribute('data-sidebar-collapsed');
+  }
+
+  // Salvar preferência
+  localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+  // Atualizar ícone
+  const toggle = document.getElementById('sidebarToggle');
+  if (toggle) {
+    toggle.innerHTML = isCollapsed
+      ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
+  }
+};
+
+window.toggleTheme = function() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+
+  // Atualizar ícone
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+};
+
+// Inicializar ícone do theme toggle
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  }
+});
+</script>
 
 <!-- BANNER FREE (Pro-only feature promo) -->
 <div class="banner-free bg-[var(--color-lime-t)] border border-[rgba(200,240,96,.3)] text-[var(--color-text)] mx-auto mt-4 max-w-[1400px] rounded-xl mx-4" id="banner-free" style="display:none;animation:slide-down .4s ease-out">
@@ -101,99 +260,160 @@
   </div>
 </div>
 
-<!-- BADGE PERIODICIDADE PRO -->
-<div id="badge-pro-periodicidade" style="display:none;text-align:center;padding:8px;background:var(--color-panel-bg2);border-bottom:1px solid var(--color-panel-border);font-size:12px;color:var(--color-muted)">
-  <span style="color:var(--color-panel-accent)">✓</span> Plano Pro <span id="pro-periodicidade-text"></span> ativo
-</div>
+<!-- LAYOUT GRID (App Layout) -->
+<div class="app-layout" id="appLayout">
 
-<!-- LAYOUT -->
-<div class="layout flex flex-1 overflow-hidden h-[calc(100vh-56px)] [@media(max-width:768px)]:flex-col">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar w-[240px] border-r border-[var(--color-panel-border)] bg-[var(--color-panel-bg)] flex flex-col overflow-y-auto flex-shrink-0 [@media(max-width:768px)]:w-full [@media(max-width:768px)]:max-h-[35vh] [@media(max-width:768px)]:border-r-0 [@media(max-width:768px)]:border-b [@media(max-width:768px)]:order-[-1] [@media(max-width:480px)]:max-h-[30vh]">
-    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] [@media(max-width:480px)]:p-2.5">
-      <div class="sidebar-label text-[10px] font-medium tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5" id="sidebar-mes-label">—</div>
-      <div class="mini-cal text-[12px]">
-        <div class="mini-cal-header flex justify-between items-center mb-2 text-[var(--color-muted)]">
-          <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-text)]" onclick="mudarMesCal(-1)">‹</span>
-          <span class="text-[var(--color-text)] font-medium" id="mini-cal-mes-label">—</span>
-          <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-text)]" onclick="mudarMesCal(1)">›</span>
-        </div>
-        <div class="mini-cal-grid grid grid-cols-7 gap-px text-center" id="mini-cal"></div>
-      </div>
-    </div>
-
-    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] [@media(max-width:480px)]:p-2.5">
-      <div class="sidebar-label text-[10px] font-medium tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Hoje</div>
-      <div class="stats flex flex-col gap-2">
-        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border)] rounded-lg">
-          <span class="stat-label text-[12px] text-[var(--color-muted)]">Agendamentos</span>
-          <span class="stat-val text-[15px] font-semibold font-['DM_Mono',monospace] text-[var(--color-panel-accent)]" id="stat-count">—</span>
-        </div>
-        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border)] rounded-lg">
-          <span class="stat-label text-[12px] text-[var(--color-muted)]">Receita prevista</span>
-          <span class="stat-val text-[15px] font-semibold font-['DM_Mono',monospace] text-[var(--color-panel-accent2)]" id="stat-receita">—</span>
-        </div>
-        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border)] rounded-lg">
-          <span class="stat-label text-[12px] text-[var(--color-muted)]">Próximo horário</span>
-          <span class="stat-val text-[15px] font-semibold font-['DM_Mono',monospace] text-[13px]" id="stat-proximo">—</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] [@media(max-width:480px)]:p-2.5">
-      <div class="sidebar-label text-[10px] font-medium tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Serviços</div>
-      <div class="servicos-list flex flex-col gap-1.5">
-        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
-          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-accent2)"></div>
-          <span class="servico-item-name flex-1">Corte + escova</span>
-          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">60min</span>
-        </div>
-        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
-          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-purple)"></div>
-          <span class="servico-item-name flex-1">Tintura</span>
-          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">120min</span>
-        </div>
-        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
-          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-blue)"></div>
-          <span class="servico-item-name flex-1">Escova progressiva</span>
-          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">90min</span>
-        </div>
-        <div class="servico-item flex items-center gap-2 text-[12px] text-[var(--color-muted)] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='var(--color-text)'">
-          <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:var(--color-panel-warn)"></div>
-          <span class="servico-item-name flex-1">Corte masculino</span>
-          <span class="servico-item-dur font-['DM_Mono',monospace] text-[11px]">30min</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="sidebar-section p-4 border-b border-[var(--color-panel-border)] last:border-b-0 [@media(max-width:480px)]:p-2.5">
-      <button class="btn-bloqueio w-full py-2 rounded-lg bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-muted)] text-[13px] font-medium cursor-pointer flex items-center justify-center gap-1.5 font-['DM_Sans',sans-serif] transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-text)]" onclick="abrirNovoBloqueio()">
-        <span>⛔</span> Adicionar bloqueio
+  <!-- SIDEBAR COLAPSÁVEL -->
+  <aside id="sidebar" class="bg-[rgb(var(--bg-secondary))] border-r border-[rgb(var(--color-bord))] flex flex-col overflow-hidden transition-all duration-300">
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-[rgb(var(--color-bord))] flex items-center justify-between">
+      <span class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))]">Menu</span>
+      <button onclick="toggleSidebar()" class="p-2 text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
+        </svg>
       </button>
     </div>
-  </div>
 
-  <!-- AGENDA -->
-  <div class="agenda-wrap flex-1 overflow-y-auto overflow-x-hidden relative" id="agenda-wrap">
+    <!-- Sidebar Navigation -->
+    <nav class="p-3 flex flex-col gap-1">
+      <a href="/painel" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-text))] bg-[rgb(var(--bg-tertiary))] font-semibold no-underline">
+        <span class="text-[18px] flex-shrink-0">📅</span>
+        <span class="nav-item-label flex-1">Agenda</span>
+      </a>
+      <a href="/clientes" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">👥</span>
+        <span class="nav-item-label flex-1">Clientes</span>
+      </a>
+      <a href="/relatorio" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">📊</span>
+        <span class="nav-item-label flex-1">Relatórios</span>
+      </a>
+      <a href="/configuracoes" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">⚙️</span>
+        <span class="nav-item-label flex-1">Configurações</span>
+      </a>
+      <a href="/planos" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">⭐</span>
+        <span class="nav-item-label flex-1">Plano</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Widgets (desaparece quando colapsada) -->
+    <div class="sidebar-widgets flex-1 overflow-y-auto">
+      <!-- Mini Calendar -->
+      <div class="p-3 border-t border-[rgb(var(--color-bord))]">
+        <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2.5" id="sidebar-mes-label">—</div>
+        <div class="mini-cal text-[12px]">
+          <div class="mini-cal-header flex justify-between items-center mb-2 text-[rgb(var(--color-faint))]">
+            <span class="cursor-pointer px-1.5 py-0.5 hover:text-[rgb(var(--color-text))]" onclick="mudarMesCal(-1)">‹</span>
+            <span class="text-[rgb(var(--color-text))] font-medium" id="mini-cal-mes-label">—</span>
+            <span class="cursor-pointer px-1.5 py-0.5 hover:text-[rgb(var(--color-text))]" onclick="mudarMesCal(1)">›</span>
+          </div>
+          <div class="mini-cal-grid grid grid-cols-7 gap-px text-center" id="mini-cal"></div>
+        </div>
+      </div>
+
+      <!-- Stats Hoje -->
+      <div class="p-3 border-t border-[rgb(var(--color-bord))]">
+        <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2.5">Hoje</div>
+        <div class="stats flex flex-col gap-2">
+          <div class="stat flex items-center justify-between p-2.5 bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-lg">
+            <span class="stat-label text-[12px] text-[rgb(var(--color-faint))]">Agendamentos</span>
+            <span class="stat-val text-[15px] font-semibold font-mono text-[rgb(var(--color-lime))]" id="stat-count">—</span>
+          </div>
+          <div class="stat flex items-center justify-between p-2.5 bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-lg">
+            <span class="stat-label text-[12px] text-[rgb(var(--color-faint))]">Receita prevista</span>
+            <span class="stat-val text-[15px] font-semibold font-mono text-[#7dd3a8]" id="stat-receita">—</span>
+          </div>
+          <div class="stat flex items-center justify-between p-2.5 bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-lg">
+            <span class="stat-label text-[12px] text-[rgb(var(--color-faint))]">Próximo horário</span>
+            <span class="stat-val text-[15px] font-semibold font-mono text-[13px] text-[rgb(var(--color-text))]" id="stat-proximo">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Serviços -->
+      <div class="p-3 border-t border-[rgb(var(--color-bord))]">
+        <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2.5">Serviços</div>
+        <div class="servicos-list flex flex-col gap-1.5">
+          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
+            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#7dd3a8"></div>
+            <span class="servico-item-name flex-1">Corte + escova</span>
+            <span class="servico-item-dur font-mono text-[11px]">60min</span>
+          </div>
+          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
+            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#b060f0"></div>
+            <span class="servico-item-name flex-1">Tintura</span>
+            <span class="servico-item-dur font-mono text-[11px]">120min</span>
+          </div>
+          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
+            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#60a8f0"></div>
+            <span class="servico-item-name flex-1">Escova progressiva</span>
+            <span class="servico-item-dur font-mono text-[11px]">90min</span>
+          </div>
+          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
+            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#f0a060"></div>
+            <span class="servico-item-name flex-1">Corte masculino</span>
+            <span class="servico-item-dur font-mono text-[11px]">30min</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Bloqueio -->
+      <div class="p-3 border-t border-[rgb(var(--color-bord))]">
+        <button class="btn-bloqueio w-full py-2 rounded-lg bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord2))] text-[rgb(var(--color-faint))] text-[13px] font-medium cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))]" onclick="abrirNovoBloqueio()">
+          <span>⛔</span> Adicionar bloqueio
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT - AGENDA GRID -->
+  <main class="agenda-wrap flex-1 overflow-y-auto overflow-x-hidden relative" id="agenda-wrap">
     <div class="agenda-grid flex relative pb-8" id="agenda-grid">
 
       <!-- coluna de horas -->
-      <div class="time-col w-[52px] flex-shrink-0 sticky left-0 bg-[var(--color-panel-bg)] z-[10]" id="time-col"></div>
+      <div class="time-col w-[52px] flex-shrink-0 sticky left-0 bg-[rgb(var(--bg-primary))] z-[10]" id="time-col"></div>
 
       <!-- coluna de eventos -->
       <div class="events-col flex-1 relative min-w-0" id="events-col"></div>
 
     </div>
-  </div>
+  </main>
+
 </div>
+
+<!-- BOTTOM NAV (MOBILE ONLY) -->
+<nav class="show-mobile-only flex fixed bottom-0 left-0 right-0 z-[100] bg-[rgb(var(--bg-tertiary))] border-t border-[rgb(var(--color-bord))] p-2 justify-around shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[max(8px,env(safe-area-inset-bottom))]">
+  <a href="/painel" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-text))] no-underline transition-all duration-200" aria-label="Agenda">
+    <span class="text-[20px]">📅</span>
+    <span class="text-[10px] font-medium">Agenda</span>
+  </a>
+  <a href="/clientes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Clientes">
+    <span class="text-[20px]">👥</span>
+    <span class="text-[10px] font-medium">Clientes</span>
+  </a>
+  <a href="/relatorio" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Relatórios">
+    <span class="text-[20px]">📊</span>
+    <span class="text-[10px] font-medium">Relatórios</span>
+  </a>
+  <a href="/configuracoes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Configurações">
+    <span class="text-[20px]">⚙️</span>
+    <span class="text-[10px] font-medium">Config</span>
+  </a>
+  <a href="/planos" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Plano">
+    <span class="text-[20px]">⭐</span>
+    <span class="text-[10px] font-medium">Plano</span>
+  </a>
+</nav>
 
 <!-- DETAIL PANEL -->
 <div class="detail-overlay fixed inset-0 z-[199] hidden" id="overlay" onclick="fecharDetalhe()"></div>
-<div class="detail-panel fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[.95] bg-[var(--color-panel-bg2)] border border-[var(--color-panel-border2)] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
+<div class="detail-panel fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[.95] bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord2))] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
   <div class="detail-header flex justify-between items-start mb-4">
-    <div class="detail-title text-[16px] font-semibold" id="dp-title"></div>
-    <button class="detail-close bg-[var(--color-panel-bg3)] border-none text-[var(--color-muted)] w-[26px] h-[26px] rounded-md text-[15px] cursor-pointer flex items-center justify-center transition-colors hover:text-[var(--color-text)]" onclick="fecharDetalhe()">✕</button>
+    <div class="detail-title text-[16px] font-semibold text-[rgb(var(--color-text))]" id="dp-title"></div>
+    <button class="detail-close bg-[rgb(var(--bg-secondary))] border-none text-[rgb(var(--color-faint))] w-[26px] h-[26px] rounded-md text-[15px] cursor-pointer flex items-center justify-center transition-colors hover:text-[rgb(var(--color-text))]" onclick="fecharDetalhe()">✕</button>
   </div>
   <div id="dp-body"></div>
   <div class="detail-actions flex gap-2 mt-[18px]" id="dp-actions"></div>
@@ -229,22 +449,22 @@ const nomePrestador = prestador?.nome
 const iniciais = nomePrestador.split(' ').slice(0,2).map(p => p[0].toUpperCase()).join('');
 const avatarEl = document.getElementById('avatar-initials');
 if (avatarEl) avatarEl.textContent = iniciais;
+
+// Atualizar nome no dropdown do menu
+const userMenuName = document.getElementById('user-menu-name');
+if (userMenuName) userMenuName.textContent = nomePrestador;
+
 document.title = `Agenda — ${nomePrestador}`;
 
 // ── BANNER FREE (Verifica plano e mostra banner se necessário) ─────────────
 async function initBannerFree() {
   const plano = prestador?.plano || 'free';
 
-  // Se for Pro, não mostra banner free
+  // Se for Pro, mostra badge na topbar
   if (plano === 'pro') {
-    // Mostra badge de periodicidade Pro
-    const badge = document.getElementById('badge-pro-periodicidade');
-    const periodicidadeText = document.getElementById('pro-periodicidade-text');
-    
-    if (badge && periodicidadeText) {
-      badge.style.display = 'block';
-      const periodicidade = prestador?.assinatura_periodicidade || 'MONTHLY';
-      periodicidadeText.textContent = periodicidade === 'YEARLY' ? '(plano anual)' : '(plano mensal)';
+    const badgeTopbar = document.getElementById('badge-pro-topbar');
+    if (badgeTopbar) {
+      badgeTopbar.style.display = 'inline-flex';
     }
     return;
   }
