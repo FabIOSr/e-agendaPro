@@ -99,3 +99,33 @@ function injectTopbar(selector, options) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { renderTopbar, injectTopbar };
 }
+
+/* ==========================================
+   AUTO-INICIALIZAÇÃO (opcional)
+   Se existir <div id="topbar-root"> no DOM, injeta automaticamente
+   ========================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('topbar-root');
+  if (root && typeof renderTopbar === 'function') {
+    // Detectar página atual pela URL
+    const path = window.location.pathname;
+    const pageMap = {
+      '/painel': 'painel',
+      '/clientes': 'clientes',
+      '/relatorio': 'relatorio',
+      '/configuracoes': 'configuracoes',
+      '/planos': 'planos'
+    };
+    const pageName = pageMap[path] || '';
+
+    // Painel mostra date nav e botão novo
+    const isPainel = pageName === 'painel';
+
+    root.innerHTML = renderTopbar({
+      showDateNav: isPainel,
+      showNewButton: isPainel,
+      pageName
+    });
+  }
+});

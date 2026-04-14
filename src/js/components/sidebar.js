@@ -152,3 +152,26 @@ if (typeof module !== 'undefined' && module.exports) {
     renderCalendarWidget
   };
 }
+
+/* ==========================================
+   AUTO-INICIALIZAÇÃO (opcional)
+   Se existir <aside id="sidebar-root"> no DOM, injeta automaticamente
+   ========================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('sidebar-root');
+  if (root && typeof renderSidebar === 'function') {
+    // Detectar página atual pela URL
+    const path = window.location.pathname;
+    const pageMap = {
+      '/painel': 'painel',
+      '/clientes': 'clientes',
+      '/relatorio': 'relatorio',
+      '/configuracoes': 'configuracoes',
+      '/planos': 'planos'
+    };
+    const currentPage = pageMap[path] || '';
+
+    root.innerHTML = renderSidebar({ currentPage, showWidgets: false });
+  }
+});

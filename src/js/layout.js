@@ -15,14 +15,17 @@ let isCollapsed = false;
 
 /**
  * Alterna entre sidebar expandida (240px) e colapsada (64px)
- * Atualiza: grid layout, data attribute, localStorage, ícone
+ * Atualiza: grid layout (via classes CSS), data attribute, localStorage, ícone
+ *
+ * NOTA: Não usamos inline style (sidebar.style.width) para evitar
+ * conflito com as regras CSS. A classe .sidebar-collapsed e o data
+ * attribute [data-sidebar-collapsed] controlam toda a estilização.
  */
 function toggleSidebar() {
   isCollapsed = !isCollapsed;
   const layout = document.getElementById('appLayout');
-  const sidebar = document.getElementById('sidebar');
 
-  // Toggle classe de layout
+  // Toggle classe de layout (CSS cuida das larguras)
   if (layout) {
     layout.classList.toggle('sidebar-collapsed', isCollapsed);
   }
@@ -32,15 +35,6 @@ function toggleSidebar() {
     document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
   } else {
     document.documentElement.removeAttribute('data-sidebar-collapsed');
-  }
-
-  // Ajustar largura da sidebar
-  if (sidebar) {
-    if (isCollapsed) {
-      sidebar.style.width = '64px';
-    } else {
-      sidebar.style.width = '240px';
-    }
   }
 
   // Salvar preferência

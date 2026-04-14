@@ -126,7 +126,6 @@
     <aside
       id="sidebar"
       class="bg-[rgb(var(--bg-secondary))] border-r border-[rgb(var(--color-bord))] flex flex-col overflow-hidden transition-all duration-300"
-      style="width: 240px;"
     >
       <!-- Sidebar Header -->
       <div class="p-4 border-b border-[rgb(var(--color-bord))] flex items-center justify-between">
@@ -203,27 +202,78 @@
        URLs amigáveis do Firebase Hosting (sem .html)
        ========================================== -->
   <nav class="show-mobile-only flex fixed bottom-0 left-0 right-0 z-[100] bg-[rgb(var(--bg-tertiary))] border-t border-[rgb(var(--color-bord))] p-2 justify-around shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[max(8px,env(safe-area-inset-bottom))]">
-    <a href="/painel" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+    <a href="/painel" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Agenda">
       <span class="text-[20px]">📅</span>
       <span class="text-[10px] font-medium">Agenda</span>
     </a>
-    <a href="/clientes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+    <a href="/clientes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Clientes">
       <span class="text-[20px]">👥</span>
       <span class="text-[10px] font-medium">Clientes</span>
     </a>
-    <a href="/relatorio" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+    <a href="/relatorio" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Relatórios">
       <span class="text-[20px]">📊</span>
       <span class="text-[10px] font-medium">Relatórios</span>
     </a>
-    <a href="/configuracoes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+    <a href="/configuracoes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Configurações">
       <span class="text-[20px]">⚙️</span>
       <span class="text-[10px] font-medium">Config</span>
     </a>
-    <a href="/planos" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+    <a href="/planos" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200" aria-label="Plano">
       <span class="text-[20px]">⭐</span>
       <span class="text-[10px] font-medium">Plano</span>
     </a>
   </nav>
+
+  <!-- ==========================================
+       MINI CALENDAR (MOBILE ONLY)
+       Requisito crítico: profissionais de beleza
+       precisam de acesso ao calendar no celular
+       ========================================== -->
+  <!-- Mostrar apenas em mobile (escondido em desktop via CSS) -->
+  <div class="show-mobile-only px-4 pb-4">
+    <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4">
+      <div class="flex justify-between items-center mb-3">
+        <div class="text-[13px] font-semibold">Abril 2026</div>
+        <div class="flex gap-1">
+          <button class="p-1 text-[rgb(var(--color-faint))] hover:text-[rgb(var(--color-text))] rounded" aria-label="Mês anterior">‹</button>
+          <button class="p-1 text-[rgb(var(--color-faint))] hover:text-[rgb(var(--color-text))] rounded" aria-label="Próximo mês">›</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 gap-px text-center text-[10px]">
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">D</span>
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">S</span>
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">T</span>
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">Q</span>
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">Q</span>
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">S</span>
+        <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">S</span>
+
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">1</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">2</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">3</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">4</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">5</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">6</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">7</span>
+
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">8</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">9</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">10</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">11</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">12</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">13</span>
+        <span class="aspect-square flex items-center justify-center rounded bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] font-semibold">14</span>
+
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">15</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">16</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">17</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">18</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">19</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">20</span>
+        <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">21</span>
+      </div>
+    </div>
+  </div>
 
   <!-- ==========================================
        JAVASCRIPT

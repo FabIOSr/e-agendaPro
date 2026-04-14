@@ -150,16 +150,9 @@ aside#sidebar {
 }
 
 /* ==========================================
-   Z-INDEX LAYERS
+   Z-INDEX — definições no design-system.css
+   Não duplicar aqui para evitar conflitos
    ============================================ */
-
-:root {
-  --z-overlay: 200;
-  --z-topbar: 100;
-  --z-sidebar: 90;
-  --z-modal: 300;
-  --z-toast: 400;
-}
 
 /* Topbar fixa */
 .topbar {

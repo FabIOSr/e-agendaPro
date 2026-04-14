@@ -35,7 +35,9 @@ function renderMobileNav(options = {}) {
       : 'text-[rgb(var(--color-faint))]';
 
     return `
-      <a href="${item.href}" class="flex flex-col items-center gap-1 p-2 rounded-lg ${activeClass} transition-all duration-200 no-underline">
+      <a href="${item.href}"
+         class="flex flex-col items-center gap-1 p-2 rounded-lg ${activeClass} transition-all duration-200 no-underline"
+         aria-label="${item.label}">
         <span class="text-[20px]">${item.icon}</span>
         <span class="text-[10px] font-medium">${item.label}</span>
       </a>
@@ -109,3 +111,26 @@ if (typeof module !== 'undefined' && module.exports) {
     renderMobileNavCompact
   };
 }
+
+/* ==========================================
+   AUTO-INICIALIZAÇÃO (opcional)
+   Se existir <nav id="mobile-nav-root"> no DOM, injeta automaticamente
+   ========================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('mobile-nav-root');
+  if (root && typeof renderMobileNav === 'function') {
+    // Detectar página atual pela URL
+    const path = window.location.pathname;
+    const pageMap = {
+      '/painel': 'painel',
+      '/clientes': 'clientes',
+      '/relatorio': 'relatorio',
+      '/configuracoes': 'configuracoes',
+      '/planos': 'planos'
+    };
+    const currentPage = pageMap[path] || '';
+
+    root.innerHTML = renderMobileNav({ currentPage });
+  }
+});
