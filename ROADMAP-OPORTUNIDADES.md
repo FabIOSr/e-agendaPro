@@ -54,9 +54,9 @@ Este documento documenta **12 oportunidades** identificadas através de análise
 | Categoria | Oportunidades | Viabilidade | Justificativa |
 |-----------|--------------|-------------|---------------|
 | **Quick Wins** | Q-1 a Q-5 | ✅ 100% | JS/CSS puro, funciona em HTML estático |
-| **Retenção** | R-1 a R-4 | ✅ 100% | Edge Functions já existem, só adicionar lógica |
+| **Retenção** | R-1, R-3 a R-5 | ✅ 100% | Edge Functions já existem, só adicionar lógica |
 | **Monetização** | M-1, M-2, M-3 | ✅ 100% | Asaas API + HTML |
-| **Features** | F-1, F-2, F-3 | ✅ 100% | SQL + JS + APIs REST (Zoom, etc) |
+| **Features** | F-1, F-3 | ✅ 100% | SQL + JS + APIs REST (Zoom, etc) |
 
 **Exemplo - Lista de Espera (R-1):**
 ```typescript
@@ -154,7 +154,6 @@ TOTAL            │   12    │   4   │    1     │      0
 | ID | Oportunidade | Impacto | Esforço | ROI |
 |----|-------------|---------|---------|-----|
 | R-1 | Lista de Espera Inteligente | ⭐⭐⭐⭐⭐ | 6h | Muito Alto |
-| R-2 | Cancelamento Survey | ⭐⭐⭐⭐ | 2h | Alto |
 | R-3 | Nurturing During Trial | ⭐⭐⭐⭐ | 4h | Alto |
 | R-4 | Dunning Inteligente | ⭐⭐⭐ | 4h | ✅ IMPLEMENTADO |
 | R-5 | Offboarding ao Downgrade | ⭐⭐⭐ | 2h | Médio |
@@ -185,8 +184,8 @@ TOTAL            │   12    │   4   │    1     │      0
 IMPACTO
    │
  5 │     M-1           R-1    F-1
-   │           M-2        R-2    F-2
- 4 │     M-3        R-3    Q-2
+   │           M-2        R-3
+ 4 │     M-3              Q-2
    │              Q-5    F-4        Q-1
  3 │        R-4  R-5    Q-4    F-3
    │                    Q-3    F-5
@@ -1011,171 +1010,6 @@ async function enviarEmailNurturing(prestador: any, templateNome: string, vars: 
 
 ---
 
-### R-2: Cancelamento Survey
-
-**Problema:** Quando usuário clica em cancelar, não capturamos o motivo nem fazemos retenção.
-
-**Solução:**
-
-```html
-<!-- pages/configuracoes.html -->
-<div id="cancel-survey-modal" style="display:none">
-  <div class="modal-content">
-    <h2>Podemos ajudar?</h2>
-    <p>Conte-nos o motivo do cancelamento:</p>
-
-    <div class="survey-options">
-      <label>
-        <input type="radio" name="cancel-reason" value="muito-caro">
-        <span>Muito caro</span>
-      </label>
-      <label>
-        <input type="radio" name="cancel-reason" value="nao-uso">
-        <span>Não uso mais</span>
-      </label>
-      <label>
-        <input type="radio" name="cancel-reason" value="faltou-feature">
-        <span>Faltou alguma funcionalidade</span>
-      </label>
-      <label>
-        <input type="radio" name="cancel-reason" value="mudei-ramo">
-        <span>Mudei de ramo/atividade</span>
-      </label>
-      <label>
-        <input type="radio" name="cancel-reason" value="outro">
-        <span>Outro motivo</span>
-      </label>
-    </div>
-
-    <!-- Offer de desconto se "muito caro" -->
-    <div id="discount-offer" style="display:none">
-      <div class="offer-card">
-        <h3>🎁 Oferta especial</h3>
-        <p>Que tal <strong>20% de desconto</strong> por 3 meses?</p>
-        <p class="offer-price">R$31/mês em vez de R$39</p>
-        <button class="btn-accept" onclick="aceitarDesconto()">Aceitar oferta</button>
-        <button class="btn-decline" onclick="recusarDesconto()">Não, quero cancelar</button>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="fecharSurvey()">Voltar</button>
-      <button class="btn-danger" onclick="confirmarCancelamento()">Confirmar cancelamento</button>
-    </div>
-  </div>
-</div>
-
-<script>
-let cancelReason = null;
-
-document.querySelectorAll('input[name="cancel-reason"]').forEach(radio => {
-  radio.addEventListener('change', (e) => {
-    cancelReason = e.target.value;
-
-    // Mostrar offer se "muito caro"
-    const offer = document.getElementById('discount-offer');
-    offer.style.display = cancelReason === 'muito-caro' ? 'block' : 'none';
-  });
-});
-
-async function aceitarDesconto() {
-  // Criar cupom de desconto no Asaas
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/criar-cupom`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      desconto_percentual: 20,
-      meses: 3,
-      prestador_id: userId
-    })
-  });
-
-  if (response.ok) {
-    toast('✓ Desconto aplicado! Você foi redirecionado para o Asaas.');
-    fecharSurvey();
-    // Redirecionar para Asaas com cupom
-  }
-}
-</script>
-```
-
-```css
-.survey-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.survey-options label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.survey-options label:hover {
-  border-color: var(--lime-d);
-  background: var(--lime-l);
-}
-
-.survey-options input[type="radio"]:checked + span {
-  font-weight: 600;
-}
-
-.offer-card {
-  background: var(--lime-l);
-  border: 1.5px solid var(--lime);
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-  text-align: center;
-}
-
-.offer-price {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--lime-d);
-  margin: 10px 0;
-}
-
-.btn-accept {
-  background: var(--lime-d);
-  color: var(--lime-ink);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  margin: 0 8px;
-}
-
-.btn-decline {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-```
-
-**Benefícios:**
-- Recuperar 10-20% de cancelamentos
-- Capturar feedback para melhorar produto
-- Entender principais motivos de churn
-
-**Arquivos:** `pages/configuracoes.html`
-
----
-
 ## 📅 Roadmap Sugerido
 
 ### Fase 1: Quick Wins (Semana 1)
@@ -1187,10 +1021,9 @@ async function aceitarDesconto() {
 | Q-2: Undo ações | 2h | Alta | ⏳ Pendente |
 | Q-5: Busca clientes | 2h | Alta | ✅ IMPLEMENTADO |
 | M-1: Plano Anual | 2h | Alta | ✅ IMPLEMENTADO |
-| R-2: Cancel Survey | 2h | Alta | ⏳ Pendente |
 | T-1: Testes automatizados | 4h | Alta | ✅ IMPLEMENTADO |
 
-**Total:** 13h (2-3 dias) — 9h concluídas
+**Total:** 11h (2-3 dias) — 9h concluídas
 RETURNS TABLE (
   servico_id UUID,
   servico_nome TEXT,
@@ -1346,188 +1179,6 @@ async function loadTempoMedio() {
 
 ---
 
-### F-2: Avaliações Públicas na Landing Page
-
-**Problema:** Página do profissional não tem prova social. Perde conversão.
-
-**Solução:**
-
-```javascript
-// pages/pagina-cliente.html
-async function loadAvaliacoesPublicas() {
-  const { data } = await supabase
-    .rpc('avaliacoes_publicas', {
-      p_prestador_slug: prestadorSlug
-    });
-
-  if (!data || data.length === 0) return;
-
-  // Calcular média
-  const media = data.reduce((sum, a) => sum + a.nota, 0) / data.length;
-
-  // Renderizar seção
-  const section = document.createElement('section');
-  section.className = 'reviews-section';
-  section.innerHTML = `
-    <div class="reviews-header">
-      <h2>O que clients dizem</h2>
-      <div class="rating-stars">
-        ${renderStars(media)}
-        <span class="rating-score">${media.toFixed(1)}</span>
-        <span class="rating-count">(${data.length} avaliações)</span>
-      </div>
-    </div>
-
-    <div class="reviews-grid">
-      ${data.slice(0, 3).map(avaliacao => `
-        <div class="review-card">
-          <div class="review-header">
-            <div class="review-avatar">${avaliacao.cliente_nome.charAt(0)}</div>
-            <div class="review-info">
-              <div class="review-name">${avaliacao.cliente_nome}</div>
-              <div class="review-date">${formatarData(avaliacao.created_at)}</div>
-            </div>
-          </div>
-          <div class="review-stars">${renderStars(avaliacao.nota)}</div>
-          ${avaliacao.comentario ? `<div class="review-comment">${avaliacao.comentario}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>
-  `;
-
-  // Inserir antes do footer
-  document.querySelector('.booking-container').before(section);
-}
-
-function renderStars(nota) {
-  return Array(5).fill(0).map((_, i) =>
-    i < nota ? '⭐' : '☆'
-  ).join('');
-}
-```
-
-```sql
--- migrations/23_avaliacoes_publicas.sql
-CREATE OR REPLACE FUNCTION public.avaliacoes_publicas(p_prestador_slug TEXT)
-RETURNS TABLE (
-  cliente_nome TEXT,
-  nota INT,
-  comentario TEXT,
-  created_at TIMESTAMPTZ
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    SUBSTRING(a.cliente_nome FROM '^[^ ]+') as cliente_nome,
-    av.nota,
-    av.comentario,
-    av.created_at
-  FROM public.avaliacoes av
-  JOIN public.agendamentos a ON a.id = av.agendamento_id
-  JOIN public.prestadores p ON p.id = av.prestador_id
-  WHERE p.slug = p_prestador_slug
-    AND av.comentario IS NOT NULL
-  ORDER BY av.created_at DESC
-  LIMIT 20;
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.avaliacoes_publicas TO anon;
-```
-
-```css
-.reviews-section {
-  padding: 40px 20px;
-  background: var(--cream);
-  margin: 40px 0;
-  border-radius: var(--radius);
-}
-
-.reviews-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.rating-stars {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-  font-size: 24px;
-}
-
-.rating-score {
-  font-weight: 700;
-  font-size: 28px;
-}
-
-.rating-count {
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.reviews-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.review-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid var(--border);
-}
-
-.review-header {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.review-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--lime);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: var(--lime-ink);
-}
-
-.review-name {
-  font-weight: 600;
-}
-
-.review-date {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.review-comment {
-  margin-top: 12px;
-  line-height: 1.6;
-  color: var(--ink);
-}
-```
-
-**Benefícios:**
-- Prova social aumenta conversão em 20-30%
-- SEO (conteúdo gerado por usuário)
-- Diferencial competitivo
-
-**Arquivos:** `migrations/23_avaliacoes_publicas.sql`, `pages/pagina-cliente.html`
-
----
-
 ## 📅 Roadmap Sugerido
 
 ### Fase 1: Quick Wins (Semana 1)
@@ -1539,10 +1190,9 @@ GRANT EXECUTE ON FUNCTION public.avaliacoes_publicas TO anon;
 | Q-2: Undo ações | 2h | Alta | ⏳ Pendente |
 | Q-5: Busca clientes | 2h | Alta | ✅ IMPLEMENTADO |
 | M-1: Plano Anual | 2h | Alta | ✅ IMPLEMENTADO |
-| R-2: Cancel Survey | 2h | Alta | ⏳ Pendente |
 | T-1: Testes automatizados | 4h | Alta | ✅ IMPLEMENTADO |
 
-**Total:** 13h (2-3 dias) — 9h concluídas
+**Total:** 11h (2-3 dias) — 9h concluídas
 
 ---
 
@@ -1553,9 +1203,8 @@ GRANT EXECUTE ON FUNCTION public.avaliacoes_publicas TO anon;
 |--------|---------|------------|--------|
 | R-1: Lista Espera | 6h | Muito Alta | ✅ IMPLEMENTADO |
 | R-3: Nurturing Trial | 4h | Alta | ⏳ Pendente |
-| F-2: Avaliações Públicas | 4h | Alta | ⏳ Pendente |
 
-**Total:** 14h (3-4 dias) — 6h concluídas
+**Total:** 10h (2-3 dias) — 6h concluídas
 
 ---
 
