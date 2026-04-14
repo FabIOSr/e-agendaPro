@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<!--
+  AGENDAPRO APP SHELL TEMPLATE
+  ============================
+
+  URLS AMIGÁVEIS (Firebase Hosting):
+  - /painel        → /pages/painel.html
+  - /clientes      → /pages/clientes.html
+  - /relatorio     → /pages/relatorio.html
+  - /configuracoes → /pages/configuracoes.html
+  - /planos        → /pages/planos.html
+
+  IMPORTANTE: Usar URLs amigáveis (sem .html) em todos os links!
+  O Firebase Hosting reescreve as URLs automaticamente.
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgendaPro - App Shell Template</title>
+
+  <!-- ⚡ CRÍTICO: FOUC Prevention - Executa ANTES do carregamento -->
+  <script>
+    // Tema
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    // Sidebar colapsada
+    const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    if (sidebarCollapsed) {
+      document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+    }
+  </script>
+
+  <!-- Design System CSS -->
+  <link rel="stylesheet" href="/src/css/design-system.css">
+
+  <!-- Layout CSS -->
+  <link rel="stylesheet" href="/src/css/layout.css">
+
+  <!-- NOTA: Em produção, substituir /src/ por /dist/ ou usar build do Vite -->
+
+  <!-- Tailwind CSS v4 -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@300;400&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style type="text/tailwindcss">
+    @theme {
+      --font-syne: "Syne", sans-serif;
+      --font-fraunces: "Fraunces", serif;
+      --font-dm-mono: "DM Mono", monospace;
+    }
+  </style>
+</head>
+<body class="bg-[rgb(var(--bg-primary))] text-[rgb(var(--color-text))] font-syne min-h-screen">
+
+  <!-- ==========================================
+       TOPBAR UNIFICADA
+       ========================================== -->
+  <div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[rgb(var(--bg-secondary))] border-b border-[rgb(var(--color-bord))]">
+    <!-- Topbar Left -->
+    <div class="flex items-center gap-4">
+      <button
+        onclick="toggleSidebar()"
+        id="sidebarToggle"
+        class="p-2 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18M3 10h18M3 14h18"/>
+        </svg>
+      </button>
+      <div class="font-fraunces text-[18px] font-normal flex items-center gap-2">
+        <div class="w-[7px] h-[7px] bg-[rgb(var(--color-lime))] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5);"></div>
+        AgendaPro
+      </div>
+    </div>
+
+    <!-- Topbar Center (opcional - usar apenas se necessário) -->
+    <!-- <div class="flex items-center gap-2 hide-mobile">
+      <button class="px-2 py-1 bg-transparent border border-[rgb(var(--color-bord))] rounded-md text-[rgb(var(--color-faint))] hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200">
+        ‹
+      </button>
+      <span class="text-[14px] font-medium">Hoje, 14 de Abril</span>
+      <button class="px-2 py-1 bg-transparent border border-[rgb(var(--color-bord))] rounded-md text-[rgb(var(--color-faint))] hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200">
+        ›
+      </button>
+    </div> -->
+
+    <!-- Topbar Right -->
+    <div class="flex items-center gap-3">
+      <button
+        onclick="toggleTheme()"
+        id="themeToggle"
+        class="p-2 text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+        title="Alternar tema"
+      >
+        🌙
+      </button>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))]">
+        Pro
+      </span>
+      <!-- Botão "+ Novo" apenas no painel -->
+      <!-- <button class="px-3.5 py-2 bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--color-lime-d))]">
+        + Novo
+      </button> -->
+      <div class="w-8 h-8 bg-[rgb(var(--color-lime))] rounded-full flex items-center justify-center text-[12px] font-semibold text-[rgb(var(--color-lime-ink))] cursor-pointer hover:scale-105 transition-transform duration-200">
+        AC
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       LAYOUT GRID
+       ========================================== -->
+  <div class="app-layout" id="appLayout">
+
+    <!-- ==========================================
+         SIDEBAR COLAPSÁVEL
+         ========================================== -->
+    <aside
+      id="sidebar"
+      class="bg-[rgb(var(--bg-secondary))] border-r border-[rgb(var(--color-bord))] flex flex-col overflow-hidden transition-all duration-300"
+      style="width: 240px;"
+    >
+      <!-- Sidebar Header -->
+      <div class="p-4 border-b border-[rgb(var(--color-bord))] flex items-center justify-between">
+        <span class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))]">Menu</span>
+        <button
+          onclick="toggleSidebar()"
+          class="p-2 text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Sidebar Navigation -->
+      <!-- URLs amigáveis do Firebase Hosting (sem .html) -->
+      <nav class="p-3 flex flex-col gap-1">
+        <a href="/painel" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-text))] bg-[rgb(var(--bg-tertiary))] font-semibold no-underline">
+          <span class="text-[18px] flex-shrink-0">📅</span>
+          <span class="nav-item-label flex-1">Agenda</span>
+        </a>
+        <a href="/clientes" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">👥</span>
+          <span class="nav-item-label flex-1">Clientes</span>
+        </a>
+        <a href="/relatorio" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">📊</span>
+          <span class="nav-item-label flex-1">Relatórios</span>
+        </a>
+        <a href="/configuracoes" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">⚙️</span>
+          <span class="nav-item-label flex-1">Configurações</span>
+        </a>
+        <a href="/planos" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">⭐</span>
+          <span class="nav-item-label flex-1">Plano</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Widgets (opcional - adicionar conforme necessário) -->
+      <div class="sidebar-widgets p-3 border-t border-[rgb(var(--color-bord))] mt-auto">
+        <!-- Exemplo: Mini calendar pode ser adicionado aqui -->
+        <!-- <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2">Abril 2026</div> -->
+      </div>
+    </aside>
+
+    <!-- ==========================================
+         MAIN CONTENT (SEU CONTEÚDO AQUI)
+         ========================================== -->
+    <main class="main-content p-6 overflow-y-auto">
+      <!-- Page Header -->
+      <div class="mb-6">
+        <h1 class="font-fraunces text-[28px] font-light mb-2">Nome da Página</h1>
+        <p class="text-[14px] text-[rgb(var(--color-faint))]">Subtítulo ou descrição da página.</p>
+      </div>
+
+      <!-- SEU CONTEÚDO VAI AQUI -->
+      <!-- Exemplo de KPI Grid -->
+      <div class="kpi-grid grid grid-cols-4 gap-4 mb-6">
+        <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5 overflow-hidden kpi-card">
+          <div class="text-[11px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2.5">KPI 1</div>
+          <div class="font-fraunces text-[32px] font-light mb-1.5" style="color: rgb(var(--color-lime-d));">Valor</div>
+          <div class="text-[12px]" style="color: rgb(var(--color-teal));">Delta</div>
+        </div>
+      </div>
+
+      <!-- Mais conteúdo... -->
+    </main>
+
+  </div>
+
+  <!-- ==========================================
+       BOTTOM NAV (MOBILE ONLY)
+       URLs amigáveis do Firebase Hosting (sem .html)
+       ========================================== -->
+  <nav class="show-mobile-only flex fixed bottom-0 left-0 right-0 z-[100] bg-[rgb(var(--bg-tertiary))] border-t border-[rgb(var(--color-bord))] p-2 justify-around shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[max(8px,env(safe-area-inset-bottom))]">
+    <a href="/painel" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+      <span class="text-[20px]">📅</span>
+      <span class="text-[10px] font-medium">Agenda</span>
+    </a>
+    <a href="/clientes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+      <span class="text-[20px]">👥</span>
+      <span class="text-[10px] font-medium">Clientes</span>
+    </a>
+    <a href="/relatorio" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+      <span class="text-[20px]">📊</span>
+      <span class="text-[10px] font-medium">Relatórios</span>
+    </a>
+    <a href="/configuracoes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+      <span class="text-[20px]">⚙️</span>
+      <span class="text-[10px] font-medium">Config</span>
+    </a>
+    <a href="/planos" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+      <span class="text-[20px]">⭐</span>
+      <span class="text-[10px] font-medium">Plano</span>
+    </a>
+  </nav>
+
+  <!-- ==========================================
+       JAVASCRIPT
+       ========================================== -->
+  <script src="/src/js/layout.js"></script>
+
+  <!-- Seus scripts específicos da página -->
+  <!-- <script src="/js/sua-pagina.js"></script> -->
+
+</body>
+</html>

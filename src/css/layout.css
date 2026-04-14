@@ -1,0 +1,191 @@
+/* ============================================
+   AGENDAPRO LAYOUT SYSTEM v2.0
+   src/css/layout.css
+
+   Layout grid responsivo com sidebar colapsável
+   Baseado no protótipo new-layout-tailwind.html
+   ============================================ */
+
+/* ==========================================
+   LAYOUT GRID (Desktop)
+   ========================================== */
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  transition: grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sidebar colapsada (via classe) */
+.app-layout.sidebar-collapsed {
+  grid-template-columns: 64px 1fr;
+}
+
+/* Sidebar colapsada (via data attribute para FOUC prevention) */
+[data-sidebar-collapsed="true"] .app-layout {
+  grid-template-columns: 64px 1fr;
+}
+
+/* ==========================================
+   SIDEBAR
+   ========================================== */
+
+aside#sidebar {
+  width: 240px;
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sidebar colapsada (via classe) */
+.sidebar-collapsed aside#sidebar,
+.app-layout.sidebar-collapsed aside#sidebar {
+  width: 64px !important;
+}
+
+/* Sidebar colapsada (via data attribute) */
+[data-sidebar-collapsed="true"] aside#sidebar {
+  width: 64px !important;
+}
+
+/* Labels da sidebar (desaparecem quando colapsada) */
+.sidebar-collapsed .nav-item-label,
+.app-layout.sidebar-collapsed .nav-item-label,
+[data-sidebar-collapsed="true"] .nav-item-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Widgets da sidebar (desaparecem quando colapsada) */
+.sidebar-collapsed .sidebar-widgets,
+.app-layout.sidebar-collapsed .sidebar-widgets,
+[data-sidebar-collapsed="true"] .sidebar-widgets {
+  display: none;
+}
+
+/* ==========================================
+   MOBILE RESPONSIVIDADE
+   ========================================== */
+
+@media (max-width: 768px) {
+  /* Layout muda para flexbox em mobile */
+  .app-layout {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Sidebar completamente oculta em mobile */
+  aside#sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Garantir que todos os filhos da sidebar também estejam ocultos */
+  aside#sidebar > * {
+    display: none !important;
+  }
+
+  /* Main content com padding bottom para bottom nav */
+  .main-content {
+    padding: 1rem !important;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* KPIs grid - 1 coluna no mobile */
+  .kpi-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  /* Content grid - 1 coluna no mobile */
+  .content-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+}
+
+/* ==========================================
+   TABLET RESPONSIVIDADE
+   ========================================== */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* KPIs em 2 colunas no tablet */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ==========================================
+   UTILITY CLASSES
+   ========================================== */
+
+/* Esconder em mobile */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Mostrar apenas em mobile */
+@media (min-width: 769px) {
+  .show-mobile-only {
+    display: none !important;
+  }
+}
+
+/* ==========================================
+   LAYOUT SEM SIDEBAR (ex: planos.html)
+   ========================================== */
+
+.app-layout.no-sidebar {
+  grid-template-columns: 1fr;
+}
+
+/* ==========================================
+   Z-INDEX LAYERS
+   ============================================ */
+
+:root {
+  --z-overlay: 200;
+  --z-topbar: 100;
+  --z-sidebar: 90;
+  --z-modal: 300;
+  --z-toast: 400;
+}
+
+/* Topbar fixa */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar);
+}
+
+/* Sidebar */
+aside#sidebar {
+  z-index: var(--z-sidebar);
+}
+
+/* Overlay / Drawer / Detail Panel */
+.overlay,
+.drawer,
+.detail-panel {
+  z-index: var(--z-overlay);
+}
+
+/* Modal de confirmação */
+.modal {
+  z-index: var(--z-modal);
+}
+
+/* Toast notifications */
+.toast {
+  z-index: var(--z-toast);
+}

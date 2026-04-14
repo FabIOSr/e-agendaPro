@@ -99,11 +99,11 @@ src/
 ### Tarefas Detalhadas
 
 #### 0.1 Design System (2 horas)
-- [ ] Extrair variáveis CSS RGB do protótipo
-- [ ] Criar `src/css/design-system.css`
-- [ ] Implementar `:root` (light theme)
-- [ ] Implementar `[data-theme="dark"]`
-- [ ] Adicionar responsive breakpoints
+- [x] Extrair variáveis CSS RGB do protótipo
+- [x] Criar `src/css/design-system.css`
+- [x] Implementar `:root` (light theme)
+- [x] Implementar `[data-theme="dark"]`
+- [x] Adicionar responsive breakpoints
 
 **Arquivo:** `src/css/design-system.css`
 ```css
@@ -122,10 +122,10 @@ src/
 ```
 
 #### 0.2 Layout Base (3 horas)
-- [ ] Criar estrutura grid CSS
-- [ ] Implementar sidebar colapsável
-- [ ] Configurar mobile (flexbox vs desktop grid)
-- [ ] Adicionar regras FOUC prevention
+- [x] Criar estrutura grid CSS
+- [x] Implementar sidebar colapsável
+- [x] Configurar mobile (flexbox vs desktop grid)
+- [x] Adicionar regras FOUC prevention
 
 **Arquivo:** `src/css/layout.css`
 ```css
@@ -144,11 +144,11 @@ src/
 ```
 
 #### 0.3 JavaScript de Layout (3 horas)
-- [ ] Extrair lógica `toggleSidebar()`
-- [ ] Extrair lógica `toggleTheme()`
-- [ ] Implementar FOUC prevention script
-- [ ] Adicionar persistência localStorage
-- [ ] Adicionar feature flag `?layout=novo`
+- [x] Extrair lógica `toggleSidebar()`
+- [x] Extrair lógica `toggleTheme()`
+- [x] Implementar FOUC prevention script
+- [x] Adicionar persistência localStorage
+- [x] Adicionar feature flag `?layout=novo`
 
 **Arquivo:** `src/js/layout.js`
 ```javascript
@@ -164,14 +164,16 @@ if (new URLSearchParams(window.location.search).get('layout') === 'novo') {
 ```
 
 #### 0.4 Template App Shell (2 horas)
-- [ ] Criar `src/templates/app-shell.html` como referência
-- [ ] Incluir: FOUC script, topbar, sidebar, main content slot, bottom nav
-- [ ] Documentar estrutura para copiar em cada página
+- [x] Criar `src/templates/app-shell.html` como referência
+- [x] Incluir: FOUC script, topbar, sidebar, main content slot, bottom nav
+- [x] Documentar estrutura para copiar em cada página
+- [x] URLs amigáveis Firebase Hosting (/painel, /clientes, etc.)
 
 #### 0.5 Componentes Reutilizáveis (4 horas)
-- [ ] Criar `topbar.js` (componente topbar com date nav opcional)
-- [ ] Criar `sidebar.js` (navegação + widgets opcionais)
-- [ ] Criar `mobile-nav.js` (bottom nav)
+- [x] Criar `topbar.js` (componente topbar com date nav opcional)
+- [x] Criar `sidebar.js` (navegação + widgets opcionais)
+- [x] Criar `mobile-nav.js` (bottom nav)
+- [x] Corrigir URLs para Firebase Hosting (sem .html)
 
 **Entrega:**
 - ✅ Design system funcional
@@ -180,6 +182,7 @@ if (new URLSearchParams(window.location.search).get('layout') === 'novo') {
 - ✅ Componentes JS reutilizáveis
 - ✅ FOUC prevention implementado
 - ✅ Feature flag `?layout=novo` funcionando
+- ✅ URLs Firebase Hosting corretas
 
 **Commit:** `feat: infraestrutura compartilhada para novo layout`
 
