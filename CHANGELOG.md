@@ -36,6 +36,29 @@
 
 ---
 
+## [2026-04-12] — ⭐ A-5: Lembrete de Segunda Chance
+
+### ⭐ A-5: Lembrete de Segunda Chance — ✅ IMPLEMENTADO
+
+**`migrations/37_avaliacao_segunda_chance.sql` — Nova migration:**
+- Coluna `avaliacao_segunda_chance BOOLEAN DEFAULT false`
+- Índice parcial: `status='concluido' AND avaliacao_solicitada=true AND avaliacao_segunda_chance=false`
+
+**`supabase/functions/lembrete-avaliacao-2a-chance/index.ts` — Nova Edge Function:**
+- Cron: `0 */6 * * *` (a cada 6h)
+- Busca agendamentos concluídos entre 24h-72h com `avaliacao_solicitada=true` mas sem avaliação
+- Double-check: verifica se avaliação existe antes de enviar
+- WhatsApp primeiro → Email fallback (reusa padrão A-1)
+- Marca sempre `avaliacao_segunda_chance=true` (evita retry infinito)
+- Pausa 1.2s entre envios
+
+| Arquivo | Mudança |
+|---|---|
+| `migrations/37_avaliacao_segunda_chance.sql` | Coluna + índice parcial |
+| `supabase/functions/lembrete-avaliacao-2a-chance/index.ts` | Nova edge function |
+
+---
+
 ## [2026-04-12] — ⭐ A-4: Analytics de Avaliações
 
 ### ⭐ A-4: Analytics de Taxa de Resposta — ✅ IMPLEMENTADO
@@ -127,7 +150,7 @@
 | A-2 | Moderação de avaliações | 🔴 Alta | 6h | ✅ Implementado |
 | A-3 | Resposta do profissional | 🟡 Média | 4h | ⏳ Pendente |
 | A-4 | Analytics de taxa de resposta | 🟡 Média | 5h | ✅ Implementado |
-| A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | ⏳ Pendente |
+| A-5 | Lembrete de 2ª chance | 🟢 Baixa | 3h | ✅ Implementado |
 
 **Investimento total:** 20h
 **ROI esperado:** +40-60% de avaliações recebidas, controle total de conteúdo

@@ -1708,35 +1708,12 @@ O sistema de avaliações funciona assim:
 - **A-1:** Multi-canal (WhatsApp + Email) — SendGrid como fallback
 - **A-2:** Moderação — status pendente/aprovada/rejeitada, auto-aprovação 24h
 - **A-4:** Analytics — taxa de resposta, nota média, NPS no painel
+- **A-5:** Segunda chance — migration 37, cron 6h, WhatsApp + Email, janela 24h-72h
 
 ---
 
-### A-3: Resposta do Profissional
-
-**Problema:** Profissional não pode responder avaliações. Perde engajamento e gestão de reputação.
-
-**Arquivos a criar:**
-- `migrations/37_respostas_avaliacoes.sql` — tabela `respostas_avaliacoes`
-- `pages/pagina-cliente.html` — exibir resposta nas avaliações
-- `pages/relatorio.html` — formulário de resposta
-- `supabase/functions/avaliacoes/index.ts` — incluir resposta no GET público
-
-**Esforço estimado:** 4h
-
----
-
-### A-5: Lembrete de Segunda Chance
-
-**Problema:** Clientes que ignoram o primeiro WhatsApp nunca são recontatados.
-
-**Solução:** Cron diário (14h) busca agendamentos concluídos entre 3-7 dias com `avaliacao_solicitada=true` mas sem avaliação, envia mensagem mais suave + marca `avaliacao_segunda_chance=true`.
-
-**Arquivos a criar:**
-- `migrations/39_segunda_chance_avaliacao.sql` — coluna + índice
-- `supabase/functions/lembrete-avaliacao-2a-chance/index.ts` — nova edge function
-- Cron: `0 14 * * *`
-
-**Esforço estimado:** 3h
+### 📋 Pendente
+- **A-3:** Resposta do profissional — migration 38, tabela `respostas_avaliacoes`
 
 ---
 
