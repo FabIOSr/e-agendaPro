@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novo Layout AgendaPro - Tailwind CSS v4</title>
+
+  <!-- Prevenir FOUC - Aplicar tema e sidebar ANTES do carregamento -->
+  <script>
+    // Tema
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    // Sidebar colapsada
+    const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    if (sidebarCollapsed) {
+      document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@300;400&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    /* ============================================
+       VARIÁVEIS CSS RGB (para rgb(var()))
+       ============================================ */
+    :root {
+      /* LIGHT THEME (padrão) */
+      --bg-primary: 245, 242, 235;
+      --bg-secondary: 237, 233, 223;
+      --bg-tertiary: 229, 225, 215;
+      --bg-elevated: 255, 255, 255;
+      --color-bord: 216, 212, 200;
+      --color-bord2: 196, 192, 180;
+      --color-text: 14, 13, 10;
+      --color-faint: 138, 135, 120;
+
+      /* Cores de destaque - mesmas para light/dark */
+      --color-lime: 200, 240, 96;
+      --color-lime-d: 138, 184, 48;
+      --color-lime-ink: 26, 42, 8;
+      --color-teal: 93, 202, 165;
+      --color-amber: 239, 159, 39;
+      --color-rust: 200, 72, 48;
+    }
+
+    /* DARK THEME */
+    [data-theme="dark"] {
+      --bg-primary: 14, 13, 10;
+      --bg-secondary: 20, 19, 16;
+      --bg-tertiary: 28, 26, 22;
+      --bg-elevated: 36, 33, 24;
+      --color-bord: 42, 39, 36;
+      --color-bord2: 56, 52, 48;
+      --color-text: 240, 237, 230;
+      --color-faint: 62, 60, 54;
+    }
+  </style>
+  <style type="text/tailwindcss">
+    @theme {
+      /* Fontes */
+      --font-syne: "Syne", sans-serif;
+      --font-fraunces: "Fraunces", serif;
+      --font-dm-mono: "DM Mono", monospace;
+    }
+  </style>
+  <style>
+    /* ============================================
+       LAYOUT GRID
+       ============================================ */
+    .app-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .app-layout.sidebar-collapsed,
+    [data-sidebar-collapsed="true"] .app-layout {
+      grid-template-columns: 64px 1fr;
+    }
+
+    /* Sidebar inicialmente colapsada (via data attribute) */
+    [data-sidebar-collapsed="true"] aside#sidebar {
+      width: 64px !important;
+    }
+
+    [data-sidebar-collapsed="true"] .nav-item-label {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+    }
+
+    [data-sidebar-collapsed="true"] .sidebar-widgets {
+      display: none;
+    }
+
+    /* Sidebar colapsada */
+    .sidebar-collapsed .nav-item-label {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-collapsed .sidebar-widgets {
+      display: none;
+    }
+
+    /* MOBILE: esconder sidebar completamente */
+    @media (max-width: 768px) {
+      .app-layout {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      /* Sidebar completamente oculta em mobile */
+      aside#sidebar {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* Garantir que todos os filhos da sidebar também estejam ocultos */
+      aside#sidebar > * {
+        display: none !important;
+      }
+
+      .main-content {
+        padding: 1rem !important;
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+
+      /* KPIs grid - 1 coluna no mobile */
+      .kpi-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+      }
+
+      /* Content grid - 1 coluna no mobile */
+      .content-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+      }
+    }
+
+    /* Tablet: 2 colunas para KPIs */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    /* Esconder elementos em mobile */
+    @media (max-width: 768px) {
+      .hide-mobile {
+        display: none !important;
+      }
+    }
+
+    /* Mostrar elementos apenas em mobile */
+    @media (min-width: 769px) {
+      .show-mobile-only {
+        display: none !important;
+      }
+    }
+
+    /* ============================================
+       ANIMAÇÕES E ESTADOS ESPECIAIS
+       ============================================ */
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    .logo-dot {
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    /* Mini-cal day com evento */
+    .mini-cal-day.has-event::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 3px;
+      height: 3px;
+      background: #5DCAA5;
+      border-radius: 50%;
+    }
+
+    /* Sidebar colapsada - esconder labels */
+    .sidebar-collapsed .nav-item-label {
+      opacity: 0;
+      width: 0;
+    }
+
+    .sidebar-collapsed .sidebar-widgets {
+      display: none;
+    }
+
+    /* Dark mode toggle via data attribute */
+    [data-theme="dark"] .btn {
+      background-color: rgb(var(--bg-tertiary));
+      color: rgb(var(--color-text));
+      border-color: rgb(var(--color-bord));
+    }
+
+    [data-theme="dark"] .btn:hover {
+      background-color: rgb(var(--bg-elevated));
+      border-color: rgb(var(--color-bord2));
+    }
+
+    /* KPI card top bar */
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .kpi-card::before { background-color: rgb(var(--color-lime)); }
+    .kpi-card.teal::before { background-color: rgb(var(--color-teal)); }
+    .kpi-card.amber::before { background-color: rgb(var(--color-amber)); }
+    .kpi-card.rust::before { background-color: rgb(var(--color-rust)); }
+  </style>
+</head>
+<body class="bg-[rgb(var(--bg-primary))] text-[rgb(var(--color-text))] font-syne min-h-screen">
+
+  <!-- TOPBAR UNIFICADA -->
+  <div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[rgb(var(--bg-secondary))] border-b border-[rgb(var(--color-bord))]">
+      <!-- Topbar Left -->
+      <div class="flex items-center gap-4">
+        <button
+          onclick="toggleSidebar()"
+          id="sidebarToggle"
+          class="p-2 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M3 10h18M3 14h18"/>
+          </svg>
+        </button>
+        <div class="font-fraunces text-[18px] font-normal flex items-center gap-2">
+          <div class="w-[7px] h-[7px] bg-[rgb(var(--color-lime))] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5);"></div>
+          AgendaPro
+        </div>
+      </div>
+
+      <!-- Topbar Center (Date Nav) -->
+      <div class="flex items-center gap-2 hide-mobile">
+        <button class="px-2 py-1 bg-transparent border border-[rgb(var(--color-bord))] rounded-md text-[rgb(var(--color-faint))] hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200">
+          ‹
+        </button>
+        <span class="text-[14px] font-medium">Hoje, 14 de Abril</span>
+        <button class="px-2 py-1 bg-transparent border border-[rgb(var(--color-bord))] rounded-md text-[rgb(var(--color-faint))] hover:border-[rgb(var(--color-bord2))] hover:text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200">
+          ›
+        </button>
+      </div>
+
+      <!-- Topbar Right -->
+      <div class="flex items-center gap-3">
+        <button
+          onclick="toggleTheme()"
+          id="themeToggle"
+          class="p-2 text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+          title="Alternar tema"
+        >
+          🌙
+        </button>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))]">
+          Pro
+        </span>
+        <button class="px-3.5 py-2 bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--color-lime-d))]">
+          + Novo
+        </button>
+        <div class="w-8 h-8 bg-[rgb(var(--color-lime))] rounded-full flex items-center justify-center text-[12px] font-semibold text-[rgb(var(--color-lime-ink))] cursor-pointer hover:scale-105 transition-transform duration-200">
+          AC
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYOUT GRID -->
+  <div class="app-layout" id="appLayout">
+    <!-- SIDEBAR COLAPSÁVEL -->
+    <aside
+      id="sidebar"
+      class="bg-[rgb(var(--bg-secondary))] border-r border-[rgb(var(--color-bord))] flex flex-col overflow-hidden transition-all duration-300"
+      style="width: 240px;"
+    >
+      <!-- Sidebar Header -->
+      <div class="p-4 border-b border-[rgb(var(--color-bord))] flex items-center justify-between">
+        <span class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))]">Menu</span>
+        <button
+          onclick="toggleSidebar()"
+          class="p-2 text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Sidebar Navigation -->
+      <nav class="p-3 flex flex-col gap-1">
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-text))] bg-[rgb(var(--bg-tertiary))] font-semibold no-underline">
+          <span class="text-[18px] flex-shrink-0">📅</span>
+          <span class="nav-item-label flex-1">Agenda</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">👥</span>
+          <span class="nav-item-label flex-1">Clientes</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">📊</span>
+          <span class="nav-item-label flex-1">Relatórios</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">⚙️</span>
+          <span class="nav-item-label flex-1">Configurações</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-[rgb(var(--color-faint))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">⭐</span>
+          <span class="nav-item-label flex-1">Plano</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Widgets -->
+      <div class="sidebar-widgets p-3 border-t border-[rgb(var(--color-bord))] mt-auto">
+        <!-- Stats -->
+        <div class="mb-4">
+          <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2">Hoje</div>
+          <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-lg p-2.5 mb-2">
+            <div class="text-[11px] text-[rgb(var(--color-faint))]">Agendamentos</div>
+            <div class="text-[15px] font-semibold font-mono text-[rgb(var(--color-lime))]">8</div>
+          </div>
+          <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-lg p-2.5">
+            <div class="text-[11px] text-[rgb(var(--color-faint))]">Receita</div>
+            <div class="text-[15px] font-semibold font-mono text-[rgb(var(--color-lime-d))]">R$640</div>
+          </div>
+        </div>
+
+        <!-- Mini Calendar -->
+        <div>
+          <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2">Abril 2026</div>
+          <div class="bg-[rgb(var(--bg-tertiary))] rounded-lg p-3">
+            <div class="flex justify-between items-center mb-2 text-[12px] text-[rgb(var(--color-faint))]">
+              <span class="cursor-pointer px-1.5 py-0.5 hover:text-[rgb(var(--color-text))]">‹</span>
+              <span>Abril</span>
+              <span class="cursor-pointer px-1.5 py-0.5 hover:text-[rgb(var(--color-text))]">›</span>
+            </div>
+            <div class="grid grid-cols-7 gap-px text-center text-[11px]">
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">D</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">S</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">T</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">Q</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">Q</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">S</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">S</span>
+
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">1</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">2</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">3</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">4</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">5</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">6</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">7</span>
+
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">8</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">9</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">10</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">11</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">12</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">13</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] font-semibold relative has-event">14</span>
+
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">15</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">16</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">17</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">18</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150 relative has-event">19</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150 relative has-event">20</span>
+              <span class="mini-cal-day aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))] transition-all duration-150">21</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content p-6 overflow-y-auto">
+      <!-- Page Header -->
+      <div class="mb-6">
+        <h1 class="font-fraunces text-[28px] font-light mb-2">Dashboard</h1>
+        <p class="text-[14px] text-[rgb(var(--color-faint))]">Bem-vindo de volta, Ana! Aqui está o resumo do seu dia.</p>
+      </div>
+
+      <!-- Mini Calendar (MOBILE ONLY) -->
+      <div class="show-mobile-only mb-6">
+        <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="text-[14px] font-semibold">Abril 2026</div>
+            <div class="flex gap-2">
+              <button class="p-1 text-[rgb(var(--color-faint))] hover:text-[rgb(var(--color-text))]">‹</button>
+              <button class="p-1 text-[rgb(var(--color-faint))] hover:text-[rgb(var(--color-text))]">›</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-7 gap-px text-center text-[11px]">
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">D</span>
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">S</span>
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">T</span>
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">Q</span>
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">Q</span>
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">S</span>
+            <span class="aspect-square flex items-center justify-center rounded text-[rgb(var(--color-faint))]">S</span>
+
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">1</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">2</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">3</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">4</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">5</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">6</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">7</span>
+
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">8</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">9</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">10</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">11</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">12</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">13</span>
+            <span class="aspect-square flex items-center justify-center rounded bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] font-semibold">14</span>
+
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">15</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">16</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">17</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">18</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">19</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">20</span>
+            <span class="aspect-square flex items-center justify-center rounded cursor-pointer hover:bg-[rgb(var(--bg-elevated))]">21</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid grid grid-cols-4 gap-4 mb-6">
+        <!-- KPI 1 -->
+        <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5 overflow-hidden kpi-card">
+          <div class="text-[11px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2.5">Receita do mês</div>
+          <div class="font-fraunces text-[32px] font-light mb-1.5" style="color: rgb(var(--color-lime-d));">R$3.740</div>
+          <div class="text-[12px]" style="color: rgb(var(--color-teal));">↑ +12% vs mês anterior</div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5 overflow-hidden kpi-card teal">
+          <div class="text-[11px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2.5">Atendimentos</div>
+          <div class="font-fraunces text-[32px] font-light mb-1.5" style="color: rgb(var(--color-teal));">42</div>
+          <div class="text-[12px]" style="color: rgb(var(--color-teal));">↑ +5 vs mês anterior</div>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5 overflow-hidden kpi-card amber">
+          <div class="text-[11px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2.5">Ticket médio</div>
+          <div class="font-fraunces text-[32px] font-light mb-1.5" style="color: rgb(var(--color-amber));">R$89</div>
+          <div class="text-[12px]" style="color: rgb(var(--color-rust));">↓ -R$3 vs mês anterior</div>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5 overflow-hidden kpi-card rust">
+          <div class="text-[11px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2.5">Taxa de ocupação</div>
+          <div class="font-fraunces text-[32px] font-light mb-1.5" style="color: rgb(var(--color-rust));">78%</div>
+          <div class="text-[12px]" style="color: rgb(var(--color-teal));">↑ +6% vs mês anterior</div>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid grid grid-cols-[2fr_1fr] gap-4">
+        <!-- Agenda Card -->
+        <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <div class="text-[14px] font-semibold">Agenda de hoje</div>
+              <div class="text-[11px] text-[rgb(var(--color-faint))] mt-1">8 agendamentos confirmados</div>
+            </div>
+            <button class="px-3 py-2 bg-transparent border border-[rgb(var(--color-bord))] text-[rgb(var(--color-faint))] rounded-lg cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--bg-elevated))] hover:text-[rgb(var(--color-text))]">Ver tudo</button>
+          </div>
+
+          <!-- Agenda Items -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-3 p-3 bg-[rgb(var(--bg-elevated))] rounded-lg">
+              <div class="w-1 h-10 bg-[rgb(var(--color-lime))] rounded-sm"></div>
+              <div class="flex-1">
+                <div class="text-[13px] font-medium">Maria Silva</div>
+                <div class="text-[11px] text-[rgb(var(--color-faint))]">Corte + Escova • 60min</div>
+              </div>
+              <div class="text-[13px] font-semibold font-mono">09:00</div>
+            </div>
+
+            <div class="flex items-center gap-3 p-3 bg-[rgb(var(--bg-elevated))] rounded-lg">
+              <div class="w-1 h-10 bg-[rgb(var(--color-teal))] rounded-sm"></div>
+              <div class="flex-1">
+                <div class="text-[13px] font-medium">João Santos</div>
+                <div class="text-[11px] text-[rgb(var(--color-faint))]">Barba • 30min</div>
+              </div>
+              <div class="text-[13px] font-semibold font-mono">10:00</div>
+            </div>
+
+            <div class="flex items-center gap-3 p-3 bg-[rgb(var(--bg-elevated))] rounded-lg">
+              <div class="w-1 h-10 bg-[rgb(var(--color-amber))] rounded-sm"></div>
+              <div class="flex-1">
+                <div class="text-[13px] font-medium">Ana Costa</div>
+                <div class="text-[11px] text-[rgb(var(--color-faint))]">Escova • 45min</div>
+              </div>
+              <div class="text-[13px] font-semibold font-mono">11:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Side Cards -->
+        <div class="flex flex-col gap-4">
+          <!-- Quick Actions -->
+          <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5">
+            <div class="mb-4">
+              <div class="text-[14px] font-semibold">Acesso rápido</div>
+              <div class="text-[11px] text-[rgb(var(--color-faint))] mt-1">Ações frequentes</div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <button class="flex items-center gap-2 p-3 bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--color-bord))] rounded-lg text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--bg-secondary))] hover:border-[rgb(var(--color-bord2))]">
+                <span>📅</span>
+                <span>Novo agendamento</span>
+              </button>
+              <button class="flex items-center gap-2 p-3 bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--color-bord))] rounded-lg text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--bg-secondary))] hover:border-[rgb(var(--color-bord2))]">
+                <span>🔒</span>
+                <span>Bloquear horário</span>
+              </button>
+              <button class="flex items-center gap-2 p-3 bg-[rgb(var(--bg-elevated))] border border-[rgb(var(--color-bord))] rounded-lg text-[rgb(var(--color-text))] cursor-pointer transition-all duration-200 hover:bg-[rgb(var(--bg-secondary))] hover:border-[rgb(var(--color-bord2))]">
+                <span>👥</span>
+                <span>Cadastrar cliente</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Plan Status -->
+          <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-5">
+            <div class="flex justify-between items-center mb-4">
+              <div class="text-[14px] font-semibold">Status do plano</div>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))]">Pro</span>
+            </div>
+
+            <div class="mt-3">
+              <div class="flex justify-between text-[12px] text-[rgb(var(--color-faint))] mb-2">
+                <span>Agendamentos este mês</span>
+                <span>42 / ∞</span>
+              </div>
+              <div class="bg-[rgb(var(--bg-elevated))] h-2 rounded-sm overflow-hidden">
+                <div class="bg-[rgb(var(--color-lime))] w-full h-full"></div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-[rgb(var(--color-bord))]">
+              <div class="text-[11px] text-[rgb(var(--color-faint))] mb-1">Próxima cobrança</div>
+              <div class="text-[14px] font-semibold">14 de Maio de 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- BOTTOM NAV (MOBILE) -->
+  <nav class="show-mobile-only flex fixed bottom-0 left-0 right-0 z-[100] bg-[rgb(var(--bg-tertiary))] border-t border-[rgb(var(--color-bord))] p-2 justify-around shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[max(8px,env(safe-area-inset-bottom))]">
+      <a href="#" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+        <span class="text-[20px]">📅</span>
+        <span class="text-[10px] font-medium">Agenda</span>
+      </a>
+      <a href="#" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+        <span class="text-[20px]">👥</span>
+        <span class="text-[10px] font-medium">Clientes</span>
+      </a>
+      <a href="#" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+        <span class="text-[20px]">📊</span>
+        <span class="text-[10px] font-medium">Relatórios</span>
+      </a>
+      <a href="#" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+        <span class="text-[20px]">⚙️</span>
+        <span class="text-[10px] font-medium">Config</span>
+      </a>
+      <a href="#" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[rgb(var(--color-faint))] no-underline transition-all duration-200">
+        <span class="text-[20px]">⭐</span>
+        <span class="text-[10px] font-medium">Plano</span>
+      </a>
+    </nav>
+
+  <script>
+    // Estado da sidebar
+    let isCollapsed = false;
+
+    function toggleSidebar() {
+      isCollapsed = !isCollapsed;
+      const layout = document.getElementById('appLayout');
+      const sidebar = document.getElementById('sidebar');
+
+      // Toggle classe de layout
+      layout.classList.toggle('sidebar-collapsed', isCollapsed);
+
+      // Sincronizar data attribute (para prevenir FOUC no reload)
+      if (isCollapsed) {
+        document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+      } else {
+        document.documentElement.removeAttribute('data-sidebar-collapsed');
+      }
+
+      // Ajustar largura da sidebar
+      if (isCollapsed) {
+        sidebar.style.width = '64px';
+      } else {
+        sidebar.style.width = '240px';
+      }
+
+      // Salvar preferência
+      localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+      // Atualizar ícone
+      updateToggleIcon();
+    }
+
+    function updateToggleIcon() {
+      const toggle = document.getElementById('sidebarToggle');
+      toggle.innerHTML = isCollapsed
+        ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
+    }
+
+    // Dark mode
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+
+      // Atualizar ícone
+      document.getElementById('themeToggle').textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+
+    // Carregar preferências salvas
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sidebar - já foi aplicada via script inline, apenas sincronizar estado
+      const savedSidebar = localStorage.getItem('sidebar-collapsed');
+      if (savedSidebar === 'true') {
+        isCollapsed = true; // Sincronizar variável
+        updateToggleIcon(); // Atualizar ícone
+      }
+
+      // Tema - já foi aplicado via script inline, apenas atualizar ícone
+      const savedTheme = localStorage.getItem('theme');
+      const themeToggle = document.getElementById('themeToggle');
+      if (themeToggle) {
+        themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+      }
+    });
+  </script>
+</body>
+</html>
