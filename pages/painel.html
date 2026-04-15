@@ -101,6 +101,14 @@
 .detail-panel-open { opacity:1 !important;pointer-events:all !important;transform:translate(-50%,-50%) scale(1) !important; }
 .detail-overlay-open { display:block !important; }
 
+/* Garantir que detail panel centralize corretamente */
+.detail-panel {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scale(0.95) !important;
+}
+
 /* Banner free animation */
 .banner-free { animation:slide-down .4s ease-out; }
 </style>
@@ -247,15 +255,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <!-- BANNER FREE (Pro-only feature promo) -->
-<div class="banner-free bg-[var(--color-lime-t)] border border-[rgba(200,240,96,.3)] text-[var(--color-text)] mx-auto mt-4 max-w-[1400px] rounded-xl mx-4" id="banner-free" style="display:none;animation:slide-down .4s ease-out">
+<div class="banner-free bg-[rgba(var(--color-lime),0.1)] border border-[rgba(var(--color-lime),0.3)] text-[rgb(var(--color-text))] mx-auto mt-4 max-w-[1400px] rounded-xl mx-4" id="banner-free" style="display:none;animation:slide-down .4s ease-out">
   <div class="banner-content flex items-center justify-between gap-4 p-4 [@media(max-width:768px)]:flex-col [@media(max-width:768px)]:text-center">
     <div class="banner-text">
-      <strong class="block text-[14px] font-semibold mb-1">📱 WhatsApp automático disponível no plano Pro!</strong>
-      <p class="text-[13px] text-[var(--color-muted)] m-0">Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
+      <strong class="block text-[14px] font-semibold mb-1 text-[rgb(var(--color-lime-d))]">📱 WhatsApp automático disponível no plano Pro!</strong>
+      <p class="text-[13px] text-[rgb(var(--color-faint))] m-0">Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
     </div>
     <div class="banner-actions flex items-center gap-2 flex-shrink-0 [@media(max-width:768px)]:w-full [@media(max-width:768px)]:justify-center">
-      <a href="/planos" class="btn-banner bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-4 py-2 text-[13px] font-semibold cursor-pointer no-underline transition-all hover:bg-[#b8e050] whitespace-nowrap font-['Syne',sans-serif]">Ver planos</a>
-      <button class="btn-banner-close bg-transparent text-[var(--color-muted)] border-none text-[20px] cursor-pointer p-1 w-7 h-7 rounded-lg transition-all hover:bg-[rgba(200,240,96,.1)] hover:text-[var(--color-text)]" onclick="fecharBannerFree()">×</button>
+      <a href="/planos" class="btn-banner bg-[rgb(var(--color-lime))] text-[rgb(var(--color-lime-ink))] border-none rounded-lg px-4 py-2 text-[13px] font-semibold cursor-pointer no-underline transition-all hover:bg-[rgb(var(--color-lime-d))] whitespace-nowrap">Ver planos</a>
+      <button class="btn-banner-close bg-transparent text-[rgb(var(--color-faint))] border-none text-[20px] cursor-pointer p-1 w-7 h-7 rounded-lg transition-all hover:bg-[rgba(var(--color-lime),0.1)] hover:text-[rgb(var(--color-text))]" onclick="fecharBannerFree()">×</button>
     </div>
   </div>
 </div>
@@ -336,27 +344,9 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Serviços -->
       <div class="p-3 border-t border-[rgb(var(--color-bord))]">
         <div class="text-[10px] font-bold tracking-widest uppercase text-[rgb(var(--color-faint))] mb-2.5">Serviços</div>
-        <div class="servicos-list flex flex-col gap-1.5">
-          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
-            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#7dd3a8"></div>
-            <span class="servico-item-name flex-1">Corte + escova</span>
-            <span class="servico-item-dur font-mono text-[11px]">60min</span>
-          </div>
-          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
-            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#b060f0"></div>
-            <span class="servico-item-name flex-1">Tintura</span>
-            <span class="servico-item-dur font-mono text-[11px]">120min</span>
-          </div>
-          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
-            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#60a8f0"></div>
-            <span class="servico-item-name flex-1">Escova progressiva</span>
-            <span class="servico-item-dur font-mono text-[11px]">90min</span>
-          </div>
-          <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
-            <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:#f0a060"></div>
-            <span class="servico-item-name flex-1">Corte masculino</span>
-            <span class="servico-item-dur font-mono text-[11px]">30min</span>
-          </div>
+        <div class="servicos-list flex flex-col gap-1.5" id="sidebar-servicos-list">
+          <!-- Serviços serão carregados dinamicamente -->
+          <div class="text-[11px] text-[rgb(var(--color-faint))] text-center py-2">Carregando…</div>
         </div>
       </div>
 
@@ -369,16 +359,86 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </aside>
 
-  <!-- MAIN CONTENT - AGENDA GRID -->
-  <main class="agenda-wrap flex-1 overflow-y-auto overflow-x-hidden relative" id="agenda-wrap">
-    <div class="agenda-grid flex relative pb-8" id="agenda-grid">
+  <!-- MAIN CONTENT -->
+  <main class="main-content p-6 overflow-y-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="font-fraunces text-[28px] font-light mb-2">Agenda</h1>
+      <p class="text-[14px] text-[rgb(var(--color-faint))]" id="page-subtitle">Gerencie seus agendamentos</p>
+    </div>  
 
-      <!-- coluna de horas -->
-      <div class="time-col w-[52px] flex-shrink-0 sticky left-0 bg-[rgb(var(--bg-primary))] z-[10]" id="time-col"></div>
+    <!-- KPIs (MOBILE: scroll horizontal) -->
+    <div class="kpi-grid grid grid-cols-4 gap-4 mb-6 overflow-x-auto">
+      <!-- KPI 1 -->
+      <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4 overflow-hidden kpi-card">
+        <div class="text-[10px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2">Agendamentos</div>
+        <div class="font-fraunces text-[24px] font-light mb-1 text-[rgb(var(--color-lime-d))]" id="kpi-agendamentos">—</div>
+      </div>
 
-      <!-- coluna de eventos -->
-      <div class="events-col flex-1 relative min-w-0" id="events-col"></div>
+      <!-- KPI 2 -->
+      <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4 overflow-hidden kpi-card teal">
+        <div class="text-[10px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2">Receita hoje</div>
+        <div class="font-fraunces text-[24px] font-light mb-1 text-[rgb(93,202,165)]" id="kpi-receita">—</div>
+      </div>
 
+      <!-- KPI 3 -->
+      <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4 overflow-hidden kpi-card amber">
+        <div class="text-[10px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2">Próximo horário</div>
+        <div class="font-fraunces text-[20px] font-light mb-1 text-[rgb(239,159,39)]" id="kpi-proximo">—</div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="relative bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4 overflow-hidden kpi-card rust">
+        <div class="text-[10px] font-bold tracking-wider uppercase text-[rgb(var(--color-faint))] mb-2">Ocupação</div>
+        <div class="font-fraunces text-[24px] font-light mb-1 text-[rgb(var(--color-rust))]" id="kpi-ocupacao">—%</div>
+      </div>
+    </div>
+
+      <!-- Date Navigation (MOBILE ONLY) -->
+    <div class="show-mobile-only mb-6 flex items-center justify-center gap-3">
+      <button onclick="mudarDia(-1)" class="px-3 items-center cursor-pointer py-2 hover:bg-[rgb(var(--color-lime))] hover:text-[rgb(var(--color-lime-ink))] border border-[rgb(var(--color-bord))] rounded-lg text-[rgb(var(--color-faint))] transition-all duration-200">
+        ‹ Dia anterior
+      </button>
+      <button onclick="mudarDia(1)" class="px-3 items-center cursor-pointer py-2 hover:bg-[rgb(var(--color-lime))] hover:text-[rgb(var(--color-lime-ink))] border border-[rgb(var(--color-bord))] rounded-lg text-[rgb(var(--color-faint))] transition-all duration-200">
+        Próximo dia ›
+      </button>
+    </div>
+
+    <!-- Mini Calendar (MOBILE ONLY) -->
+    <div class="show-mobile-only mb-6">
+      <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4">
+        <div class="flex justify-between items-center mb-3">
+          <div class="text-[12px] font-semibold" id="mobile-cal-label">Abril 2026</div>
+          <div class="flex gap-1">
+            <button onclick="mudarMesCal(-1)" class="p-1 text-[rgb(var(--color-faint))] hover:text-[rgb(var(--color-text))]">‹</button>
+            <button onclick="mudarMesCal(1)" class="p-1 text-[rgb(var(--color-faint))] hover:text-[rgb(var(--color-text))]">›</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-px text-center text-[11px]" id="mobile-mini-cal">
+          <!-- Mini calendar será preenchido via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENDA FULL WIDTH -->
+    <div class="bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord))] rounded-[14px] p-4">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <div class="text-[14px] font-semibold">Agenda do dia</div>
+          <div class="text-[11px] text-[rgb(var(--color-faint))] mt-1" id="agenda-count">— agendamentos</div>
+        </div>
+      </div>
+
+      <!-- Agenda Grid -->
+      <div class="agenda-wrap overflow-y-auto overflow-x-hidden relative" id="agenda-wrap">
+        <div class="agenda-grid flex relative" id="agenda-grid">
+          <!-- coluna de horas (compacta) -->
+          <div class="time-col w-[40px] flex-shrink-0 sticky left-0 bg-[rgb(var(--bg-tertiary))] z-[10]" id="time-col"></div>
+
+          <!-- coluna de eventos -->
+          <div class="events-col flex-1 relative min-w-0" id="events-col"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -410,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- DETAIL PANEL -->
 <div class="detail-overlay fixed inset-0 z-[199] hidden" id="overlay" onclick="fecharDetalhe()"></div>
-<div class="detail-panel fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[.95] bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord2))] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
+<div class="detail-panel bg-[rgb(var(--bg-tertiary))] border border-[rgb(var(--color-bord2))] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
   <div class="detail-header flex justify-between items-start mb-4">
     <div class="detail-title text-[16px] font-semibold text-[rgb(var(--color-text))]" id="dp-title"></div>
     <button class="detail-close bg-[rgb(var(--bg-secondary))] border-none text-[rgb(var(--color-faint))] w-[26px] h-[26px] rounded-md text-[15px] cursor-pointer flex items-center justify-center transition-colors hover:text-[rgb(var(--color-text))]" onclick="fecharDetalhe()">✕</button>
@@ -583,10 +643,10 @@ async function renderAgenda() {
   eventscol.innerHTML = '';
   eventscol.style.height = (HORAS * HOUR_H) + 'px';
 
-  // Loading overlay
+  // Loading overlay (sem fundo card)
   const loadingEl = document.createElement('div');
   loadingEl.id = 'agenda-loading';
-  loadingEl.className = 'absolute inset-0 flex items-center justify-center text-[var(--color-muted)] text-[13px] bg-[var(--color-panel-bg)] z-5 pointer-events-none';
+  loadingEl.className = 'absolute inset-0 flex items-center justify-center text-[rgb(var(--color-faint))] text-[13px] z-5 pointer-events-none';
   loadingEl.textContent = 'Carregando…';
   eventscol.style.position = 'relative';
   eventscol.appendChild(loadingEl);
@@ -653,39 +713,42 @@ async function renderAgenda() {
     eventscol.appendChild(el);
   });
 
-  // Agendamentos
-  dados.ag.forEach((ag, idx) => {
-    const top    = (ag.hora - HORA_INICIO) * HOUR_H;
-    const h      = (ag.dur / 60) * HOUR_H;
-    const horaFim = ag.hora + ag.dur / 60;
-    const el     = document.createElement('div');
-    el.className = `agendamento absolute left-1.5 right-1.5 rounded-lg border-l-[3px] p-2 cursor-pointer overflow-hidden z-5 transition-all`;
-    // Cores por categoria
-    const catClasses = {
-      corte:  'bg-[#1a2d1a] border-l-[var(--color-panel-accent2)] text-[#b0e8cc]',
-      tintura:'bg-[#2a1a2d] border-l-[var(--color-panel-purple)] text-[#d0a0f0]',
-      escova: 'bg-[#1a2330] border-l-[var(--color-panel-blue)] text-[#90c8f0]',
-      barba:  'bg-[#2d1f1a] border-l-[var(--color-panel-warn)] text-[#f0c098]',
-    };
-    el.classList.add(...(catClasses[ag.cat] || catClasses.corte).split(' '));
-    el.style.cssText = `top:${top + 2}px;height:${h - 5}px`;
-    el.innerHTML = `
-      <div class="ag-service text-[12px] font-semibold mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">${ag.servico}</div>
-      <div class="ag-client text-[11px] opacity-75 whitespace-nowrap overflow-hidden text-ellipsis">${ag.cliente}</div>
-      ${h > 50 ? `<div class="ag-time text-[10px] font-['DM_Mono',monospace] opacity-60 mt-1">${fmtHora(ag.hora)} – ${fmtHora(horaFim)}</div>` : ''}
-      ${h > 50 ? `<div class="ag-badge absolute top-[7px] right-2 text-[10px] font-semibold bg-black/30 rounded px-1.5 py-0.5">R$${ag.preco}</div>` : ''}
-    `;
-    el.onclick = () => abrirDetalhe(ag);
-    eventscol.appendChild(el);
-  });
+    // Agendamentos
+    dados.ag.forEach((ag, idx) => {
+      const top    = (ag.hora - HORA_INICIO) * HOUR_H;
+      const h      = (ag.dur / 60) * HOUR_H;
+      const horaFim = ag.hora + ag.dur / 60;
+      const el     = document.createElement('div');
+      
+      // Cores adaptativas por categoria
+      const cats = {
+        corte:   { bg: 'rgba(var(--color-lime), 0.15)',  border: 'rgb(var(--color-lime-d))',  text: 'rgb(var(--color-lime-ink))' },
+        tintura: { bg: 'rgba(176, 96, 240, 0.15)',      border: 'rgb(176, 96, 240)',         text: 'var(--color-text)' },
+        escova:  { bg: 'rgba(96, 168, 240, 0.15)',      border: 'rgb(96, 168, 240)',         text: 'var(--color-text)' },
+        barba:   { bg: 'rgba(239, 159, 39, 0.15)',      border: 'rgb(239, 159, 39)',         text: 'var(--color-text)' },
+      };
+      const c = cats[ag.cat] || cats.corte;
+      
+      el.className = `agendamento absolute left-1.5 right-1.5 rounded-lg border-l-[3px] p-2 cursor-pointer overflow-hidden z-5 transition-all`;
+      el.style.cssText = `top:${top + 2}px;height:${h - 5}px; background-color: ${c.bg}; border-left-color: ${c.border}; color: ${c.text}`;
+      
+      el.innerHTML = `
+        <div class="ag-service text-[12px] font-semibold mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">${ag.servico}</div>
+        <div class="ag-client text-[11px] opacity-80 whitespace-nowrap overflow-hidden text-ellipsis">${ag.cliente}</div>
+        ${h > 50 ? `<div class="ag-time text-[10px] font-['DM_Mono',monospace] opacity-60 mt-1">${fmtHora(ag.hora)} – ${fmtHora(horaFim)}</div>` : ''}
+        ${h > 50 ? `<div class="ag-badge absolute top-[7px] right-2 text-[10px] font-semibold bg-black/10 rounded px-1.5 py-0.5">R$${ag.preco}</div>` : ''}
+      `;
+      el.onclick = () => abrirDetalhe(ag);
+      eventscol.appendChild(el);
+    });
 
-  // Nenhum agendamento
-  if (dados.ag.length === 0 && dados.bl.length === 0) {
-    const vazio = document.createElement('div');
-    vazio.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none text-[var(--color-muted)] text-[13px]';
-    vazio.innerHTML = '<div class="text-[28px] mb-2">📭</div>Nenhum agendamento para este dia';
-    eventscol.appendChild(vazio);
-  }
+    // Nenhum agendamento
+    if (dados.ag.length === 0 && dados.bl.length === 0) {
+      const vazio = document.createElement('div');
+      vazio.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none text-[rgb(var(--color-faint))] text-[13px]';
+      vazio.innerHTML = '<div class="text-[28px] mb-2">📭</div>Nenhum agendamento para este dia';
+      eventscol.appendChild(vazio);
+    }
 
   // Stats sidebar
   const total   = dados.ag.length;
@@ -694,11 +757,33 @@ async function renderAgenda() {
   const agoraH  = agora.getHours() + agora.getMinutes() / 60;
   const proximo = dados.ag.filter(a => a.hora > agoraH).sort((a,b) => a.hora - b.hora)[0];
 
+  // Stats sidebar
   document.getElementById('stat-count').textContent   = total;
   document.getElementById('stat-receita').textContent = `R$${receita.toFixed(0)}`;
   document.getElementById('stat-proximo').textContent = proximo
     ? `${fmtHora(proximo.hora)} — ${proximo.cliente.split(' ')[0]}`
     : (total > 0 ? 'Todos concluídos' : 'Nenhum');
+
+  // KPIs main content
+  const kpiAgendamentos = document.getElementById('kpi-agendamentos');
+  const kpiReceita = document.getElementById('kpi-receita');
+  const kpiProximo = document.getElementById('kpi-proximo');
+  const kpiOcupacao = document.getElementById('kpi-ocupacao');
+  const agendaCount = document.getElementById('agenda-count');
+
+  if (kpiAgendamentos) kpiAgendamentos.textContent = total;
+  if (kpiReceita) kpiReceita.textContent = `R$${receita.toFixed(0)}`;
+  if (kpiProximo) {
+    kpiProximo.textContent = proximo ? fmtHora(proximo.hora) : '—';
+  }
+  if (kpiOcupacao) {
+    // Calcular ocupação: total de minutos ocupados / total de minutos disponíveis
+    const minutosOcupados = dados.ag.reduce((s, a) => s + a.dur, 0);
+    const minutosDisponiveis = (HORA_FIM - HORA_INICIO) * 60;
+    const ocupacao = Math.round((minutosOcupados / minutosDisponiveis) * 100);
+    kpiOcupacao.textContent = `${ocupacao}%`;
+  }
+  if (agendaCount) agendaCount.textContent = `${total} agendamento${total !== 1 ? 's' : ''}`;
 
   atualizarDateLabel();
 }
@@ -726,8 +811,8 @@ window.abrirDetalhe = function(ag) {
     </div>
   `;
   document.getElementById('dp-actions').innerHTML = `
-    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(240,96,96,.12)] border border-[rgba(240,96,96,.3)] text-[var(--color-panel-danger)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(240,96,96,.22)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">✕ Fechar</button>
-    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(200,240,96,.12)] border border-[rgba(200,240,96,.3)] text-[var(--color-panel-accent)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,240,96,.22)] font-['DM_Sans',sans-serif]" onclick="marcarConcluido('${ag.id}')">✓ Concluir</button>
+    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(200,72,48,.08)] border border-[rgb(var(--color-rust))] text-[rgb(var(--color-rust))] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,72,48,.15)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">✕ Fechar</button>
+    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(138,184,48,.08)] border border-[rgb(var(--color-lime-d))] text-[rgb(var(--color-lime-d))] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(138,184,48,.15)] font-['DM_Sans',sans-serif]" onclick="marcarConcluido('${ag.id}')">✓ Concluir</button>
   `;
   document.getElementById('overlay').classList.add('detail-overlay-open');
   document.getElementById('detail-panel').classList.add('detail-panel-open');
@@ -779,8 +864,8 @@ window.abrirNovoAgendamento = function() {
     </div>
   `;
   document.getElementById('dp-actions').innerHTML = `
-    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(240,96,96,.12)] border border-[rgba(240,96,96,.3)] text-[var(--color-panel-danger)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(240,96,96,.22)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">Cancelar</button>
-    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(200,240,96,.12)] border border-[rgba(200,240,96,.3)] text-[var(--color-panel-accent)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,240,96,.22)] font-['DM_Sans',sans-serif]" onclick="salvarNovoAgendamento()">Confirmar</button>
+    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(200,72,48,.08)] border border-[rgb(var(--color-rust))] text-[rgb(var(--color-rust))] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,72,48,.15)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">Cancelar</button>
+    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(138,184,48,.08)] border border-[rgb(var(--color-lime-d))] text-[rgb(var(--color-lime-d))] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(138,184,48,.15)] font-['DM_Sans',sans-serif]" onclick="salvarNovoAgendamento()">Confirmar</button>
   `;
   document.getElementById('overlay').classList.add('detail-overlay-open');
   document.getElementById('detail-panel').classList.add('detail-panel-open');
@@ -1021,8 +1106,8 @@ window.abrirNovoBloqueio = function() {
     </div>
   `;
   document.getElementById('dp-actions').innerHTML = `
-    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(240,96,96,.12)] border border-[rgba(240,96,96,.3)] text-[var(--color-panel-danger)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(240,96,96,.22)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">Cancelar</button>
-    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(200,240,96,.12)] border border-[rgba(200,240,96,.3)] text-[var(--color-panel-accent)] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,240,96,.22)] font-['DM_Sans',sans-serif]" onclick="salvarBloqueio()">Salvar bloqueio</button>
+    <button class="btn-cancel flex-1 py-2 rounded-lg bg-[rgba(200,72,48,.08)] border border-[rgb(var(--color-rust))] text-[rgb(var(--color-rust))] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(200,72,48,.15)] font-['DM_Sans',sans-serif]"   onclick="fecharDetalhe()">Cancelar</button>
+    <button class="btn-conclude flex-1 py-2 rounded-lg bg-[rgba(138,184,48,.08)] border border-[rgb(var(--color-lime-d))] text-[rgb(var(--color-lime-d))] text-[13px] font-medium cursor-pointer transition-colors hover:bg-[rgba(138,184,48,.15)] font-['DM_Sans',sans-serif]" onclick="salvarBloqueio()">Salvar bloqueio</button>
   `;
   document.getElementById('overlay').classList.add('detail-overlay-open');
   document.getElementById('detail-panel').classList.add('detail-panel-open');
@@ -1078,41 +1163,64 @@ function atualizarDateLabel() {
 // ── MINI CALENDÁRIO ───────────────────────────────────────────────────────
 function renderMiniCal() {
   const cal = document.getElementById('mini-cal');
-  if (!cal) return;
-  cal.innerHTML = '';
+  const mobileCal = document.getElementById('mobile-mini-cal');
+  if (!cal && !mobileCal) return;
+
   const dias = ['D','S','T','Q','Q','S','S'];
-  dias.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'day-name text-[10px] text-[var(--color-panel-faint)] py-[3px]';
-    el.textContent = d;
-    cal.appendChild(el);
-  });
   const mesesCurtos  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const mesesLongos  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
   const sidebarLabel  = document.getElementById('sidebar-mes-label');
   const miniCalLabel  = document.getElementById('mini-cal-mes-label');
+  const mobileCalLabel = document.getElementById('mobile-cal-label');
   if (sidebarLabel) sidebarLabel.textContent = `${mesesLongos[calMes]} ${calAno}`;
   if (miniCalLabel) miniCalLabel.textContent  = mesesCurtos[calMes];
+  if (mobileCalLabel) mobileCalLabel.textContent = `${mesesLongos[calMes]} ${calAno}`;
 
   const primeiroDia = new Date(calAno, calMes, 1).getDay();
   const totalDias   = new Date(calAno, calMes + 1, 0).getDate();
 
-  for (let i = 0; i < primeiroDia; i++) cal.appendChild(document.createElement('div'));
-  for (let d = 1; d <= totalDias; d++) {
-    const el = document.createElement('div');
-    el.className = 'day py-1 rounded-sm cursor-pointer text-[var(--color-muted)] transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-text)] tabular-nums';
-    el.textContent = d;
-    const dataD = new Date(calAno, calMes, d);
-    if (dataD.toDateString() === hoje.toDateString()) el.classList.add('day-today');
-    if (dataD.toDateString() === diaAtual.toDateString()) el.classList.add('day-selected');
-    el.onclick = () => {
-      diaAtual = new Date(calAno, calMes, d);
-      renderAgenda();
-      renderMiniCal();
-    };
-    cal.appendChild(el);
-  }
+  // Helper para criar o calendário
+  const createCalGrid = (container) => {
+    if (!container) return;
+    container.innerHTML = '';
+    // Dias da semana
+    dias.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'day-name text-[10px] text-[rgb(var(--color-faint))] py-[3px]';
+      el.textContent = d;
+      container.appendChild(el);
+    });
+    // Espaços vazios antes do primeiro dia
+    for (let i = 0; i < primeiroDia; i++) container.appendChild(document.createElement('div'));
+    // Dias do mês
+    for (let d = 1; d <= totalDias; d++) {
+      const el = document.createElement('div');
+      el.className = 'day py-1 rounded-sm cursor-pointer text-[rgb(var(--color-faint))] transition-colors hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--color-text))] tabular-nums relative';
+      el.textContent = d;
+      const dataD = new Date(calAno, calMes, d);
+      
+      // Marcar dia selecionado e hoje
+      if (dataD.toDateString() === hoje.toDateString()) el.classList.add('day-today');
+      if (dataD.toDateString() === diaAtual.toDateString()) el.classList.add('day-selected');
+      
+      // Lógica de "has-event" (Dot)
+      const chave = dataD.toISOString().slice(0,10);
+      if (dadosPorDia[chave] && (dadosPorDia[chave].ag.length > 0 || dadosPorDia[chave].bl.length > 0)) {
+        el.classList.add('has-event');
+      }
+
+      el.onclick = () => {
+        diaAtual = new Date(calAno, calMes, d);
+        renderAgenda();
+        renderMiniCal();
+      };
+      container.appendChild(el);
+    }
+  };
+
+  createCalGrid(cal);
+  createCalGrid(mobileCal);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -1122,9 +1230,45 @@ function fmtHora(h) {
   return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
 }
 
+// ── CARREGAR SERVIÇOS NO SIDEBAR ────────────────────────────────────────────
+async function carregarServicosSidebar() {
+  const container = document.getElementById('sidebar-servicos-list');
+  if (!container) return;
+
+  try {
+    const { data: servicos, error } = await supabase
+      .from('servicos')
+      .select('id, nome, duracao_min')
+      .eq('prestador_id', userId)
+      .eq('ativo', true)
+      .order('nome')
+      .limit(5);
+
+    if (error || !servicos || servicos.length === 0) {
+      container.innerHTML = '<div class="text-[11px] text-[rgb(var(--color-faint))] text-center py-2">Nenhum serviço</div>';
+      return;
+    }
+
+    // Cores padrão para os serviços
+    const cores = ['#7dd3a8', '#b060f0', '#60a8f0', '#f0a060', '#f06060'];
+
+    container.innerHTML = servicos.map((s, i) => `
+      <div class="servico-item flex items-center gap-2 text-[12px] text-[rgb(var(--color-faint))] cursor-pointer py-1" onclick="this.querySelector('.servico-item-name').style.color='rgb(var(--color-text))'">
+        <div class="servico-dot w-2 h-2 rounded-full flex-shrink-0" style="background:${cores[i % cores.length]}"></div>
+        <span class="servico-item-name flex-1">${s.nome}</span>
+        <span class="servico-item-dur font-mono text-[11px]">${s.duracao_min}min</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Erro ao carregar serviços:', e);
+    container.innerHTML = '<div class="text-[11px] text-[rgb(var(--color-faint))] text-center py-2">Erro ao carregar</div>';
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 renderMiniCal();
 renderAgenda();
+carregarServicosSidebar(); // Carregar serviços no sidebar
 setInterval(() => { if (isToday()) renderAgenda(); }, 60_000);
 
 </script>

@@ -28,11 +28,17 @@
   /* Cores de Destaque (mesmas para light/dark) */
   --color-lime: 200, 240, 96;       /* #c8f060 - Destaque principal */
   --color-lime-d: 138, 184, 48;     /* #8ab830 - Destaque escuro */
-  --color-lime-ink: 26, 42, 8;      /* #1a2a08 - Texto sobre lime */
+  --color-lime-ink: 26, 42, 8;      /* #1a2a08 - Texto sobre lime (Contraste 11:1) */
+  --color-lime-t: 200, 240, 96, 0.1; /* Tint lime para backgrounds suaves */
 
   --color-teal: 93, 202, 165;       /* #5DCAA5 - Secundária */
+  --color-teal-ink: 10, 40, 30;     /* Texto sobre teal */
+  
   --color-amber: 239, 159, 39;      /* #EF9F27 - Alertas */
+  --color-amber-ink: 60, 40, 10;    /* Texto sobre amber */
+  
   --color-rust: 200, 72, 48;        /* #c84830 - Erro/cancelado */
+  --color-rust-ink: 255, 255, 255;  /* Texto sobre rust (Branco tem bom contraste aqui) */
 
   /* Cores de Categorias (manter hardcoded) */
   --color-purple: 176, 96, 240;     /* #b060f0 - Tintura */
