@@ -8,11 +8,9 @@ Este documento detalha o plano de implementação gradual do novo layout baseado
 - ✅ Protótipo funcional completo (`new-layout-tailwind.html`)
 - ✅ Design system validado
 - ✅ FOUC prevention implementado
-- ✅ FASE 0 (Infraestrutura) **COMPLETA**
-- ✅ FASE 1 (painel.html) **COMPLETA** com correções pós-migração
-- ⏳ FASE 2-6: PENDENTE
+- ⏳ Migração das páginas reais: **PENDENTE**
 
-**Última revisão:** 15/04/2026 — FASE 1 concluída com sucesso! `painel.html` migrado para novo layout unificado.
+**Última revisão:** 14/04/2026 — Após análise completa das páginas reais (`painel.html`, `clientes.html`, `relatorio.html`)
 
 ---
 
@@ -259,108 +257,64 @@ if (new URLSearchParams(window.location.search).get('layout') === 'novo') {
 ### Plano de Migração
 
 #### Passo 1: Preparação (1 hora)
-- [x] Backup do `painel.html` atual
-- [x] Criar branch `feature/new-layout-painel`
-- [x] Identificar todos os componentes customizados
-- [x] Mapear variáveis CSS antigas → novas (Token Mapping)
+- [ ] Backup do `painel.html` atual
+- [ ] Criar branch `feature/new-layout-painel`
+- [ ] Identificar todos os componentes customizados
+- [ ] Mapear variáveis CSS antigas → novas (Token Mapping)
 
 #### Passo 2: Substituir Topbar (1 hora)
 **IMPORTANTE:** A topbar atual tem navegação inline + botão "Sair" explícito.
-- [x] Substituir por topbar unificada do protótipo
-- [x] Manter date navigation (‹ Hoje ›)
-- [x] Mover navegação para sidebar
-- [x] Avatar com dropdown para logout (em vez de botão "Sair" explícito)
+- [ ] Substituir por topbar unificada do protótipo
+- [ ] Manter date navigation (‹ Hoje ›)
+- [ ] Mover navegação para sidebar
+- [ ] Avatar com dropdown para logout (em vez de botão "Sair" explícito)
 
 #### Passo 3: Substituir Sidebar (2 horas)
 **IMPORTANTE:** A sidebar JÁ EXISTE e tem widgets completos. Não é "adicionar sidebar" — é **substituir a sidebar existente** pela nova com mesmo conteúdo.
-- [x] Copiar mini-calendar existente para nova sidebar
-- [x] Copiar stats de hoje (agendamentos, receita, próximo)
-- [x] Copiar lista de serviços (com cores por categoria)
-- [x] Manter botão "Adicionar bloqueio"
-- [x] Adicionar colapsabilidade (240px ↔ 64px)
-- [x] Widgets desaparecem quando colapsada
+- [ ] Copiar mini-calendar existente para nova sidebar
+- [ ] Copiar stats de hoje (agendamentos, receita, próximo)
+- [ ] Copiar lista de serviços (com cores por categoria)
+- [ ] Manter botão "Adicionar bloqueio"
+- [ ] Adicionar colapsabilidade (240px ↔ 64px)
+- [ ] Widgets desaparecem quando colapsada
 
 #### Passo 4: Envolver Agenda Grid no App Shell (2 horas)
-- [x] Envolver `<div class="agenda-wrap">` com `app-layout` grid
-- [x] Garantir que `time-col` sticky funcione com nova largura
-- [x] Ajustar `events-col` height dinâmico
-- [x] Manter `now-line`, agendamentos, bloqueios intactos
-- [x] Testar auto-scroll para horário atual
+- [ ] Envolver `<div class="agenda-wrap">` com `app-layout` grid
+- [ ] Garantir que `time-col` sticky funcione com nova largura
+- [ ] Ajustar `events-col` height dinâmico
+- [ ] Manter `now-line`, agendamentos, bloqueios intactos
+- [ ] Testar auto-scroll para horário atual
 
 #### Passo 5: Adaptar Detail Panel (1 hora)
-- [x] Ajustar z-index (overlay: 200, topbar: 100, sidebar: 90)
-- [x] Testar com sidebar colapsada e expandida
-- [x] Testar em mobile (modal deve ser full-width)
+- [ ] Ajustar z-index (overlay: 200, topbar: 100, sidebar: 90)
+- [ ] Testar com sidebar colapsada e expandida
+- [ ] Testar em mobile (modal deve ser full-width)
 
 #### Passo 6: Adaptar para Mobile (2 horas)
-- [x] Sidebar oculta em mobile → bottom nav dedicada
-- [x] Adicionar mini-calendar mobile-only (abaixo do header)
-- [x] Agenda grid em coluna única
-- [x] Detail panel full-width em mobile
-- [x] Banner free responsivo
+- [ ] Sidebar oculta em mobile → bottom nav dedicada
+- [ ] Adicionar mini-calendar mobile-only (abaixo do header)
+- [ ] Agenda grid em coluna única
+- [ ] Detail panel full-width em mobile
+- [ ] Banner free responsivo
 
 #### Passo 7: Testes Exaustivos (2 horas)
-- [x] Desktop: agenda grid funcionando com sidebar expandida
-- [x] Desktop: agenda grid funcionando com sidebar colapsada
-- [x] Desktop: dark mode toggle sem flash
-- [x] Desktop: now-line na hora correta
-- [x] Desktop: detail panel abrindo/fechando
-- [x] Desktop: realtime updates funcionando
-- [x] Mobile: bottom nav funcional
-- [x] Mobile: calendar mobile dedicado
-- [x] Mobile: detail panel full-width
-- [x] Mobile: banner free responsivo
-- [x] FOUC: zero flash no reload
+- [ ] Desktop: agenda grid funcionando com sidebar expandida
+- [ ] Desktop: agenda grid funcionando com sidebar colapsada
+- [ ] Desktop: dark mode toggle sem flash
+- [ ] Desktop: now-line na hora correta
+- [ ] Desktop: detail panel abrindo/fechando
+- [ ] Desktop: realtime updates funcionando
+- [ ] Mobile: bottom nav funcional
+- [ ] Mobile: calendar mobile dedicado
+- [ ] Mobile: detail panel full-width
+- [ ] Mobile: banner free responsivo
+- [ ] FOUC: zero flash no reload
 
 **Tempo Estimado:** 10 horas (revisado de 8h — agenda grid é mais complexo que o previsto)
 **Risco:** Alto (página principal)
 **Rollback:** Git revert, restaurar versão anterior
 
-**Commits:**
-- `feat(painel): migrar painel.html para novo layout unificado` — Migração inicial
-- `fix(painel): correções pós-migração FASE 1` — Ajustes finais
-
-**Status:** ✅ **COMPLETA** (15/04/2026)
-
-#### Correções Pós-Migração (Commit `fix(painel): correções pós-migração FASE 1`)
-
-Após a migração inicial, foram identificadas e corrigidas as seguintes questões:
-
-1. **Serviços no Sidebar:**
-   - ❌ Problema: Serviços hardcoded no HTML
-   - ✅ Solução: Implementada função `carregarServicosSidebar()` que busca dinamicamente do Supabase
-   - **Campo `cor` removido da query** (não existe na tabela)
-
-2. **KPIs sem Dados:**
-   - ❌ Problema: Cards exibiam "—" sem dados reais
-   - ✅ Solução: Implementado preenchimento dinâmico de todos os KPIs
-     - `kpi-agendamentos`: Total do dia
-     - `kpi-receita`: Receita formatada (R$ X)
-     - `kpi-proximo`: Próximo horário ou "—"
-     - `kpi-ocupacao`: % calculado (minutos ocupados / disponíveis)
-     - `agenda-count`: "X agendamento(s)" com plural correto
-
-3. **Mobile Issues:**
-   - ❌ Problema: Date navigation mobile não funcionava (botões com hide-mobile)
-   - ✅ Solução: Adicionados botões mobile-only para navegação de datas
-   - ❌ Problema: Mini calendar mobile não aparecia
-   - ✅ Solução: `renderMiniCal()` agora popula ambos `mini-cal` e `mobile-mini-cal`
-
-4. **UI/UX:**
-   - ❌ Problema: Loading exibia card de fundo invasivo
-   - ✅ Solução: Removido `bg-[var(--color-panel-bg)]` - agora apenas texto/ícone
-   - ❌ Problema: Modal não centralizado horizontalmente
-   - ✅ Solução: CSS com `!important` força centralização correta
-   - ❌ Problema: Botões dos modais com cores ilegíveis (muito claras)
-   - ✅ Solução: Substituído para `lime-d` (confirmar) e `rust` (cancelar)
-
-5. **Design System:**
-   - ✅ Adicionadas variáveis complementares: `teal-ink`, `amber-ink`, `rust-ink`, `lime-t`
-   - ✅ Banner free convertido para variáveis RGB (removido `--color-lime-t` hardcoded)
-
-6. **CSS Aliases:**
-   - ✅ Mantidas aliases de variáveis antigas para compatibilidade com JS existente
-   - `--color-panel-bg` → `rgb(var(--bg-primary))`, etc.
+**Commit:** `feat(painel): migrar painel.html para novo layout unificado`
 
 ---
 
