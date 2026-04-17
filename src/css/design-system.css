@@ -1,24 +1,17 @@
 /* ============================================
-   AGENDAPRO DESIGN SYSTEM v2.0
+   AGENDAPRO DESIGN SYSTEM
    src/css/design-system.css
 
-   NOTA: Variáveis de cores movidas para @theme em style.css
-   ============================================================
+   Todas as variáveis de cores estão centralizadas
+   no @theme do src/style.css (valores HEX)
 
-   As variáveis --bg-*, --color-*, --color-teal, --color-amber, --color-rust,
-   --color-purple, --color-blue foram movidas para o bloco @theme no src/style.css
-
-   Isso evita conflitos com as páginas que usam variáveis HEX (auth.html, landing-page.html, etc.)
-   ============================================ */
-
-/* ==========================================
-   Z-INDEX LAYERS
+   Este arquivo contém apenas z-index e utilitários.
    ============================================ */
 
 :root {
-  --z-overlay: 200;    /* Modais, drawers, detail panels */
-  --z-topbar: 100;     /* Topbar fixa */
-  --z-sidebar: 90;     /* Sidebar colapsável */
-  --z-modal: 300;      /* Modais de confirmação */
-  --z-toast: 400;      /* Toast notifications */
+  --z-overlay: 200;
+  --z-topbar: 100;
+  --z-sidebar: 90;
+  --z-modal: 300;
+  --z-toast: 400;
 }
