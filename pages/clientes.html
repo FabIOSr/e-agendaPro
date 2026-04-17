@@ -1,514 +1,706 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-  <script src="/config.js"></script>
-  <script src="/modules/sentry.js"></script>
-  <script src="/modules/ui-helpers.js"></script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgendaPro — Clientes</title>
+<script src="/config.js"></script>
+<script src="/modules/sentry.js"></script>
+<script src="/modules/ui-helpers.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clientes — AgendaPro</title>
 
-  <!-- ═══════════════════ CSS MÍNIMO (animações + pseudo-elementos + estados JS) ═══════════════════ -->
-  <style>
-    @keyframes pulse-trial { 0%,100%{opacity:1} 50%{opacity:.85} }
+<!-- ⚡ CRÍTICO: FOUC Prevention - Executa ANTES do carregamento -->
+<script>
+  // Tema - aplicar explicitamente para evitar FOUC
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    // Garantir que o light theme seja aplicado (remove data-theme)
+    document.documentElement.removeAttribute('data-theme');
+  }
 
-    /* Animação do drawer */
-    .drawer { transition: right .3s cubic-bezier(.4,0,.2,1); }
-    .overlay { transition: opacity .3s; }
+  // Sidebar colapsada
+  const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+  if (sidebarCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  }
+</script>
 
-    /* Estados controlados por JS */
-    .overlay.open { display: block; }
-    .drawer.open { right: 0; }
-    .filter-btn.active { background: var(--color-lime-t); border-color: rgba(200,240,96,.3); color: var(--color-lime); }
-    .plano-badge.pro { background: var(--color-lime-t); color: var(--color-lime); border: 1px solid rgba(200,240,96,.2); }
-    .plano-badge.free { background: var(--color-bg-dark3); color: var(--color-muted); border: 1px solid var(--color-bord); }
-    .plano-badge.trial { background: var(--color-amber-t); color: var(--color-amber); border: 1px solid rgba(239,159,39,.3); animation: pulse-trial 2s ease-in-out infinite; }
-    .btn-salvar.saving { opacity: .5; cursor: default; }
-    .nav-link.active { background: var(--color-bg-dark2); color: var(--color-text); }
-    .freq-badge-vip { background: var(--color-lime-t); color: var(--color-lime); border: 1px solid rgba(200,240,96,.2); }
-    .freq-badge-regular { background: var(--color-teal-t); color: var(--color-teal); border: 1px solid rgba(93,202,165,.2); }
-    .freq-badge-novo { background: var(--color-bg-dark2); color: var(--color-muted); border: 1px solid var(--color-bord); }
-    .hist-row:last-child { border-bottom: none; }
+<style>
+  @keyframes pulse-trial { 0%,100%{opacity:1} 50%{opacity:.85} }
 
-    /* Hover states que Tailwind não cobre bem com ::before */
-    .search-input:focus { border-color: var(--color-bord2); }
-    .obs-area:focus { border-color: var(--color-bord2); }
-  </style>
+  /* Animação do drawer */
+  .drawer { transition: right .3s cubic-bezier(.4,0,.2,1); }
+  .overlay { transition: opacity .3s; }
+
+  /* Estados controlados por JS */
+  .overlay.open { display: block; }
+  .drawer.open { right: 0; }
+  .filter-btn.active { background: var(--color-lime-t); border-color: rgba(200,240,96,.3); color: var(--color-lime-d); }
+  .plano-badge.pro { background: var(--color-lime-t); color: var(--color-lime); border: 1px solid rgba(200,240,96,.2); }
+  .plano-badge.free { background: var(--color-panel-bg3); color: var(--color-muted); border: 1px solid var(--color-panel-border); }
+  .plano-badge.trial { background: var(--color-amber-t); color: var(--color-amber); border: 1px solid rgba(239,159,39,.3); animation: pulse-trial 2s ease-in-out infinite; }
+  .btn-salvar.saving { opacity: .5; cursor: default; }
+  .nav-link.active { background: var(--color-panel-bg3); color: var(--color-panel-text); }
+  .freq-badge-vip { background: var(--color-lime-t); color: var(--color-lime); border: 1px solid rgba(200,240,96,.2); }
+  .freq-badge-regular { background: var(--color-teal-t); color: var(--color-teal); border: 1px solid rgba(93,202,165,.2); }
+  .freq-badge-novo { background: var(--color-panel-bg2); color: var(--color-muted); border: 1px solid var(--color-panel-border); }
+  .hist-row:last-child { border-bottom: none; }
+
+  /* Hover states que Tailwind não cobre bem com ::before */
+  .search-input:focus { border-color: var(--color-panel-border2); }
+  .obs-area:focus { border-color: var(--color-panel-border2); }
+</style>
 </head>
+<body class="bg-[var(--color-panel-bg)] text-[var(--color-panel-text)] font-sans min-h-screen">
 
-<body class="font-['Syne',sans-serif] bg-[var(--color-bg-dark)] text-[var(--color-text)] min-h-[100vh] block">
-
-  <div class="topbar h-[54px] flex items-center justify-between px-6 border-b border-[var(--color-bord)] sticky top-0 z-50 bg-[rgba(14,13,10,.92)] backdrop-blur-md">
-    <div class="logo font-['Fraunces',serif] text-[17px] font-[400] flex items-center gap-[7px]">
-      <div class="logo-dot w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full shadow-[0_0_8px_rgba(200,240,96,.5)]"></div>AgendaPro
-    </div>
-    <div class="topbar-right flex items-center gap-[10px]">
-      <nav class="nav-links flex items-center gap-[2px] [@media(max-width:900px)]:hidden">
-        <a href="/painel" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">📅 Agenda</a>
-        <a href="/clientes" class="nav-link active bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">👥 Clientes</a>
-        <a href="/relatorio" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">📊 Relatórios</a>
-        <a href="/configuracoes" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">⚙️ Config</a>
-        <a href="/planos" class="nav-link bg-none border-none text-[var(--color-muted)] text-[13px] font-[500] px-[10px] py-[5px] rounded-[7px] cursor-pointer no-underline flex items-center gap-[5px] transition-[background,color] duration-150 hover:bg-[var(--color-bg-dark2)] hover:text-[var(--color-text)]">⭐ Plano</a>
-      </nav>
-      <div class="plano-badge text-[10px] font-[700] tracking-[.08em] uppercase py-[3px] px-[10px] rounded-[20px]" id="topbar-plano">—</div>
-      <button class="btn-logout bg-none border border-[var(--color-bord)] text-[var(--color-muted)] text-[12px] font-[500] font-['DM_Sans',sans-serif] py-1 px-2.5 rounded-[7px] cursor-pointer transition-[border-color,color] duration-150 hover:text-[var(--color-text)]" onclick="fazerLogout()">Sair</button>
-      <div class="avatar w-[30px] h-[30px] rounded-full bg-[var(--color-lime-t)] text-[var(--color-lime)] flex items-center justify-center text-[12px] font-[700] cursor-pointer" id="topbar-avatar">—</div>
-    </div>
+<!-- TOPBAR UNIFICADA -->
+<div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">
+  <!-- Topbar Left -->
+  <div class="flex items-center gap-4">
+    <button
+      onclick="toggleSidebar()"
+      id="sidebarToggle"
+      class="hidden p-2 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] transition-all duration-200 md:flex items-center justify-center bg-transparent border-0 cursor-pointer"
+      aria-label="Toggle sidebar"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M3 10h18M3 14h18"/>
+      </svg>
+    </button>
+    <a href="/painel" class="font-fraunces text-[18px] font-normal flex items-center gap-2 no-underline text-[var(--color-panel-text)]">
+      <div class="w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5);"></div>
+      AgendaPro
+    </a>
   </div>
 
-  <div class="page-header flex items-start justify-between px-6 pt-[28px] pb-0 max-w-[1100px] mx-auto gap-4 flex-wrap [@media(max-width:600px)]:px-4">
-    <div>
-      <div class="page-title font-['Fraunces',serif] text-[28px] font-[300] tracking-[-.02em]">Clientes</div>
-      <div class="page-sub text-[13px] text-[var(--color-muted)] mt-1" id="page-sub">Carregando…</div>
-    </div>
-    <div class="header-actions flex gap-2 items-center flex-wrap">
-      <button class="btn-export bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] leading-none cursor-pointer transition-[border-color,color] duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="exportarCSV()">⬇ Exportar CSV</button>
-    </div>
-  </div>
-
-  <div class="filters flex gap-[10px] px-6 pt-5 pb-0 max-w-[1100px] mx-auto flex-wrap items-center [@media(max-width:600px)]:px-4">
-    <div class="search-wrap relative flex-1 min-w-[200px]">
-      <span class="search-icon absolute left-[11px] top-1/2 -translate-y-1/2 text-[13px] text-[var(--color-faint-dark)] pointer-events-none">🔍</span>
-      <input class="search-input w-full bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg py-2 pl-8 pr-3 text-[13px] text-[var(--color-text)] outline-none font-['Syne',sans-serif] transition-[border-color] duration-200 placeholder:text-[var(--color-faint-dark)]" id="search" placeholder="Buscar por nome, telefone ou email…" oninput="filtrar()">
-    </div>
-    <button class="filter-btn active bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-todos" onclick="setFiltro('todos',this)">Todos</button>
-    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-vip" onclick="setFiltro('vip',this)">VIP (8+)</button>
-    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-regular" onclick="setFiltro('regular',this)">Regular</button>
-    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-novo" onclick="setFiltro('novo',this)">Novos</button>
-    <button class="filter-btn bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg py-[7px] px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-bord2)] hover:text-[var(--color-text)]" id="f-sem-visita" onclick="setFiltro('sem-visita',this)">Sem visita +60d</button>
-  </div>
-
-  <!-- Gate Pro envolve todo o conteúdo -->
-  <div class="content max-w-[1100px] mx-auto px-6 pt-5 pb-20 [@media(max-width:600px)]:px-4" id="crm-gate">
-
-    <div class="stats-row grid grid-cols-4 gap-[10px] mb-5 [@media(max-width:700px)]:grid-cols-2" id="stats-row">
-      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
-        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Total de clientes</div>
-        <div class="stat-val lime font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em] text-[var(--color-lime)]" id="s-total">—</div>
+  <!-- Topbar Right -->
+  <div class="flex items-center gap-3">
+    <button
+      onclick="toggleTheme()"
+      id="themeToggle"
+      class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+      title="Alternar tema"
+      aria-label="Alternar tema claro/escuro"
+    >
+      🌙
+    </button>
+    <!-- Badge Pro - HIDDEN EM MOBILE -->
+    <span id="badge-pro-topbar" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-lime)] text-[var(--color-lime-ink)]"></span>
+    <!-- Avatar com dropdown -->
+    <div class="relative">
+      <div class="w-8 h-8 bg-[var(--color-lime)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-lime-ink)] cursor-pointer hover:scale-105 transition-transform duration-200" id="avatar-initials" title="Meu perfil" onclick="toggleUserMenu()">
+        —
       </div>
-      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
-        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Clientes VIP</div>
-        <div class="stat-val teal font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em] text-[var(--color-teal)]" id="s-vip">—</div>
-      </div>
-      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
-        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Ticket médio</div>
-        <div class="stat-val font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em]" id="s-ticket">—</div>
-      </div>
-      <div class="stat-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3.5 px-4">
-        <div class="stat-label text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] mb-1.5">Receita total</div>
-        <div class="stat-val font-['Fraunces',serif] text-[26px] font-[300] tracking-[-.02em] text-[var(--color-lime)]" id="s-receita">—</div>
-      </div>
-    </div>
-
-    <div class="table-card bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl overflow-hidden">
-      <div class="table-info py-3 px-4 text-[12px] text-[var(--color-muted)] border-b border-[var(--color-bord)] bg-[var(--color-bg-dark2)]" id="table-info">Carregando clientes…</div>
-      <table class="w-full border-collapse">
-        <thead>
-          <tr>
-            <th class="text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)]">Cliente</th>
-            <th class="sort text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)] cursor-pointer select-none hover:text-[var(--color-text)]" onclick="sortBy('total_visitas')">Visitas ↕</th>
-            <th class="text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)]">Último serviço</th>
-            <th class="sort text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)] cursor-pointer select-none hover:text-[var(--color-text)]" onclick="sortBy('ultima_visita')">Última visita ↕</th>
-            <th class="sort text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)] cursor-pointer select-none hover:text-[var(--color-text)]" onclick="sortBy('total_gasto')">Total gasto ↕</th>
-            <th class="text-left py-2.5 px-3.5 text-[10px] font-[600] uppercase tracking-[.07em] text-[var(--color-muted)] bg-[var(--color-bg-dark2)] border-b border-[var(--color-bord)]">Obs.</th>
-          </tr>
-        </thead>
-        <tbody id="tbody" class="[&_tr]:border-b [&_tr]:border-[var(--color-bord)] [&_tr]:transition-[background] [&_tr]:duration-150 [&_tr]:cursor-pointer [&_tr:last-child]:border-b-0 [&_tr:hover]:bg-[var(--color-bg-dark4)] [&_td]:py-3 [&_td]:px-3.5 [&_td]:text-[13px] [&_td]:align-middle"></tbody>
-      </table>
-      <div class="loading text-center py-[60px] text-[var(--color-muted)] text-[14px]" id="loading">Carregando…</div>
-      <div class="empty text-center py-[60px] px-6 text-[var(--color-muted)] hidden" id="empty">
-        <div class="empty-icon text-[32px] mb-3">👥</div>
-        <div class="empty-title font-['Fraunces',serif] text-[20px] font-[300] mb-1.5">Nenhum cliente encontrado</div>
-        <div class="text-[13px] text-[var(--color-muted)] mt-1.5">Tente ajustar os filtros.</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- DRAWER -->
-  <div class="overlay fixed inset-0 bg-[rgba(0,0,0,.65)] z-[100] hidden" id="overlay" onclick="fecharDrawer()"></div>
-  <div class="drawer fixed top-0 right-[-440px] bottom-0 w-[420px] z-[101] bg-[var(--color-bg-dark2)] border-l border-[var(--color-bord)] overflow-y-auto py-7 px-6 pb-20 [@media(max-width:500px)]:w-full [@media(max-width:500px)]:right-[-100%]" id="drawer">
-    <button class="drawer-close absolute top-5 right-5 bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] w-7 h-7 rounded-lg text-[14px] cursor-pointer flex items-center justify-center transition-colors duration-200 hover:text-[var(--color-text)]" onclick="fecharDrawer()">✕</button>
-    <div id="drawer-body"></div>
-  </div>
-
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
-
-    // ── PROTEÇÃO DE ROTA ─────────────────────────────────────────────────────
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/auth'; }
-    const userId = session.user.id;
-
-    // ── LOGOUT ────────────────────────────────────────────────────────────────
-    window.fazerLogout = async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/auth';
-    };
-
-    // ── ESTADO ────────────────────────────────────────────────────────────────
-    let todosClientes = [];
-    let clientesFiltrados = [];
-    let filtroAtivo = 'todos';
-    let sortCol = 'ultima_visita';
-    let sortAsc = false;
-
-    // ── INIT ──────────────────────────────────────────────────────────────────
-    async function init() {
-      const { data: prestador } = await supabase
-        .from('prestadores')
-        .select('nome, plano, trial_ends_at')
-        .eq('id', userId)
-        .maybeSingle();
-
-      const nome = prestador?.nome || session.user.user_metadata?.nome_completo || 'P';
-      const plano = prestador?.plano || 'free';
-
-      const avEl = document.getElementById('topbar-avatar');
-      const planoEl = document.getElementById('topbar-plano');
-      if (avEl) avEl.textContent = nome[0].toUpperCase();
-
-      // Verifica se está em trial
-      let isTrial = false;
-      let trialDaysRemaining = 0;
-      if (prestador?.trial_ends_at) {
-        const trialEnd = new Date(prestador.trial_ends_at);
-        const now = new Date();
-        if (trialEnd > now) {
-          isTrial = true;
-          trialDaysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        }
-      }
-
-      // Atualiza badge
-      if (planoEl) {
-        if (isTrial) {
-          planoEl.textContent = trialDaysRemaining === 1 ? 'Trial (1 dia)' : `Trial (${trialDaysRemaining} dias)`;
-          planoEl.className = 'plano-badge trial';
-        } else {
-          planoEl.textContent = plano === 'pro' ? 'Pro' : 'Grátis';
-          planoEl.className = `plano-badge ${plano}`;
-        }
-      }
-
-      document.getElementById('page-sub').textContent = 'Carregando clientes…';
-
-      // Gate pro (aviso sem bloquear — mostra dados vazios se free)
-      // Usa verifica_plano_ativo para considerar trial também
-      const { data: planoAtivo } = await supabase.rpc('verifica_plano_ativo', { p_prestador_id: userId });
-      if (!planoAtivo) {
-        document.getElementById('page-sub').textContent = 'Disponível no plano Pro';
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('crm-gate')?.classList.remove('hidden');
-        return;
-      }
-
-      await carregarClientes();
-
-      // Realtime: atualiza ao concluir agendamentos
-      supabase.channel('ag-clientes')
-        .on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'agendamentos',
-          filter: `prestador_id=eq.${userId}`,
-        }, () => carregarClientes())
-        .subscribe();
-    }
-
-    // ── CARREGAR CLIENTES ─────────────────────────────────────────────────────
-    async function carregarClientes() {
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('tbody').innerHTML = '';
-
-      const { data, error } = await supabase
-        .from('crm_clientes')
-        .select('*')
-        .eq('prestador_id', userId);
-
-      if (error) {
-        console.error('Erro ao carregar clientes:', error);
-        document.getElementById('loading').textContent = 'Erro ao carregar. Tente recarregar.';
-        return;
-      }
-
-      todosClientes = data ?? [];
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('page-sub').textContent = `${todosClientes.length} cliente${todosClientes.length !== 1 ? 's' : ''} no CRM`;
-
-      atualizarStats();
-      filtrar();
-    }
-
-    // ── STATS CARDS ───────────────────────────────────────────────────────────
-    function atualizarStats() {
-      const total = todosClientes.length;
-      const vips = todosClientes.filter(c => (c.total_visitas || 0) >= 8).length;
-      const recGasto = todosClientes.reduce((s, c) => s + Number(c.total_gasto || 0), 0);
-      const totalVisitas = todosClientes.reduce((s, c) => s + (c.total_visitas || 0), 0);
-      const ticketM = totalVisitas > 0 ? recGasto / totalVisitas : 0;
-
-      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-      set('s-total', total);
-      set('s-vip', vips);
-      set('s-ticket', `R$${ticketM.toFixed(0)}`);
-      set('s-receita', `R$${recGasto.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`);
-    }
-
-    // ── FILTRAR E RENDERIZAR ──────────────────────────────────────────────────
-    window.setFiltro = function (filtro, btn) {
-      filtrar(filtro);
-    };
-    window.filtrar = function (filtro) {
-      if (filtro) filtroAtivo = filtro;
-      document.querySelectorAll('.filter-btn').forEach(b =>
-        b.classList.toggle('active', b.id === `f-${filtroAtivo}`));
-
-      const q = document.getElementById('search')?.value.toLowerCase() || '';
-      const agora = new Date();
-      clientesFiltrados = todosClientes.filter(c => {
-        const visitas = c.total_visitas || 0;
-        const ultima = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
-        const diasSemVisita = ultima ? Math.floor((agora - ultima) / (1000 * 60 * 60 * 24)) : 999;
-
-        const passaFiltro =
-          filtroAtivo === 'todos' ? true :
-            filtroAtivo === 'vip' ? visitas >= 8 :
-              filtroAtivo === 'regular' ? visitas >= 3 && visitas < 8 :
-                filtroAtivo === 'novo' ? visitas <= 2 :
-                  filtroAtivo === 'sem-visita' ? diasSemVisita > 60 : true;
-        const passaBusca = !q ||
-          (c.nome || '').toLowerCase().includes(q) ||
-          (c.telefone || '').includes(q) ||
-          (c.email || '').toLowerCase().includes(q);
-        return passaFiltro && passaBusca;
-      });
-      ordenar();
-    }
-
-    function filtrar() { window.filtrar(); }
-
-    window.buscar = function () { window.filtrar(); };
-
-    function ordenar() {
-      const col = sortCol;
-      clientesFiltrados.sort((a, b) => {
-        let va = a[col] ?? '', vb = b[col] ?? '';
-        if (col === 'total_gasto' || col === 'total_visitas') { va = Number(va); vb = Number(vb); }
-        if (col === 'ultima_visita' || col === 'ultimo_agendamento') { va = new Date(va || 0); vb = new Date(vb || 0); }
-        return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
-      });
-      renderTabela();
-    }
-
-    window.sortBy = function (col) {
-      if (sortCol === col) sortAsc = !sortAsc;
-      else { sortCol = col; sortAsc = false; }
-      ordenar();
-    };
-
-    // ── RENDER TABELA ─────────────────────────────────────────────────────────
-    function renderTabela() {
-      const tbody = document.getElementById('tbody');
-      if (!tbody) return;
-
-      if (clientesFiltrados.length === 0) {
-        const q = document.getElementById('search')?.value || '';
-        const msg = q
-          ? `Nenhum cliente encontrado para "<strong>${q}</strong>"<br>Tente buscar por nome, telefone ou email.`
-          : 'Nenhum cliente cadastrado.';
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 px-6 text-[var(--color-muted)] text-[14px] leading-relaxed">${msg}</td></tr>`;
-        return;
-      }
-
-      const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      const cores = ['#c8f060', '#5DCAA5', '#60a8f0', '#EF9F27', '#b060f0', '#f06048'];
-
-      tbody.innerHTML = clientesFiltrados.map((c, i) => {
-        const dt = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
-        const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]}` : '—';
-        const total = Number(c.total_gasto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const vis = c.total_visitas || 0;
-        const cor = cores[i % cores.length];
-        const ini = (c.nome || '?')[0].toUpperCase();
-
-        return `<tr onclick="abrirCliente('${(c.telefone || '').replace(/'/g, "\\'")}')">
-      <td>
-        <div class="flex items-center gap-[10px]">
-          <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-[600] text-[13px]" style="background:${cor}22;color:${cor}">${ini}</div>
-          <div>
-            <div class="font-[500] text-[13px]">${c.nome || '—'}</div>
-            <div class="text-[11px] text-[var(--color-muted)]">${c.telefone || ''}</div>
-          </div>
+      <!-- Dropdown menu -->
+      <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg shadow-lg py-1 hidden" style="z-index: 200;">
+        <div class="px-4 py-2 border-b border-[var(--color-panel-border)]">
+          <div class="text-[11px] text-[var(--color-panel-faint)]">Logado como</div>
+          <div class="text-[13px] font-medium text-[var(--color-panel-text)] truncate" id="user-menu-name">Profissional</div>
         </div>
-      </td>
-      <td class="text-[12px]">${vis}x</td>
-      <td class="text-[12px] text-[var(--color-muted)]">${c.ultimo_servico || '—'}</td>
-      <td class="text-[12px] text-[var(--color-muted)]">${dtFmt}</td>
-      <td class="font-['DM_Mono',monospace] text-[12px]">${total}</td>
-      <td class="text-[12px] text-[var(--color-muted)] max-w-[160px] truncate">${c.observacoes || ''}</td>
-    </tr>`;
-      }).join('');
-    }
+        <button onclick="fazerLogout()" class="w-full text-left px-4 py-2 text-[13px] text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg2)] hover:text-[var(--color-panel-text)] transition-colors cursor-pointer border-none bg-transparent">
+          Sair
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-    // ── DRAWER DETALHE ────────────────────────────────────────────────────────
-    // Função para gerar cor baseada no nome
-    function cor(nome) {
-      if (!nome) return '#c8f060';
-      const CORES = ['#c8f060', '#5DCAA5', '#60a8f0', '#EF9F27', '#b060f0', '#f06048'];
-      let hash = 0;
-      for (let i = 0; i < nome.length; i++) {
-        hash = nome.charCodeAt(i) + ((hash << 5) - hash);
+<!-- Script para dropdown do avatar e layout functions -->
+<script>
+window.toggleUserMenu = function() {
+  const menu = document.getElementById('user-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const avatar = document.getElementById('avatar-initials');
+  if (menu && !menu.classList.contains('hidden') && !avatar?.contains(e.target) && !menu?.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+// Layout functions (toggleSidebar e toggleTheme)
+window.toggleSidebar = function() {
+  const layout = document.getElementById('appLayout');
+  if (!layout) return;
+
+  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
+
+  // Sincronizar data attribute
+  if (isCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  } else {
+    document.documentElement.removeAttribute('data-sidebar-collapsed');
+  }
+
+  // Salvar preferência
+  localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+  // Atualizar ícone
+  const toggle = document.getElementById('sidebarToggle');
+  if (toggle) {
+    toggle.innerHTML = isCollapsed
+      ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
+  }
+};
+
+window.toggleTheme = function() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+
+  // Atualizar ícone
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+};
+
+// Inicializar ícone do theme toggle
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  }
+});
+</script>
+
+<!-- LAYOUT GRID (App Layout) -->
+<div class="app-layout" id="appLayout">
+
+  <!-- SIDEBAR COLAPSÁVEL -->
+  <aside id="sidebar" class="bg-[var(--color-panel-bg2)] border-r border-[var(--color-panel-border)] flex flex-col overflow-hidden transition-all duration-300">
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-[var(--color-panel-border)] flex items-center justify-between">
+      <span class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)]">Menu</span>
+      <button onclick="toggleSidebar()" class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="p-3 flex flex-col gap-1">
+      <a href="/painel" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">📅</span>
+        <span class="nav-item-label flex-1">Agenda</span>
+      </a>
+      <a href="/clientes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-text)] bg-[var(--color-panel-bg3)] font-semibold no-underline">
+        <span class="text-[18px] flex-shrink-0">👥</span>
+        <span class="nav-item-label flex-1">Clientes</span>
+      </a>
+      <a href="/relatorio" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">📊</span>
+        <span class="nav-item-label flex-1">Relatórios</span>
+      </a>
+      <a href="/configuracoes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">⚙️</span>
+        <span class="nav-item-label flex-1">Configurações</span>
+      </a>
+      <a href="/planos" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">⭐</span>
+        <span class="nav-item-label flex-1">Plano</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content p-6 overflow-y-auto">
+    <!-- Page Header -->
+    <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="font-fraunces text-[28px] font-light mb-2">Clientes</h1>
+        <p class="text-[14px] text-[var(--color-panel-secondary)]" id="page-sub">Carregando…</p>
+      </div>
+      <div class="header-actions flex gap-2 items-center flex-wrap">
+        <button class="btn-export bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-secondary)] rounded-lg py-2 px-3.5 text-[12px] font-semibold leading-none cursor-pointer transition-[border-color,color] duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters flex gap-2.5 mb-5 flex-wrap items-center">
+      <div class="search-wrap relative flex-1 min-w-[200px]">
+        <span class="search-icon absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[var(--color-panel-secondary)] pointer-events-none">🔍</span>
+        <input class="search-input w-full bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg py-2 pl-9 pr-3 text-[13px] text-[var(--color-panel-text)] outline-none font-sans transition-[border-color] duration-200 placeholder:text-[var(--color-panel-secondary)]" id="search" placeholder="Buscar por nome, telefone ou email…" oninput="filtrar()">
+      </div>
+      <button class="filter-btn active bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-text)] rounded-lg py-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-panel-border2)]" id="f-todos" onclick="setFiltro('todos',this)">Todos</button>
+      <button class="filter-btn bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-secondary)] rounded-lg py-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)]" id="f-vip" onclick="setFiltro('vip',this)">VIP (8+)</button>
+      <button class="filter-btn bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-secondary)] rounded-lg py-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)]" id="f-regular" onclick="setFiltro('regular',this)">Regular</button>
+      <button class="filter-btn bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-secondary)] rounded-lg py-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)]" id="f-novo" onclick="setFiltro('novo',this)">Novos</button>
+      <button class="filter-btn bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-secondary)] rounded-lg py-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)]" id="f-sem-visita" onclick="setFiltro('sem-visita',this)">Sem visita +60d</button>
+    </div>
+
+    <!-- Gate Pro envolve todo o conteúdo -->
+    <div class="content" id="crm-gate">
+
+      <!-- Stats Row -->
+      <div class="stats-row grid grid-cols-4 gap-2.5 mb-5 md:grid-cols-2" id="stats-row">
+        <div class="stat-card bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+          <div class="stat-label text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] mb-2">Total de clientes</div>
+          <div class="stat-val lime font-fraunces text-[26px] font-light tracking-tight text-[var(--color-lime-d)]" id="s-total">—</div>
+        </div>
+        <div class="stat-card bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+          <div class="stat-label text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] mb-2">Clientes VIP</div>
+          <div class="stat-val teal font-fraunces text-[26px] font-light tracking-tight text-[var(--color-teal)]" id="s-vip">—</div>
+        </div>
+        <div class="stat-card bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+          <div class="stat-label text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] mb-2">Ticket médio</div>
+          <div class="stat-val font-fraunces text-[26px] font-light tracking-tight" id="s-ticket">—</div>
+        </div>
+        <div class="stat-card bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+          <div class="stat-label text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] mb-2">Receita total</div>
+          <div class="stat-val font-fraunces text-[26px] font-light tracking-tight text-[var(--color-lime-d)]" id="s-receita">—</div>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="table-card bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl overflow-hidden">
+        <div class="table-info py-3 px-4 text-[12px] text-[var(--color-panel-secondary)] border-b border-[var(--color-panel-border)] bg-[var(--color-panel-bg2)]" id="table-info">Carregando clientes…</div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr>
+                <th class="text-left py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">Cliente</th>
+                <th class="sort text-left py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)] cursor-pointer select-none hover:text-[var(--color-panel-text)]" onclick="sortBy('total_visitas')">Visitas ↕</th>
+                <th class="text-left py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">Último serviço</th>
+                <th class="sort text-left py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)] cursor-pointer select-none hover:text-[var(--color-panel-text)]" onclick="sortBy('ultima_visita')">Última visita ↕</th>
+                <th class="sort text-left py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)] cursor-pointer select-none hover:text-[var(--color-panel-text)]" onclick="sortBy('total_gasto')">Total gasto ↕</th>
+                <th class="text-left py-2.5 px-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-panel-secondary)] bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">Obs.</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="[&_tr]:border-b [&_tr]:border-[var(--color-panel-border)] [&_tr]:transition-[background] [&_tr]:duration-150 [&_tr]:cursor-pointer [&_tr:last-child]:border-b-0 [&_tr:hover]:bg-[var(--color-panel-bg-elevated)] [&_td]:py-3 [&_td]:px-3.5 [&_td]:text-[13px] [&_td]:align-middle"></tbody>
+          </table>
+        </div>
+        <div class="loading text-center py-[60px] text-[var(--color-panel-secondary)] text-[14px]" id="loading">Carregando…</div>
+        <div class="empty text-center py-[60px] px-6 text-[var(--color-panel-secondary)] hidden" id="empty">
+          <div class="empty-icon text-[32px] mb-3">👥</div>
+          <div class="empty-title font-fraunces text-[20px] font-light mb-2">Nenhum cliente encontrado</div>
+          <div class="text-[13px] text-[var(--color-panel-secondary)] mt-2">Tente ajustar os filtros.</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- DRAWER - z-[200] para ficar acima da sidebar -->
+<div class="overlay fixed inset-0 bg-black/65 z-[200] hidden" id="overlay" onclick="fecharDrawer()"></div>
+<div class="drawer fixed top-0 right-[-440px] bottom-0 w-full max-w-[420px] z-[200] bg-[var(--color-panel-bg2)] border-l border-[var(--color-panel-border)] overflow-y-auto py-7 px-6 pb-20" id="drawer">
+  <button class="drawer-close absolute top-5 right-5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-secondary)] w-7 h-7 rounded-lg text-[14px] cursor-pointer flex items-center justify-center transition-colors duration-200 hover:text-[var(--color-panel-text)]" onclick="fecharDrawer()">✕</button>
+  <div id="drawer-body"></div>
+</div>
+
+<!-- BOTTOM NAV (Mobile Only) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-panel-bg2)] border-t border-[var(--color-panel-border)] flex items-center justify-around py-3 z-[150]">
+  <a href="/painel" class="flex flex-col items-center gap-1 text-[var(--color-panel-secondary)] hover:text-[var(--color-panel-text)] transition-colors no-underline">
+    <span class="text-[20px]">📅</span>
+    <span class="text-[10px] font-medium">Agenda</span>
+  </a>
+  <a href="/clientes" class="flex flex-col items-center gap-1 text-[var(--color-lime)] transition-colors no-underline">
+    <span class="text-[20px]">👥</span>
+    <span class="text-[10px] font-medium">Clientes</span>
+  </a>
+  <a href="/relatorio" class="flex flex-col items-center gap-1 text-[var(--color-panel-secondary)] hover:text-[var(--color-panel-text)] transition-colors no-underline">
+    <span class="text-[20px]">📊</span>
+    <span class="text-[10px] font-medium">Relatórios</span>
+  </a>
+  <a href="/configuracoes" class="flex flex-col items-center gap-1 text-[var(--color-panel-secondary)] hover:text-[var(--color-panel-text)] transition-colors no-underline">
+    <span class="text-[20px]">⚙️</span>
+    <span class="text-[10px] font-medium">Config</span>
+  </a>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+  // ── PROTEÇÃO DE ROTA ─────────────────────────────────────────────────────
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) { window.location.href = '/auth'; }
+  const userId = session.user.id;
+
+  // ── LOGOUT ────────────────────────────────────────────────────────────────
+  window.fazerLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/auth';
+  };
+
+  // ── ESTADO ────────────────────────────────────────────────────────────────
+  let todosClientes = [];
+  let clientesFiltrados = [];
+  let filtroAtivo = 'todos';
+  let sortCol = 'ultima_visita';
+  let sortAsc = false;
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  async function init() {
+    const { data: prestador } = await supabase
+      .from('prestadores')
+      .select('nome, plano, trial_ends_at')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const nome = prestador?.nome || session.user.user_metadata?.nome_completo || 'P';
+    const plano = prestador?.plano || 'free';
+
+    // Avatar
+    const avEl = document.getElementById('avatar-initials');
+    const userMenuNameEl = document.getElementById('user-menu-name');
+    const badgeEl = document.getElementById('badge-pro-topbar');
+    if (avEl) avEl.textContent = nome[0].toUpperCase();
+    if (userMenuNameEl) userMenuNameEl.textContent = nome;
+
+    // Verifica se está em trial
+    let isTrial = false;
+    let trialDaysRemaining = 0;
+    if (prestador?.trial_ends_at) {
+      const trialEnd = new Date(prestador.trial_ends_at);
+      const now = new Date();
+      if (trialEnd > now) {
+        isTrial = true;
+        trialDaysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       }
-      return CORES[Math.abs(hash) % CORES.length];
     }
 
-    // Badge de frequência
-    function freqBadge(visitas) {
-      const v = visitas || 0;
-      if (v >= 8) return '<span class="freq-badge-vip text-[10px] font-[600] py-0.5 px-2 rounded-full inline-block">VIP</span>';
-      if (v >= 3) return '<span class="freq-badge-regular text-[10px] font-[600] py-0.5 px-2 rounded-full inline-block">Regular</span>';
-      return '<span class="freq-badge-novo text-[10px] font-[600] py-0.5 px-2 rounded-full inline-block">Novo</span>';
-    }
-
-    // Carregar histórico de forma assíncrona
-    async function carregarHistorico(telefone) {
-      const { data: hist } = await supabase
-        .from('agendamentos')
-        .select('data_hora, status, servicos(nome, preco)')
-        .eq('prestador_id', userId)
-        .eq('cliente_tel', telefone)
-        .order('data_hora', { ascending: false })
-        .limit(10);
-      return hist || [];
-    }
-
-    async function abrirCliente(tel) {
-      const c = todosClientes.find(x => x.telefone === tel);
-      if (!c) return;
-
-      const c2 = cor(c.nome);
-      const ticket = c.total_visitas > 0 ? Math.round((c.total_gasto ?? 0) / c.total_visitas) : 0;
-
-      document.getElementById('drawer-body').innerHTML = `
-        <div class="w-[58px] h-[58px] rounded-full text-[22px] font-[700] flex items-center justify-center mb-3" style="background:${c2}22;color:${c2}">${c.nome[0]}</div>
-        <div class="font-['Fraunces',serif] text-[22px] font-[300] mb-1">${c.nome}</div>
-        <div class="text-[13px] text-[var(--color-muted)] font-['DM_Mono',monospace] mb-1">${c.telefone}</div>
-        <div class="inline-block mt-1">${freqBadge(c.total_visitas)}</div>
-
-        <div class="grid grid-cols-3 gap-2 my-[18px]">
-          <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3 px-2.5 text-center">
-            <div class="font-['Fraunces',serif] text-[20px] font-[300] text-[var(--color-lime)]">${c.total_visitas}</div>
-            <div class="text-[10px] text-[var(--color-muted)] mt-1">visitas</div>
-          </div>
-          <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3 px-2.5 text-center">
-            <div class="font-['Fraunces',serif] text-[16px] font-[300]">R$${ticket}</div>
-            <div class="text-[10px] text-[var(--color-muted)] mt-1">ticket médio</div>
-          </div>
-          <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl py-3 px-2.5 text-center">
-            <div class="font-['Fraunces',serif] text-[16px] font-[300] text-[var(--color-teal)]">R$${(c.total_gasto ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</div>
-            <div class="text-[10px] text-[var(--color-muted)] mt-1">total gasto</div>
-          </div>
-        </div>
-
-        <div class="section-lbl text-[10px] font-[700] uppercase tracking-[.09em] text-[var(--color-faint-dark)] mt-4 mb-2">Histórico</div>
-        <div id="hist-loading" class="text-[13px] text-[var(--color-muted)] py-3">Carregando…</div>
-        <div id="hist-list"></div>
-
-        <div class="section-lbl text-[10px] font-[700] uppercase tracking-[.09em] text-[var(--color-faint-dark)] mt-4 mb-2">Observações</div>
-        <textarea class="obs-area w-full bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg py-2.5 px-3 text-[13px] text-[var(--color-text)] outline-none font-['Syne',sans-serif] resize-y min-h-[72px] transition-[border-color] duration-200 mt-1" id="obs-${tel}" placeholder="Preferências, alergias, observações…">${c.observacoes ?? ''}</textarea>
-        <button class="btn-salvar bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-lime)] rounded-lg py-2 px-4 text-[12px] font-[600] cursor-pointer mt-2 transition-all duration-200 flex items-center gap-1.5 hover:bg-[var(--color-lime-t)]" id="btn-salvar-${tel}"
-          onclick="window._salvarObs('${tel}', this)">💾 Salvar</button>
-
-        <div class="section-lbl text-[10px] font-[700] uppercase tracking-[.09em] text-[var(--color-faint-dark)] mt-4 mb-2">Ações</div>
-        <div class="action-row flex gap-2 flex-wrap mt-4">
-          <button class="btn-action bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg py-2 px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}')">💬 WhatsApp</button>
-          <button class="btn-action bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg py-2 px-3.5 text-[12px] font-[600] cursor-pointer transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="window.location.href='/painel'">📅 Ver na agenda</button>
-        </div>
-      `;
-
-      document.getElementById('overlay').classList.add('open');
-      document.getElementById('drawer').classList.add('open');
-
-      // Carrega histórico de forma assíncrona
-      const hist = await carregarHistorico(tel);
-      const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      const histHtml = hist.length === 0
-        ? '<div class="text-[13px] text-[var(--color-muted)] py-3">Nenhum atendimento ainda.</div>'
-        : hist.map(h => {
-            const dt = new Date(h.data_hora);
-            const dtF = `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}`;
-            const val = Number(h.servicos?.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const statusDot = h.status === 'concluido' ? '🟢' : h.status === 'confirmado' ? '🟡' : '🔴';
-            return `
-              <div class="hist-row flex items-center gap-[10px] py-2.5 border-b border-[var(--color-bord)]">
-                <div class="hist-info flex-1">
-                  <div class="hist-servico text-[13px] font-[500]">${h.servicos?.nome || '—'} ${statusDot}</div>
-                  <div class="hist-data text-[11px] text-[var(--color-muted)] font-['DM_Mono',monospace] mt-1">${dtF}</div>
-                </div>
-                <div class="hist-val font-['DM_Mono',monospace] text-[13px] text-[var(--color-lime-d)]">${val}</div>
-              </div>
-            `;
-          }).join('');
-
-      document.getElementById('hist-loading').style.display = 'none';
-      const listEl = document.getElementById('hist-list');
-      if (listEl) listEl.innerHTML = histHtml;
-    }
-    window.abrirCliente = abrirCliente;
-
-    window.fecharDrawer = function () {
-      document.getElementById('overlay').classList.remove('open');
-      document.getElementById('drawer').classList.remove('open');
-    };
-
-    window._salvarObs = async function (tel, btn) {
-      const obs = document.getElementById(`obs-${tel}`)?.value ?? '';
-      const cliente = todosClientes.find(c => c.telefone === tel);
-      if (!cliente) return;
-
-      btn.classList.add('saving');
-      btn.textContent = 'Salvando…';
-
-      const { error } = await supabase
-        .from('clientes')
-        .upsert({
-          prestador_id: userId,
-          telefone: tel,
-          nome: cliente.nome,
-          observacoes: obs
-        }, { onConflict: 'prestador_id,telefone' });
-
-      btn.classList.remove('saving');
-      btn.textContent = '💾 Salvar';
-
-      if (error) {
-        toast('Erro ao salvar', false);
+    // Atualiza badge
+    if (badgeEl) {
+      if (isTrial) {
+        badgeEl.textContent = trialDaysRemaining === 1 ? 'Trial (1 dia)' : `Trial (${trialDaysRemaining} dias)`;
+        badgeEl.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-amber)] text-[var(--color-amber-ink)]';
       } else {
-        toast('Observação salva!');
-        cliente.observacoes = obs; // cache local
+        badgeEl.textContent = plano === 'pro' ? 'Pro' : 'Grátis';
+        badgeEl.className = plano === 'pro'
+          ? 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-lime)] text-[var(--color-lime-ink)]'
+          : 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-panel-bg3)] text-[var(--color-panel-faint)] border border-[var(--color-panel-border)]';
       }
-    };
+    }
 
-    window.exportarCSV = function () {
-      const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      const header = ['Nome', 'Telefone', 'Visitas', 'Último serviço', 'Última visita', 'Total gasto'];
-      const rows = todosClientes.map(c => {
-        const dt = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
-        const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}` : '';
-        return [c.nome || '', c.telefone || '', c.total_visitas || 0, c.ultimo_servico || '', dtFmt,
-        Number(c.total_gasto || 0).toFixed(2)];
-      });
-      const csv = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'clientes.csv'; a.click();
-      URL.revokeObjectURL(url);
-    };
+    document.getElementById('page-sub').textContent = 'Carregando clientes…';
 
-    await init();
-  </script>
+    // Gate pro (aviso sem bloquear — mostra dados vazios se free)
+    const { data: planoAtivo } = await supabase.rpc('verifica_plano_ativo', { p_prestador_id: userId });
+    if (!planoAtivo) {
+      document.getElementById('page-sub').textContent = 'Disponível no plano Pro';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('crm-gate')?.classList.remove('hidden');
+      return;
+    }
+
+    await carregarClientes();
+
+    // Realtime: atualiza ao concluir agendamentos
+    supabase.channel('ag-clientes')
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'agendamentos',
+        filter: `prestador_id=eq.${userId}`,
+      }, () => carregarClientes())
+      .subscribe();
+  }
+
+  // ── CARREGAR CLIENTES ─────────────────────────────────────────────────────
+  async function carregarClientes() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('tbody').innerHTML = '';
+
+    const { data, error } = await supabase
+      .from('crm_clientes')
+      .select('*')
+      .eq('prestador_id', userId);
+
+    if (error) {
+      console.error('Erro ao carregar clientes:', error);
+      document.getElementById('loading').textContent = 'Erro ao carregar. Tente recarregar.';
+      return;
+    }
+
+    todosClientes = data ?? [];
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('page-sub').textContent = `${todosClientes.length} cliente${todosClientes.length !== 1 ? 's' : ''} no CRM`;
+    document.getElementById('table-info').textContent = `${todosClientes.length} cliente${todosClientes.length !== 1 ? 's' : ''}`;
+
+    atualizarStats();
+    filtrar();
+  }
+
+  // ── STATS CARDS ───────────────────────────────────────────────────────────
+  function atualizarStats() {
+    const total = todosClientes.length;
+    const vips = todosClientes.filter(c => (c.total_visitas || 0) >= 8).length;
+    const recGasto = todosClientes.reduce((s, c) => s + Number(c.total_gasto || 0), 0);
+    const totalVisitas = todosClientes.reduce((s, c) => s + (c.total_visitas || 0), 0);
+    const ticketM = totalVisitas > 0 ? recGasto / totalVisitas : 0;
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('s-total', total);
+    set('s-vip', vips);
+    set('s-ticket', `R$${ticketM.toFixed(0)}`);
+    set('s-receita', `R$${recGasto.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`);
+  }
+
+  // ── FILTRAR E RENDERIZAR ──────────────────────────────────────────────────
+  window.setFiltro = function (filtro, btn) {
+    filtrar(filtro);
+  };
+  window.filtrar = function (filtro) {
+    if (filtro) filtroAtivo = filtro;
+    document.querySelectorAll('.filter-btn').forEach(b =>
+      b.classList.toggle('active', b.id === `f-${filtroAtivo}`));
+
+    const q = document.getElementById('search')?.value.toLowerCase() || '';
+    const agora = new Date();
+    clientesFiltrados = todosClientes.filter(c => {
+      const visitas = c.total_visitas || 0;
+      const ultima = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
+      const diasSemVisita = ultima ? Math.floor((agora - ultima) / (1000 * 60 * 60 * 24)) : 999;
+
+      const passaFiltro =
+        filtroAtivo === 'todos' ? true :
+          filtroAtivo === 'vip' ? visitas >= 8 :
+            filtroAtivo === 'regular' ? visitas >= 3 && visitas < 8 :
+              filtroAtivo === 'novo' ? visitas <= 2 :
+                filtroAtivo === 'sem-visita' ? diasSemVisita > 60 : true;
+      const passaBusca = !q ||
+        (c.nome || '').toLowerCase().includes(q) ||
+        (c.telefone || '').includes(q) ||
+        (c.email || '').toLowerCase().includes(q);
+      return passaFiltro && passaBusca;
+    });
+    ordenar();
+  }
+
+  function filtrar() { window.filtrar(); }
+
+  window.buscar = function () { window.filtrar(); };
+
+  function ordenar() {
+    const col = sortCol;
+    clientesFiltrados.sort((a, b) => {
+      let va = a[col] ?? '', vb = b[col] ?? '';
+      if (col === 'total_gasto' || col === 'total_visitas') { va = Number(va); vb = Number(vb); }
+      if (col === 'ultima_visita' || col === 'ultimo_agendamento') { va = new Date(va || 0); vb = new Date(vb || 0); }
+      return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    renderTabela();
+  }
+
+  window.sortBy = function (col) {
+    if (sortCol === col) sortAsc = !sortAsc;
+    else { sortCol = col; sortAsc = false; }
+    ordenar();
+  };
+
+  // ── RENDER TABELA ─────────────────────────────────────────────────────────
+  function renderTabela() {
+    const tbody = document.getElementById('tbody');
+    if (!tbody) return;
+
+    if (clientesFiltrados.length === 0) {
+      const q = document.getElementById('search')?.value || '';
+      const msg = q
+        ? `Nenhum cliente encontrado para "<strong>${q}</strong>"<br>Tente buscar por nome, telefone ou email.`
+        : 'Nenhum cliente cadastrado.';
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 px-6 text-[var(--color-panel-faint)] text-[14px] leading-relaxed">${msg}</td></tr>`;
+      return;
+    }
+
+    const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const cores = ['#c8f060', '#5DCAA5', '#60a8f0', '#EF9F27', '#b060f0', '#f06048'];
+
+    tbody.innerHTML = clientesFiltrados.map((c, i) => {
+      const dt = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
+      const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]}` : '—';
+      const total = Number(c.total_gasto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const vis = c.total_visitas || 0;
+      const cor = cores[i % cores.length];
+      const ini = (c.nome || '?')[0].toUpperCase();
+
+      return `<tr onclick="abrirCliente('${(c.telefone || '').replace(/'/g, "\\'")}')">
+    <td>
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-semibold text-[13px]" style="background:${cor}22;color:${cor}">${ini}</div>
+        <div>
+          <div class="font-medium text-[13px]">${c.nome || '—'}</div>
+          <div class="text-[11px] text-[var(--color-panel-faint)]">${c.telefone || ''}</div>
+        </div>
+      </div>
+    </td>
+    <td class="text-[12px]">${vis}x</td>
+    <td class="text-[12px] text-[var(--color-panel-faint)]">${c.ultimo_servico || '—'}</td>
+    <td class="text-[12px] text-[var(--color-panel-faint)]">${dtFmt}</td>
+    <td class="font-mono text-[12px]">${total}</td>
+    <td class="text-[12px] text-[var(--color-panel-faint)] max-w-[160px] truncate">${c.observacoes || ''}</td>
+  </tr>`;
+    }).join('');
+  }
+
+  // ── DRAWER DETALHE ────────────────────────────────────────────────────────
+  // Função para gerar cor baseada no nome
+  function cor(nome) {
+    if (!nome) return '#c8f060';
+    const CORES = ['#c8f060', '#5DCAA5', '#60a8f0', '#EF9F27', '#b060f0', '#f06048'];
+    let hash = 0;
+    for (let i = 0; i < nome.length; i++) {
+      hash = nome.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return CORES[Math.abs(hash) % CORES.length];
+  }
+
+  // Badge de frequência
+  function freqBadge(visitas) {
+    const v = visitas || 0;
+    if (v >= 8) return '<span class="freq-badge-vip text-[10px] font-semibold py-1 px-2 rounded-full inline-block">VIP</span>';
+    if (v >= 3) return '<span class="freq-badge-regular text-[10px] font-semibold py-1 px-2 rounded-full inline-block">Regular</span>';
+    return '<span class="freq-badge-novo text-[10px] font-semibold py-1 px-2 rounded-full inline-block">Novo</span>';
+  }
+
+  // Carregar histórico de forma assíncrona
+  async function carregarHistorico(telefone) {
+    const { data: hist } = await supabase
+      .from('agendamentos')
+      .select('data_hora, status, servicos(nome, preco)')
+      .eq('prestador_id', userId)
+      .eq('cliente_tel', telefone)
+      .order('data_hora', { ascending: false })
+      .limit(10);
+    return hist || [];
+  }
+
+  async function abrirCliente(tel) {
+    const c = todosClientes.find(x => x.telefone === tel);
+    if (!c) return;
+
+    const c2 = cor(c.nome);
+    const ticket = c.total_visitas > 0 ? Math.round((c.total_gasto ?? 0) / c.total_visitas) : 0;
+
+    document.getElementById('drawer-body').innerHTML = `
+      <div class="w-[58px] h-[58px] rounded-full text-[22px] font-bold flex items-center justify-center mb-3" style="background:${c2}22;color:${c2}">${c.nome[0]}</div>
+      <div class="font-fraunces text-[22px] font-light mb-1">${c.nome}</div>
+      <div class="text-[13px] text-[var(--color-panel-secondary)] font-mono mb-1">${c.telefone}</div>
+      <div class="inline-block mt-1">${freqBadge(c.total_visitas)}</div>
+
+      <div class="grid grid-cols-3 gap-2 my-5">
+        <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-3 text-center">
+          <div class="font-fraunces text-[20px] font-light text-[var(--color-lime-d)]">${c.total_visitas}</div>
+          <div class="text-[10px] text-[var(--color-panel-secondary)] mt-1">visitas</div>
+        </div>
+        <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-3 text-center">
+          <div class="font-fraunces text-[16px] font-light">R$${ticket}</div>
+          <div class="text-[10px] text-[var(--color-panel-secondary)] mt-1">ticket médio</div>
+        </div>
+        <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-3 text-center">
+          <div class="font-fraunces text-[16px] font-light text-[var(--color-teal)]">R$${(c.total_gasto ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</div>
+          <div class="text-[10px] text-[var(--color-panel-secondary)] mt-1">total gasto</div>
+        </div>
+      </div>
+
+      <div class="section-lbl text-[10px] font-bold uppercase tracking-wider text-[var(--color-panel-secondary)] mt-4 mb-2">Histórico</div>
+      <div id="hist-loading" class="text-[13px] text-[var(--color-panel-secondary)] py-3">Carregando…</div>
+      <div id="hist-list"></div>
+
+      <div class="section-lbl text-[10px] font-bold uppercase tracking-wider text-[var(--color-panel-secondary)] mt-4 mb-2">Observações</div>
+      <textarea class="obs-area w-full bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg p-2.5 text-[13px] text-[var(--color-panel-text)] outline-none font-sans resize-y min-h-[72px] transition-[border-color] duration-200 mt-1" id="obs-${tel}" placeholder="Preferências, alergias, observações…">${c.observacoes ?? ''}</textarea>
+      <button class="btn-salvar bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-lime)] rounded-lg p-2 px-4 text-[12px] font-semibold cursor-pointer mt-2 transition-all duration-200 flex items-center gap-1.5 hover:bg-[var(--color-lime-t)]" id="btn-salvar-${tel}"
+        onclick="window._salvarObs('${tel}', this)">💾 Salvar</button>
+
+      <div class="section-lbl text-[10px] font-bold uppercase tracking-wider text-[var(--color-panel-secondary)] mt-4 mb-2">Ações</div>
+      <div class="action-row flex gap-2 flex-wrap mt-4">
+        <button class="btn-action bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-secondary)] rounded-lg p-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}')">💬 WhatsApp</button>
+        <button class="btn-action bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-secondary)] rounded-lg p-2 px-3.5 text-[12px] font-semibold cursor-pointer transition-all duration-200 hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="window.location.href='/painel'">📅 Ver na agenda</button>
+      </div>
+    `;
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+
+    // Carrega histórico de forma assíncrona
+    const hist = await carregarHistorico(tel);
+    const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const histHtml = hist.length === 0
+      ? '<div class="text-[13px] text-[var(--color-panel-secondary)] py-3">Nenhum atendimento ainda.</div>'
+      : hist.map(h => {
+          const dt = new Date(h.data_hora);
+          const dtF = `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}`;
+          const val = Number(h.servicos?.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          const statusDot = h.status === 'concluido' ? '🟢' : h.status === 'confirmado' ? '🟡' : '🔴';
+          return `
+            <div class="hist-row flex items-center gap-2.5 py-2.5 border-b border-[var(--color-panel-border)]">
+              <div class="hist-info flex-1">
+                <div class="hist-servico text-[13px] font-medium">${h.servicos?.nome || '—'} ${statusDot}</div>
+                <div class="hist-data text-[11px] text-[var(--color-panel-secondary)] font-mono mt-1">${dtF}</div>
+              </div>
+              <div class="hist-val font-mono text-[13px] text-[var(--color-lime-d)]">${val}</div>
+            </div>
+          `;
+        }).join('');
+
+    document.getElementById('hist-loading').style.display = 'none';
+    const listEl = document.getElementById('hist-list');
+    if (listEl) listEl.innerHTML = histHtml;
+  }
+  window.abrirCliente = abrirCliente;
+
+  window.fecharDrawer = function () {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+  };
+
+  window._salvarObs = async function (tel, btn) {
+    const obs = document.getElementById(`obs-${tel}`)?.value ?? '';
+    const cliente = todosClientes.find(c => c.telefone === tel);
+    if (!cliente) return;
+
+    btn.classList.add('saving');
+    btn.textContent = 'Salvando…';
+
+    const { error } = await supabase
+      .from('clientes')
+      .upsert({
+        prestador_id: userId,
+        telefone: tel,
+        nome: cliente.nome,
+        observacoes: obs
+      }, { onConflict: 'prestador_id,telefone' });
+
+    btn.classList.remove('saving');
+    btn.textContent = '💾 Salvar';
+
+    if (error) {
+      toast('Erro ao salvar', false);
+    } else {
+      toast('Observação salva!');
+      cliente.observacoes = obs; // cache local
+    }
+  };
+
+  window.exportarCSV = function () {
+    const MESES_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const header = ['Nome', 'Telefone', 'Visitas', 'Último serviço', 'Última visita', 'Total gasto'];
+    const rows = todosClientes.map(c => {
+      const dt = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
+      const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}` : '';
+      return [c.nome || '', c.telefone || '', c.total_visitas || 0, c.ultimo_servico || '', dtFmt,
+      Number(c.total_gasto || 0).toFixed(2)];
+    });
+    const csv = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'clientes.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  await init();
+</script>
 </body>
-
 </html>

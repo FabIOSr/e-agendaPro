@@ -10,9 +10,10 @@ Este documento detalha o plano de implementação gradual do novo layout baseado
 - ✅ FOUC prevention implementado
 - ✅ FASE 0 (Infraestrutura) **COMPLETA**
 - ✅ FASE 1 (painel.html) **COMPLETA** com correções pós-migração
-- ⏳ FASE 2-6: PENDENTE
+- ✅ FASE 2 (clientes.html) **COMPLETA** com correções de acessibilidade
+- ⏳ FASE 3-6: PENDENTE
 
-**Última revisão:** 16/04/2026 — FASE 1 concluída com sucesso! `painel.html` migrado para novo layout unificado.
+**Última revisão:** 17/04/2026 — FASE 2 concluída! `clientes.html` migrado para novo layout unificado com melhorias de acessibilidade e bottom nav mobile.
 
 ---
 
@@ -364,7 +365,7 @@ Após a migração inicial, foram identificadas e corrigidas as seguintes quest�
 
 ---
 
-## 👥 FASE 2: clientes.html
+## 👥 FASE 2: clientes.html ✅ **COMPLETA**
 
 ### Análise da Página Atual (LEITO)
 
@@ -430,60 +431,48 @@ Após a migração inicial, foram identificadas e corrigidas as seguintes quest�
    - Carrega histórico de agendamentos assíncrono
    - Gera cor baseada no nome do cliente
 
-### Plano de Migração
+### ✅ Implementação Realizada (17/04/2026)
 
-#### Passo 1: Preparação (30 min)
-- [ ] Backup do `clientes.html`
-- [ ] Mapear variáveis CSS antigas → novas
+**Status:** COMPLETA com melhorias de acessibilidade
 
-#### Passo 2: Aplicar App Shell (1 hora)
-- [ ] Substituir topbar por topbar unificada
-- [ ] Adicionar sidebar colapsável (sem widgets — apenas navegação)
-- [ ] Adicionar bottom nav mobile
+#### O que foi feito:
 
-#### Passo 3: Adaptar Filtros (30 min)
-- [ ] Mover para abaixo do page header
-- [ ] Testar responsividade (search + botões em wrap)
+1. **App Shell Aplicado:**
+   - ✅ Topbar unificada com toggle sidebar
+   - ✅ Sidebar colapsável (sem widgets - apenas navegação)
+   - ✅ Bottom nav mobile fixo
+   - ✅ FOUC prevention script
 
-#### Passo 4: Adaptar Stats Grid (1 hora)
-- [ ] Converter cores `--color-lime` → `rgb(var(--color-lime))`
-- [ ] Usar KPI cards do design system (mesmo estilo que painel)
-- [ ] Manter lógica de cálculo existente
+2. **Variáveis CSS Migradas:**
+   - ✅ `--color-bg-dark*` → `--color-panel-bg*`
+   - ✅ `--color-bord*` → `--color-panel-border*`
+   - ✅ `--color-faint-dark` → `--color-panel-faint`
+   - ✅ Nova variável `--color-panel-secondary` para melhor legibilidade
 
-```html
-<!-- ANTES -->
-<div class="stat-val lime" style="color: var(--color-lime)">247</div>
+3. **Badge Mobile:**
+   - ✅ Hidden em mobile (< 768px) para evitar encavalamento
+   - ✅ Mostra status do plano (Pro/Grátis/Trial)
 
-<!-- DEPOIS -->
-<div class="kpi-value" style="color: rgb(var(--color-lime))">247</div>
-```
+4. **Drawer Z-Index:**
+   - ✅ Ajustado para `z-[200]` (acima de sidebar/topbar)
+   - ✅ Full-width em mobile (< 770px)
 
-#### Passo 5: Adaptar Tabela (30 min)
-- [ ] Ajustar background `--color-bg-dark3` → `rgb(var(--bg-tertiary))`
-- [ ] Ajustar bordas
-- [ ] Testar hover states
+5. **Correções de Acessibilidade:**
+   - ✅ Dark mode: Textos secundários mais legíveis (`--color-panel-secondary`)
+   - ✅ Light mode: Cores lime mais escuras (`--color-lime-d`) para melhor contraste
+   - ✅ Filtros: Botão ativo com cor mais visível
+   - ✅ `table-info`: Atualizado dinamicamente com contagem de clientes
 
-#### Passo 6: Testar Drawer com Nova Sidebar (1 hora)
-**⚠️ PEGADINHA:** O drawer tem `z-[101]` e a nova sidebar tem `z-[90]`. Quando sidebar está expandida, o drawer pode sobrepor incorretamente.
-- [ ] Ajustar z-index do drawer para `z-[200]` (acima de tudo)
-- [ ] Testar drawer com sidebar expandida
-- [ ] Testar drawer com sidebar colapsada
-- [ ] Testar drawer em mobile (full-width)
+6. **Funcionalidades Mantidas:**
+   - ✅ Filtros (Todos, VIP, Regular, Novos, Sem visita)
+   - ✅ Sort por colunas (Visitas, Última visita, Total gasto)
+   - ✅ Export CSV
+   - ✅ Gate Pro (trial/plano)
+   - ✅ Realtime updates
+   - ✅ CRUD completo (observações)
 
-#### Passo 7: Testes (1 hora)
-- [ ] CRUD funcionando
-- [ ] Filtros funcionando (todos, VIP, regular, novos, sem visita)
-- [ ] Sort por colunas funcionando
-- [ ] Export CSV funcionando
-- [ ] Search em tempo real
-- [ ] Drawer abrindo/fechando
-- [ ] Mobile: lista scrollável
-- [ ] Dark mode: cores corretas
-
-**Tempo Estimado:** 6 horas (revisado de 5h — drawer z-index precisa de cuidado extra)
-**Risco:** Médio
-
-**Commit:** `feat(clientes): migrar clientes.html para novo layout unificado`
+**Backup:** `pages/clientes.html.backup`
+**Tempo Real:** ~4 horas
 
 ---
 
