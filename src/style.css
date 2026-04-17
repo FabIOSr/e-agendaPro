@@ -10,6 +10,82 @@ html, body { margin: 0; padding: 0; }
 /* Escaneia todos os HTMLs para gerar as classes utility */
 @source "../pages/**/*.html";
 
+/* ── Landing-page vars (compatibilidade com CSS inline existente) ── */
+@theme {
+  --font-syne: "Syne", sans-serif;
+  --font-fraunces: "Fraunces", serif;
+  --font-dm-sans: "DM Sans", sans-serif;
+
+  --color-ink: #0e0d0a;
+  --color-paper: #f5f2eb;
+  --color-paper2: #ede9df;
+  --color-paper3: #e4dfd2;
+  --color-cream: #faf8f3;
+  --color-lime: #c8f060;
+  --color-lime-d: #8ab830;
+  --color-lime-ink: #1a2a08;
+  --color-rust: #c84830;
+  --color-rust-dark: #f06048;
+  --color-gold: #d4a820;
+  --color-muted: #6b6860;
+  --color-faint: #a8a49a;
+  --color-border: #d8d4c8;
+
+  /* Dark theme (auth.html) */
+  --color-bg: #0e0d0a;
+  --color-bg2: #181714;
+  --color-bg3: #222018;
+  --color-border-dark: #2e2b24;
+  --color-border2: #3e3b32;
+  --color-text: #f0ede6;
+  --color-lime-t: rgba(200,240,96,.12);
+  --color-lime-l: #1a2a08;
+  --color-rust: #f06048;
+  --color-rust-t: rgba(240,96,72,.12);
+
+  /* Light theme (onboarding.html) */
+  --color-bg-light: #f5f2eb;
+  --color-bg-light2: #ede9df;
+  --color-bg-light3: #e4dfd2;
+  --color-cream: #faf8f3;
+  --color-border-light: #d8d4c8;
+  --color-border-light2: #c4c0b4;
+  --color-ink: #0e0d0a;
+  --color-lime-l-light: #eef6d8;
+  --color-rust-light: #c84830;
+  --color-rust-l: #fdf0ed;
+
+  /* Dark theme (painel.html, clientes.html, relatorio.html) */
+  --color-bg-dark: #0e0d0a;
+  --color-bg-dark2: #141310;
+  --color-bg-dark3: #1c1a16;
+  --color-bg-dark4: #242118;
+  --color-bord: #2a2724;
+  --color-bord2: #383430;
+  --color-text: #f0ede6;
+  --color-teal: #5DCAA5;
+  --color-teal-t: rgba(93,202,165,.1);
+  --color-amber: #EF9F27;
+  --color-amber-t: rgba(239,159,39,.12);
+  --color-lime-t: rgba(200,240,96,.1);
+  --color-rust-t: rgba(240,96,72,.1);
+  --color-faint-dark: #3e3c36;
+
+  /* Painel-specific (agenda grid, sidebar, modal) */
+  --color-panel-bg: #0f0f0f;
+  --color-panel-bg2: #181818;
+  --color-panel-bg3: #222222;
+  --color-panel-border: #2e2e2e;
+  --color-panel-border2: #3a3a3a;
+  --color-panel-faint: #444;
+  --color-panel-accent: #c8f060;
+  --color-panel-accent2: #7dd3a8;
+  --color-panel-warn: #f0a060;
+  --color-panel-danger: #f06060;
+  --color-panel-blue: #60b0f0;
+  --color-panel-purple: #b060f0;
+}
+
 /* ── [x-cloak] para Alpine.js ── */
 [x-cloak] { display: none !important; }
 
@@ -19,7 +95,6 @@ html {
   scroll-padding-top: 70px;
 }
 
-/* ── Novo Layout: Importar CSS em ordem correta ── */
+/* ── Novo Layout: Importar CSS do design system e layout ── */
 @import "./css/design-system.css";
 @import "./css/layout.css";
-@import "./css/components.css";

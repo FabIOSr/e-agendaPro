@@ -1,48 +1,48 @@
 /* ============================================
-   AGENDAPRO DESIGN SYSTEM v3.0
+   AGENDAPRO DESIGN SYSTEM v2.0
    src/css/design-system.css
 
-   Sistema de cores RGB para compatibilidade com código existente
-   Usa cores NATIVAS do Tailwind quando possível
+   Tokens RGB para uso com Tailwind CSS v4
+   Formato: rgb(var(--variable)) requer valores separados por espaço
    ============================================ */
 
 :root {
   /* ==========================================
-     LIGHT THEME (RGB values para rgb(var()))
+     LIGHT THEME (padrão)
      ========================================== */
 
   /* Backgrounds */
-  --bg-primary: 245, 242, 235;      /* #f5f2eb - stone-100 */
-  --bg-secondary: 237, 233, 223;    /* #ede9df - stone-200 */
-  --bg-tertiary: 229, 225, 215;     /* #e5e1d7 - stone-300 */
-  --bg-elevated: 255, 255, 255;     /* #ffffff - white */
+  --bg-primary: 245, 242, 235;      /* #f5f2eb - Background principal */
+  --bg-secondary: 237, 233, 223;    /* #ede9df - Background secundário */
+  --bg-tertiary: 229, 225, 215;     /* #e5e1d7 - Background terciário */
+  --bg-elevated: 255, 255, 255;     /* #ffffff - Background elevado */
 
   /* Bordas */
-  --color-bord: 216, 212, 200;      /* #d8d4c8 - stone-200 */
-  --color-bord2: 196, 192, 180;     /* #c4c0b4 - stone-300 */
+  --color-bord: 216, 212, 200;      /* #d8d4c8 - Bordas padrão */
+  --color-bord2: 196, 192, 180;     /* #c4c0b4 - Bordas hover */
 
   /* Texto */
-  --color-text: 14, 13, 10;         /* #0e0d0a - stone-950 */
-  --color-faint: 138, 135, 120;     /* #8a8778 - stone-500 */
+  --color-text: 14, 13, 10;         /* #0e0d0a - Texto principal */
+  --color-faint: 138, 135, 120;     /* #8a8778 - Texto secundário */
 
   /* Cores de Destaque (mesmas para light/dark) */
-  --color-lime: 200, 240, 96;       /* #c8f060 - lime-400 */
-  --color-lime-d: 138, 184, 48;     /* #8ab830 - lime-600 */
-  --color-lime-ink: 26, 42, 8;      /* #1a2a08 - lime-950 */
-  --color-lime-t: 200, 240, 96, 0.1; /* Tint lime */
+  --color-lime: 200, 240, 96;       /* #c8f060 - Destaque principal */
+  --color-lime-d: 138, 184, 48;     /* #8ab830 - Destaque escuro */
+  --color-lime-ink: 26, 42, 8;      /* #1a2a08 - Texto sobre lime (Contraste 11:1) */
+  --color-lime-t: 200, 240, 96, 0.1; /* Tint lime para backgrounds suaves */
 
-  --color-teal: 93, 202, 165;       /* #5DCAA5 - teal-400 */
-  --color-teal-ink: 10, 40, 30;     /* teal-950 */
+  --color-teal: 93, 202, 165;       /* #5DCAA5 - Secundária */
+  --color-teal-ink: 10, 40, 30;     /* Texto sobre teal */
+  
+  --color-amber: 239, 159, 39;      /* #EF9F27 - Alertas */
+  --color-amber-ink: 60, 40, 10;    /* Texto sobre amber */
+  
+  --color-rust: 200, 72, 48;        /* #c84830 - Erro/cancelado */
+  --color-rust-ink: 255, 255, 255;  /* Texto sobre rust (Branco tem bom contraste aqui) */
 
-  --color-amber: 239, 159, 39;      /* #EF9F27 - amber-500 */
-  --color-amber-ink: 60, 40, 10;    /* amber-950 */
-
-  --color-rust: 200, 72, 48;        /* #c84830 - custom */
-  --color-rust-ink: 255, 255, 255;  /* white */
-
-  /* Cores de Categorias */
-  --color-purple: 176, 96, 240;     /* #b060f0 - purple-500 */
-  --color-blue: 96, 168, 240;       /* #60a8f0 - sky-400 */
+  /* Cores de Categorias (manter hardcoded) */
+  --color-purple: 176, 96, 240;     /* #b060f0 - Tintura */
+  --color-blue: 96, 168, 240;       /* #60a8f0 - Escova */
 }
 
 /* ==========================================
@@ -51,35 +51,50 @@
 
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg-primary: 14, 13, 10;         /* #0e0d0a - stone-950 */
-  --bg-secondary: 20, 19, 16;       /* #141310 - stone-900 */
-  --bg-tertiary: 28, 26, 22;        /* #1c1a16 - stone-800 */
-  --bg-elevated: 36, 33, 24;        /* #242118 - stone-800 */
+  --bg-primary: 14, 13, 10;         /* #0e0d0a - Background principal */
+  --bg-secondary: 20, 19, 16;       /* #141310 - Background secundário */
+  --bg-tertiary: 28, 26, 22;        /* #1c1a16 - Background terciário */
+  --bg-elevated: 36, 33, 24;        /* #242118 - Background elevado */
 
   /* Bordas */
-  --color-bord: 42, 39, 36;         /* #2a2724 - stone-800 */
-  --color-bord2: 56, 52, 48;        /* #383430 - stone-700 */
+  --color-bord: 42, 39, 36;         /* #2a2724 - Bordas padrão */
+  --color-bord2: 56, 52, 48;        /* #383430 - Bordas hover */
 
   /* Texto */
-  --color-text: 240, 237, 230;      /* #f0ede6 - stone-100 */
-  --color-faint: 62, 60, 54;        /* #3e3c36 - stone-500 */
+  --color-text: 240, 237, 230;      /* #f0ede6 - Texto principal */
+  --color-faint: 62, 60, 54;        /* #3e3c36 - Texto secundário */
 }
 
 /* ==========================================
-   CUSTOMIZAÇÕES ADICIONAIS (@theme do Tailwind)
+   BREAKPOINTS (referência para Tailwind)
    ============================================ */
 
-@theme {
-  /* Rust - Única cor customizada necessária */
-  --color-rust-500: #c84830;
-  --color-rust-600: #a03020;
+/*
+  Tailwind v4 padrão:
+  --bp-xs: 375px
+  --bp-sm: 640px
+  --bp-md: 768px
+  --bp-lg: 1024px
+  --bp-xl: 1280px
+*/
 
-  /* Fontes */
-  --font-syne: "Syne", sans-serif;
-  --font-fraunces: "Fraunces", serif;
-  --font-dm-sans: "DM Sans", sans-serif;
-  --font-dm-mono: "DM Mono", monospace;
-}
+/* ==========================================
+   SPACING (referência para Tailwind)
+   ============================================ */
+
+/*
+  Tailwind v4 padrão:
+  0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 56, 64, 80, 96
+*/
+
+/* ==========================================
+   BORDER RADIUS (referência para Tailwind)
+   ============================================ */
+
+/*
+  Tailwind v4 padrão: rounded-[14px]
+  sm: 8px, md: 12px, lg: 14px, xl: 20px, full: 9999px
+*/
 
 /* ==========================================
    Z-INDEX LAYERS
@@ -92,3 +107,41 @@
   --z-modal: 300;      /* Modais de confirmação */
   --z-toast: 400;      /* Toast notifications */
 }
+
+/* ==========================================
+   TRANSITIONS
+   ============================================ */
+
+/*
+  Tailwind v4 padrão:
+  duration-150: 150ms
+  duration-200: 200ms
+  duration-300: 300ms
+
+  easing: cubic-bezier(0.4, 0, 0.2, 1)
+*/
+
+/* ==========================================
+   TOKEN MAPPING (legado → novo)
+   ============================================ */
+
+/*
+  Variáveis antigas (painel/clientes/relatorio) → Novas:
+
+  --color-panel-bg     → rgb(var(--bg-primary))
+  --color-panel-bg2    → rgb(var(--bg-secondary))
+  --color-panel-bg3    → rgb(var(--bg-tertiary))
+  --color-panel-border → rgb(var(--color-bord))
+  --color-panel-border2→ rgb(var(--color-bord2))
+  --color-panel-faint  → rgb(var(--color-faint))
+  --color-panel-accent → rgb(var(--color-lime))
+  --color-panel-accent2→ rgb(var(--color-lime-d))
+  --color-panel-warn   → rgb(var(--color-amber))
+
+  --color-bg-dark      → rgb(var(--bg-primary)) [dark]
+  --color-bg-dark2     → rgb(var(--bg-secondary)) [dark]
+  --color-bg-dark3     → rgb(var(--bg-tertiary)) [dark]
+
+  --color-lime         → rgb(var(--color-lime))
+  --color-teal         → rgb(var(--color-teal))
+*/
