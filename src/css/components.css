@@ -107,12 +107,6 @@
     @apply border-stone-300 shadow-md;
   }
 
-  /* Dark mode cards */
-  .bg-\[var\(--color-bg-dark3\)],
-  .bg-\[var\(--color-bg-dark4\)] {
-    @apply dark:bg-stone-900;
-  }
-
   /* ==========================================
      BADGES - Sistema unificado
      ========================================== */

@@ -88,3 +88,4 @@ playwright/.cache/
 # Playwright test env (optional)
 .env.test
 *.backup
+.mcp.json
