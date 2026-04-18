@@ -6,8 +6,27 @@
 <script src="/modules/ui-helpers.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgendaPro — Relatórios</title>
+<title>Relatórios — AgendaPro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- ⚡ CRÍTICO: FOUC Prevention - Executa ANTES do carregamento -->
+<script>
+  // Tema - aplicar explicitamente para evitar FOUC
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    // Garantir que o light theme seja aplicado (remove data-theme)
+    document.documentElement.removeAttribute('data-theme');
+  }
+
+  // Sidebar colapsada
+  const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+  if (sidebarCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  }
+</script>
+
 <style>
 @keyframes fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 @keyframes pulse-trial { 0%,100%{opacity:1} 50%{opacity:.85} }
@@ -15,9 +34,9 @@
 /* KPI ::before — barra colorida topo */
 .kpi-bar { position:relative; }
 .kpi-bar::before { content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0; }
-.kpi-bar.lime::before  { background:#c8f060; }
-.kpi-bar.teal::before  { background:#5DCAA5; }
-.kpi-bar.amber::before { background:#EF9F27; }
+.kpi-bar.lime::before  { background:var(--color-lime); }
+.kpi-bar.teal::before  { background:var(--color-teal); }
+.kpi-bar.amber::before { background:var(--color-amber); }
 .kpi-bar.blue::before  { background:#60a8f0; }
 
 /* Panel + Drawer states (JS controlled) */
@@ -31,267 +50,443 @@
 .free-only { display:block; }
 </style>
 </head>
-<body class="bg-[var(--color-bg-dark)] text-[var(--color-text)] font-['Syne',sans-serif] min-h-screen">
+<body class="bg-[var(--color-panel-bg)] text-[var(--color-panel-text)] font-sans min-h-screen">
 
-<!-- TOPBAR -->
-<div class="h-[54px] flex items-center justify-between px-6 border-b border-[var(--color-bord)] sticky top-0 z-[50] bg-[rgba(14,13,10,.9)] backdrop-blur-md">
-  <div class="font-['Fraunces',serif] text-[17px] font-normal flex items-center gap-[7px]">
-    <div class="w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full" style="box-shadow:0 0 8px rgba(200,240,96,.5)"></div>
-    AgendaPro
+<!-- TOPBAR UNIFICADA -->
+<div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">
+  <!-- Topbar Left -->
+  <div class="flex items-center gap-4">
+    <button
+      onclick="toggleSidebar()"
+      id="sidebarToggle"
+      class="hidden p-2 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] transition-all duration-200 md:flex items-center justify-center bg-transparent border-0 cursor-pointer"
+      aria-label="Toggle sidebar"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M3 10h18M3 14h18"/>
+      </svg>
+    </button>
+    <a href="/painel" class="font-fraunces text-[18px] font-normal flex items-center gap-2 no-underline text-[var(--color-panel-text)]">
+      <div class="w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5)"></div>
+      AgendaPro
+    </a>
   </div>
-  <div class="flex items-center gap-2.5">
-    <nav class="flex items-center gap-0.5">
-      <a href="/painel" class="bg-transparent text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-bg-dark3)] hover:text-[var(--color-text)]">📅 Agenda</a>
-      <a href="/clientes" class="bg-transparent text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-bg-dark3)] hover:text-[var(--color-text)]">👥 Clientes</a>
-      <a href="/relatorio" class="bg-[var(--color-bg-dark3)] text-[var(--color-text)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg no-underline flex items-center gap-1.5">📊 Relatórios</a>
-      <a href="/configuracoes" class="bg-transparent text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-bg-dark3)] hover:text-[var(--color-text)]">⚙️ Config</a>
-      <a href="/planos" class="bg-transparent text-[var(--color-muted)] text-[13px] font-medium px-2.5 py-1.5 rounded-lg no-underline flex items-center gap-1.5 transition-colors hover:bg-[var(--color-bg-dark3)] hover:text-[var(--color-text)]">⭐ Plano</a>
+
+  <!-- Topbar Right -->
+  <div class="flex items-center gap-3">
+    <button
+      onclick="toggleTheme()"
+      id="themeToggle"
+      class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+      title="Alternar tema"
+      aria-label="Alternar tema claro/escuro"
+    >
+      🌙
+    </button>
+    <span id="badge-pro-topbar" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-lime)] text-[var(--color-lime-ink)]" style="display:none;">
+      Pro
+    </span>
+    <!-- Avatar com dropdown -->
+    <div class="relative">
+      <div class="w-8 h-8 bg-[var(--color-lime)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-lime-ink)] cursor-pointer hover:scale-105 transition-transform duration-200" id="avatar-initials" title="Meu perfil" onclick="toggleUserMenu()">
+        —
+      </div>
+      <!-- Dropdown menu -->
+      <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg shadow-lg py-1 hidden" style="z-index: 200;">
+        <div class="px-4 py-2 border-b border-[var(--color-panel-border)]">
+          <div class="text-[11px] text-[var(--color-panel-faint)]">Logado como</div>
+          <div class="text-[13px] font-medium text-[var(--color-panel-text)] truncate" id="user-menu-name">Profissional</div>
+        </div>
+        <button onclick="fazerLogout()" class="w-full text-left px-4 py-2 text-[13px] text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg2)] hover:text-[var(--color-panel-text)] transition-colors cursor-pointer border-none bg-transparent">
+          Sair
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Script para dropdown do avatar e layout functions -->
+<script>
+window.toggleUserMenu = function() {
+  const menu = document.getElementById('user-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const avatar = document.getElementById('avatar-initials');
+  if (menu && !menu.classList.contains('hidden') && !avatar?.contains(e.target) && !menu?.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+window.toggleSidebar = function() {
+  const layout = document.getElementById('appLayout');
+  if (!layout) return;
+
+  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
+
+  // Sincronizar data attribute
+  if (isCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  } else {
+    document.documentElement.removeAttribute('data-sidebar-collapsed');
+  }
+
+  // Salvar preferência
+  localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+  // Atualizar ícone
+  const toggle = document.getElementById('sidebarToggle');
+  if (toggle) {
+    toggle.innerHTML = isCollapsed
+      ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
+  }
+};
+
+window.toggleTheme = function() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+
+  // Atualizar ícone
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+
+  // Atualizar cores dos charts se existirem
+  if (typeof updateChartsColors === 'function') {
+    updateChartsColors();
+  }
+};
+
+// Inicializar ícone do theme toggle
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  }
+});
+</script>
+
+<!-- LAYOUT GRID (App Layout) -->
+<div class="app-layout" id="appLayout">
+
+  <!-- SIDEBAR COLAPSÁVEL (apenas navegação, sem widgets) -->
+  <aside id="sidebar" class="bg-[var(--color-panel-bg2)] border-r border-[var(--color-panel-border)] flex flex-col overflow-hidden transition-all duration-300">
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-[var(--color-panel-border)] flex items-center justify-between">
+      <span class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)]">Menu</span>
+      <button onclick="toggleSidebar()" class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="p-3 flex flex-col gap-1">
+      <a href="/painel" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">📅</span>
+        <span class="nav-item-label flex-1">Agenda</span>
+      </a>
+      <a href="/clientes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">👥</span>
+        <span class="nav-item-label flex-1">Clientes</span>
+      </a>
+      <a href="/relatorio" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-text)] bg-[var(--color-panel-bg3)] font-semibold no-underline">
+        <span class="text-[18px] flex-shrink-0">📊</span>
+        <span class="nav-item-label flex-1">Relatórios</span>
+      </a>
+      <a href="/configuracoes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">⚙️</span>
+        <span class="nav-item-label flex-1">Configurações</span>
+      </a>
+      <a href="/planos" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+        <span class="text-[18px] flex-shrink-0">⭐</span>
+        <span class="nav-item-label flex-1">Plano</span>
+      </a>
     </nav>
-    <div class="text-[10px] font-bold tracking-wider uppercase px-2.5 py-[3px] rounded-[20px] bg-[var(--color-lime-t)] text-[var(--color-lime)] border border-[rgba(200,240,96,.2)]" id="badge-plano">Pro</div>
-    <button class="bg-transparent border border-[var(--color-bord)] text-[var(--color-muted)] text-[12px] font-medium px-2.5 py-1 rounded-lg transition-colors hover:border-[var(--color-bord2)] hover:text-[var(--color-text)] font-['DM_Sans',sans-serif]" onclick="fazerLogout()">Sair</button>
-    <div class="w-8 h-8 bg-[var(--color-lime)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-lime-ink)] flex-shrink-0" id="topbar-avatar">—</div>
-  </div>
-</div>
+  </aside>
 
-<!-- TABS -->
-<div class="flex items-center justify-between px-6 pt-5 pb-0 max-w-[1200px] mx-auto [@media(max-width:600px)]:flex-col [@media(max-width:600px)]:gap-3">
-  <div class="flex gap-1">
-    <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-text)] rounded-lg px-4 py-2 text-[13px] font-medium flex items-center gap-1.5 transition-all font-['Syne',sans-serif]" id="tab-receita" onclick="abrirTab('receita')">📈 Receita</button>
-    <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-clientes" onclick="abrirTab('clientes')">👥 Clientes</button>
-    <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-tempo-medio" onclick="abrirTab('tempo-medio')">⏱️ Tempo Médio</button>
-    <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-['Syne',sans-serif]" id="tab-avaliacoes" onclick="abrirTab('avaliacoes')">⭐ Avaliações</button>
-  </div>
-  <div class="flex gap-2">
-    <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)] font-['Syne',sans-serif]" onclick="exportar('csv')" id="btn-export-csv">⬇ CSV</button>
-    <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)] font-['Syne',sans-serif]" onclick="exportar('pdf')" id="btn-export">⬇ PDF</button>
-  </div>
-</div>
+  <!-- MAIN CONTENT -->
+  <main class="main-content p-6 overflow-y-auto">
 
-<!-- CONTEÚDO (oculto para free) -->
-<div id="conteudo-pro">
-<div class="max-w-[1200px] mx-auto px-6 pt-6 pb-20">
-
-  <!-- ══════════ PAINEL RECEITA ══════════ -->
-  <div class="panel-active" id="panel-receita">
-
-    <!-- FILTROS PRO (Pro only) -->
-    <div class="pro-only mb-5">
-      <div class="flex gap-3 items-center flex-wrap">
-        <div class="text-[12px] font-semibold text-[var(--color-muted)] uppercase tracking-wider">Filtros:</div>
-        <select id="filtro-status" onchange="aplicarFiltros()" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg px-3 py-2 text-[13px] text-[var(--color-text)] font-['Syne',sans-serif] cursor-pointer">
-          <option value="">Todos os status</option>
-          <option value="confirmado">Confirmado</option>
-          <option value="concluido">Concluído</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="nao_compareceu">Não compareceu</option>
-        </select>
-        <select id="filtro-servico" onchange="aplicarFiltros()" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg px-3 py-2 text-[13px] text-[var(--color-text)] font-['Syne',sans-serif] cursor-pointer">
-          <option value="">Todos os serviços</option>
-        </select>
-        <button onclick="limparFiltros()" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg px-3 py-2 text-[12px] font-semibold cursor-pointer font-['Syne',sans-serif] hover:text-[var(--color-text)] hover:border-[var(--color-bord2)] transition-colors">✕ Limpar</button>
-      </div>
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="font-fraunces text-[28px] font-light mb-2">Relatórios</h1>
+      <p class="text-[14px] text-[var(--color-panel-faint)]">Analise o desempenho do seu negócio</p>
     </div>
 
-    <!-- KPIs -->
-    <div class="grid grid-cols-4 gap-3 mb-6 [@media(max-width:900px)]:grid-cols-2 [@media(max-width:500px)]:grid-cols-1">
-      <div class="relative bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar lime">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2.5 font-['Syne',sans-serif]">Receita do mês</div>
-        <div class="font-['Fraunces',serif] text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[var(--color-lime)]" id="kpi-mes">R$3.740</div>
-        <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-teal)]" id="kpi-mes-delta">↑ +12% vs mês anterior</div>
-      </div>
-      <div class="relative bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar teal">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2.5 font-['Syne',sans-serif]">Atendimentos</div>
-        <div class="font-['Fraunces',serif] text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[var(--color-teal)]" id="kpi-atend">42</div>
-        <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-teal)]">↑ +5 vs mês anterior</div>
-      </div>
-      <div class="relative bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar amber">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2.5 font-['Syne',sans-serif]">Ticket médio</div>
-        <div class="font-['Fraunces',serif] text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[var(--color-amber)]" id="kpi-ticket">R$89</div>
-        <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-rust)]">↓ -R$3 vs mês anterior</div>
-      </div>
-      <div class="relative bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar blue">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2.5 font-['Syne',sans-serif]">Taxa de ocupação</div>
-        <div class="font-['Fraunces',serif] text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[#60a8f0]" id="kpi-ocup">78%</div>
-        <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-teal)]">↑ +6% vs mês anterior</div>
-      </div>
-    </div>
-
-    <!-- TOP SERVIÇOS (Free) -->
-    <div class="free-only" id="top-servicos-container" style="display:none">
-      <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-muted)] font-['Syne',sans-serif]">Top 3 serviços do mês</h3>
-      <div class="flex flex-col gap-3 mt-6" id="top-servicos-list"></div>
-    </div>
-
-    <!-- CHARTS (Pro only) -->
-    <div class="pro-only grid grid-cols-[2fr_1fr] gap-4 mb-6 [@media(max-width:860px)]:grid-cols-1">
-
-      <!-- receita por mês -->
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-[14px] p-5">
-        <div class="flex items-center justify-between mb-[18px]">
-          <div>
-            <div class="text-[13px] font-semibold text-[var(--color-text)] font-['Syne',sans-serif]">Receita mensal</div>
-            <div class="text-[11px] text-[var(--color-muted)] mt-0.5 font-['Syne',sans-serif]">Últimos 6 meses</div>
-          </div>
-          <div class="flex gap-1 bg-[var(--color-bg-dark2)] rounded-lg p-[3px]">
-            <button class="period-btn-active bg-[var(--color-bg-dark3)] text-[var(--color-text)] rounded-md px-2.5 py-1 text-[11px] font-semibold font-['Syne',sans-serif] cursor-pointer transition-all" onclick="setPeriod(6,this)">6m</button>
-            <button class="bg-transparent rounded-md px-2.5 py-1 text-[11px] font-semibold font-['Syne',sans-serif] text-[var(--color-muted)] cursor-pointer transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)]" onclick="setPeriod(12,this)">12m</button>
-          </div>
-        </div>
-        <div class="relative" style="height:220px"><canvas id="chart-receita-mensal"></canvas></div>
-      </div>
-
-      <!-- por serviço -->
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-[14px] p-5">
-        <div class="flex items-center justify-between mb-[18px]">
-          <div>
-            <div class="text-[13px] font-semibold text-[var(--color-text)] font-['Syne',sans-serif]">Por serviço</div>
-            <div class="text-[11px] text-[var(--color-muted)] mt-0.5 font-['Syne',sans-serif]">Participação na receita</div>
-          </div>
-        </div>
-        <div class="relative" style="height:140px"><canvas id="chart-servicos"></canvas></div>
-        <div class="flex flex-col gap-2 mt-3" id="legend-servicos"></div>
-      </div>
-
-    </div>
-
-    <!-- segundo row charts (Pro only) -->
-    <div class="pro-only grid grid-cols-2 gap-4 mb-6 [@media(max-width:860px)]:grid-cols-1">
-
-      <!-- por dia da semana -->
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-[14px] p-5">
-        <div class="flex items-center justify-between mb-[18px]">
-          <div>
-            <div class="text-[13px] font-semibold text-[var(--color-text)] font-['Syne',sans-serif]">Atendimentos por dia</div>
-            <div class="text-[11px] text-[var(--color-muted)] mt-0.5 font-['Syne',sans-serif]">Média do mês atual</div>
-          </div>
-        </div>
-        <div class="relative" style="height:160px"><canvas id="chart-dias"></canvas></div>
-      </div>
-
-      <!-- horários de pico -->
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-[14px] p-5">
-        <div class="flex items-center justify-between mb-[18px]">
-          <div>
-            <div class="text-[13px] font-semibold text-[var(--color-text)] font-['Syne',sans-serif]">Horários de pico</div>
-            <div class="text-[11px] text-[var(--color-muted)] mt-0.5 font-['Syne',sans-serif]">Atendimentos por hora</div>
-          </div>
-        </div>
-        <div class="relative" style="height:160px"><canvas id="chart-horas"></canvas></div>
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- ══════════ PAINEL TOP CLIENTES ══════════ -->
-  <div class="panel-hidden" id="panel-clientes">
-
-    <div class="flex items-center justify-between py-5 mb-4 [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:items-start [@media(max-width:700px)]:gap-3">
-      <div>
-        <div class="font-['Fraunces',serif] text-[22px] font-light tracking-[-.02em]">🏆 Top 10 Clientes</div>
-        <div class="text-[12px] text-[var(--color-muted)] mt-1 font-['Syne',sans-serif]">Classificação por receita total gerada</div>
-      </div>
-      <a href="/clientes" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-lime)] rounded-lg px-4 py-2 text-[12px] font-semibold no-underline transition-all hover:bg-[var(--color-lime-t)] hover:border-[rgba(200,240,96,.3)] font-['Syne',sans-serif]">Ver todos no CRM →</a>
-    </div>
-
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3 [@media(max-width:700px)]:grid-cols-1" id="top-clients-grid"></div>
-
-  </div>
-
-  <!-- ══════════ PAINEL TEMPO MÉDIO ══════════ -->
-  <div class="panel-hidden" id="panel-tempo-medio">
-
-    <div class="flex items-center justify-between py-5 mb-4 [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:items-start [@media(max-width:700px)]:gap-3">
-      <div>
-        <div class="font-['Fraunces',serif] text-[22px] font-light tracking-[-.02em]">⏱️ Tempo Médio por Serviço</div>
-        <div class="text-[12px] text-[var(--color-muted)] mt-1 font-['Syne',sans-serif]">Compare o tempo configurado com o tempo real de atendimento</div>
-      </div>
-    </div>
-
-    <!-- Cards de análise -->
-    <div id="tempo-medio-grid" class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-      <div class="text-center py-12 col-span-full">
-        <div class="text-[40px] mb-3">⏳</div>
-        <div class="text-[var(--color-muted)] text-[13px]">Carregando análise...</div>
-      </div>
-    </div>
-
-    <!-- Sem dados -->
-    <div id="tempo-medio-empty" class="hidden text-center py-12">
-      <div class="text-[40px] mb-3">📊</div>
-      <div class="text-[var(--color-muted)] text-[13px] mb-2">Nenhum agendamento concluído ainda</div>
-      <div class="text-[var(--color-muted)] text-[11px]">Os dados aparecerão aqui após você completar atendimentos.</div>
-    </div>
-
-  </div>
-
-  <!-- ══════════ PAINEL AVALIAÇÕES ══════════ -->
-  <div class="panel-hidden" id="panel-avaliacoes">
-
-    <div class="flex items-center justify-between py-5 mb-4 [@media(max-width:700px)]:flex-col [@media(max-width:700px)]:items-start [@media(max-width:700px)]:gap-3">
-      <div>
-        <div class="font-['Fraunces',serif] text-[22px] font-light tracking-[-.02em]">⭐ Moderação de Avaliações</div>
-        <div class="text-[12px] text-[var(--color-muted)] mt-1 font-['Syne',sans-serif]">Aprovar ou rejeitar avaliações pendentes</div>
+    <!-- TABS -->
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div class="flex gap-1">
+        <button class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-text)] rounded-lg px-4 py-2 text-[13px] font-medium flex items-center gap-1.5 transition-all" id="tab-receita" onclick="abrirTab('receita')">📈 Receita</button>
+        <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-panel-faint)] flex items-center gap-1.5 transition-all hover:text-[var(--color-panel-text)] hover:bg-[var(--color-panel-bg3)]" id="tab-clientes" onclick="abrirTab('clientes')">👥 Clientes</button>
+        <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-panel-faint)] flex items-center gap-1.5 transition-all hover:text-[var(--color-panel-text)] hover:bg-[var(--color-panel-bg3)]" id="tab-tempo-medio" onclick="abrirTab('tempo-medio')">⏱️ Tempo Médio</button>
+        <button class="bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-panel-faint)] flex items-center gap-1.5 transition-all hover:text-[var(--color-panel-text)] hover:bg-[var(--color-panel-bg3)]" id="tab-avaliacoes" onclick="abrirTab('avaliacoes')">⭐ Avaliações</button>
       </div>
       <div class="flex gap-2">
-        <button class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)] font-['Syne',sans-serif]" onclick="carregarAvaliacoesPendentes()">🔄 Atualizar</button>
+        <button class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-faint)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="exportar('csv')" id="btn-export-csv">⬇ CSV</button>
+        <button class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-faint)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="exportar('pdf')" id="btn-export">⬇ PDF</button>
       </div>
     </div>
 
-    <!-- Estatísticas -->
-    <div class="grid grid-cols-3 gap-3 mb-6">
-      <div class="bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] border border-[var(--color-bord)]">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Pendentes</div>
-        <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-amber)]" id="avaliacoes-pendentes-count">0</div>
-      </div>
-      <div class="bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] border border-[var(--color-bord)]">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Aprovadas</div>
-        <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-teal)]" id="avaliacoes-aprovadas-count">0</div>
-      </div>
-      <div class="bg-[var(--color-bg-dark3)] rounded-[14px] p-[18px_20px] border border-[var(--color-bord)]">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Rejeitadas</div>
-        <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-rust)]" id="avaliacoes-rejeitadas-count">0</div>
-      </div>
-    </div>
+    <!-- CONTEÚDO (oculto para free) -->
+    <div id="conteudo-pro">
 
-    <!-- Analytics -->
-    <div class="mb-6">
-      <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-muted)] font-['Syne',sans-serif]">📊 Desempenho</h3>
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3" id="avaliacoes-analytics">
-        <div class="text-center py-8 col-span-full">
-          <div class="text-[40px] mb-3">⏳</div>
-          <div class="text-[var(--color-muted)] text-[13px]">Carregando analytics...</div>
+      <!-- ══════════ PAINEL RECEITA ══════════ -->
+      <div class="panel-active" id="panel-receita">
+
+        <!-- FILTROS PRO (Pro only) -->
+        <div class="pro-only mb-5">
+          <div class="flex gap-3 items-center flex-wrap">
+            <div class="text-[12px] font-semibold text-[var(--color-panel-faint)] uppercase tracking-wider">Filtros:</div>
+            <select id="filtro-status" onchange="aplicarFiltros()" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg px-3 py-2 text-[13px] text-[var(--color-panel-text)] cursor-pointer">
+              <option value="">Todos os status</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="concluido">Concluído</option>
+              <option value="cancelado">Cancelado</option>
+              <option value="nao_compareceu">Não compareceu</option>
+            </select>
+            <select id="filtro-servico" onchange="aplicarFiltros()" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg px-3 py-2 text-[13px] text-[var(--color-panel-text)] cursor-pointer">
+              <option value="">Todos os serviços</option>
+            </select>
+            <button onclick="limparFiltros()" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-faint)] rounded-lg px-3 py-2 text-[12px] font-semibold cursor-pointer hover:text-[var(--color-panel-text)] hover:border-[var(--color-panel-border2)] transition-colors">✕ Limpar</button>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Lista de avaliações pendentes -->
-    <div id="avaliacoes-pendentes-container">
-      <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-muted)] font-['Syne',sans-serif]">Avaliações Pendentes</h3>
-      <div id="avaliacoes-pendentes-list" class="flex flex-col gap-3">
-        <div class="text-center py-8 col-span-full">
-          <div class="text-[40px] mb-3">⏳</div>
-          <div class="text-[var(--color-muted)] text-[13px]">Carregando...</div>
+        <!-- KPIs -->
+        <div class="grid grid-cols-4 gap-3 mb-6 md:grid-cols-2 lg:grid-cols-4">
+          <div class="relative bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar lime">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2.5">Receita do mês</div>
+            <div class="font-fraunces text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[var(--color-lime-d)]" id="kpi-mes">R$3.740</div>
+            <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-teal)]" id="kpi-mes-delta">↑ +12% vs mês anterior</div>
+          </div>
+          <div class="relative bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar teal">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2.5">Atendimentos</div>
+            <div class="font-fraunces text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[var(--color-teal)]" id="kpi-atend">42</div>
+            <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-teal)]">↑ +5 vs mês anterior</div>
+          </div>
+          <div class="relative bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar amber">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2.5">Ticket médio</div>
+            <div class="font-fraunces text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[var(--color-amber)]" id="kpi-ticket">R$89</div>
+            <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-rust)]">↓ -R$3 vs mês anterior</div>
+          </div>
+          <div class="relative bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] overflow-hidden kpi-bar blue">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2.5">Taxa de ocupação</div>
+            <div class="font-fraunces text-[32px] font-light tracking-[-.02em] leading-none mb-1.5 text-[#60a8f0]" id="kpi-ocup">78%</div>
+            <div class="kpi-delta text-[12px] flex items-center gap-1 pro-only text-[var(--color-teal)]">↑ +6% vs mês anterior</div>
+          </div>
         </div>
+
+        <!-- TOP SERVIÇOS (Free) -->
+        <div class="free-only" id="top-servicos-container" style="display:none">
+          <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-panel-faint)]">Top 3 serviços do mês</h3>
+          <div class="flex flex-col gap-3 mt-6" id="top-servicos-list"></div>
+        </div>
+
+        <!-- CHARTS (Pro only) -->
+        <div class="pro-only grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
+
+          <!-- receita por mês -->
+          <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-5">
+            <div class="flex items-center justify-between mb-[18px]">
+              <div>
+                <div class="text-[13px] font-semibold text-[var(--color-panel-text)]">Receita mensal</div>
+                <div class="text-[11px] text-[var(--color-panel-faint)] mt-0.5">Últimos 6 meses</div>
+              </div>
+              <div class="flex gap-1 bg-[var(--color-panel-bg2)] rounded-lg p-[3px]">
+                <button class="period-btn-active bg-[var(--color-panel-bg3)] text-[var(--color-panel-text)] rounded-md px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-all" onclick="setPeriod(6,this)">6m</button>
+                <button class="bg-transparent rounded-md px-2.5 py-1 text-[11px] font-semibold text-[var(--color-panel-faint)] cursor-pointer transition-all hover:text-[var(--color-panel-text)] hover:bg-[var(--color-panel-bg3)]" onclick="setPeriod(12,this)">12m</button>
+              </div>
+            </div>
+            <div class="relative" style="height:220px"><canvas id="chart-receita-mensal"></canvas></div>
+          </div>
+
+          <!-- por serviço -->
+          <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-5">
+            <div class="flex items-center justify-between mb-[18px]">
+              <div>
+                <div class="text-[13px] font-semibold text-[var(--color-panel-text)]">Por serviço</div>
+                <div class="text-[11px] text-[var(--color-panel-faint)] mt-0.5">Participação na receita</div>
+              </div>
+            </div>
+            <div class="relative" style="height:140px"><canvas id="chart-servicos"></canvas></div>
+            <div class="flex flex-col gap-2 mt-3" id="legend-servicos"></div>
+          </div>
+
+        </div>
+
+        <!-- segundo row charts (Pro only) -->
+        <div class="pro-only grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
+
+          <!-- por dia da semana -->
+          <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-5">
+            <div class="flex items-center justify-between mb-[18px]">
+              <div>
+                <div class="text-[13px] font-semibold text-[var(--color-panel-text)]">Atendimentos por dia</div>
+                <div class="text-[11px] text-[var(--color-panel-faint)] mt-0.5">Média do mês atual</div>
+              </div>
+            </div>
+            <div class="relative" style="height:160px"><canvas id="chart-dias"></canvas></div>
+          </div>
+
+          <!-- horários de pico -->
+          <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-5">
+            <div class="flex items-center justify-between mb-[18px]">
+              <div>
+                <div class="text-[13px] font-semibold text-[var(--color-panel-text)]">Horários de pico</div>
+                <div class="text-[11px] text-[var(--color-panel-faint)] mt-0.5">Atendimentos por hora</div>
+              </div>
+            </div>
+            <div class="relative" style="height:160px"><canvas id="chart-horas"></canvas></div>
+          </div>
+
+        </div>
+
       </div>
-    </div>
 
-    <!-- Sem avaliações pendentes -->
-    <div id="avaliacoes-empty" class="hidden text-center py-12">
-      <div class="text-[40px] mb-3">✨</div>
-      <div class="text-[var(--color-muted)] text-[13px] mb-2">Nenhuma avaliação pendente</div>
-      <div class="text-[var(--color-muted)] text-[11px]">Todas as avaliações foram moderadas.</div>
-    </div>
+      <!-- ══════════ PAINEL TOP CLIENTES ══════════ -->
+      <div class="panel-hidden" id="panel-clientes">
 
-  </div>
+        <div class="flex items-center justify-between py-5 mb-4 md:flex-col md:items-start md:gap-3">
+          <div>
+            <div class="font-fraunces text-[22px] font-light tracking-[-.02em]">🏆 Top 10 Clientes</div>
+            <div class="text-[12px] text-[var(--color-panel-faint)] mt-1">Classificação por receita total gerada</div>
+          </div>
+          <a href="/clientes" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-lime-d)] rounded-lg px-4 py-2 text-[12px] font-semibold no-underline transition-all hover:bg-[var(--color-lime-t)] hover:border-[rgba(200,240,96,.3)]">Ver todos no CRM →</a>
+        </div>
 
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4" id="top-clients-grid"></div>
+
+      </div>
+
+      <!-- ══════════ PAINEL TEMPO MÉDIO ══════════ -->
+      <div class="panel-hidden" id="panel-tempo-medio">
+
+        <div class="flex items-center justify-between py-5 mb-4 md:flex-col md:items-start md:gap-3">
+          <div>
+            <div class="font-fraunces text-[22px] font-light tracking-[-.02em]">⏱️ Tempo Médio por Serviço</div>
+            <div class="text-[12px] text-[var(--color-panel-faint)] mt-1">Compare o tempo configurado com o tempo real de atendimento</div>
+          </div>
+        </div>
+
+        <!-- Cards de análise -->
+        <div id="tempo-medio-grid" class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 md:grid-cols-2 sm:grid-cols-1">
+          <div class="text-center py-12 col-span-full">
+            <div class="text-[40px] mb-3">⏳</div>
+            <div class="text-[var(--color-panel-faint)] text-[13px]">Carregando análise...</div>
+          </div>
+        </div>
+
+        <!-- Sem dados -->
+        <div id="tempo-medio-empty" class="hidden text-center py-12">
+          <div class="text-[40px] mb-3">📊</div>
+          <div class="text-[var(--color-panel-faint)] text-[13px] mb-2">Nenhum agendamento concluído ainda</div>
+          <div class="text-[var(--color-panel-faint)] text-[11px]">Os dados aparecerão aqui após você completar atendimentos.</div>
+        </div>
+
+      </div>
+
+      <!-- ══════════ PAINEL AVALIAÇÕES ══════════ -->
+      <div class="panel-hidden" id="panel-avaliacoes">
+
+        <div class="flex items-center justify-between py-5 mb-4 md:flex-col md:items-start md:gap-3">
+          <div>
+            <div class="font-fraunces text-[22px] font-light tracking-[-.02em]">⭐ Moderação de Avaliações</div>
+            <div class="text-[12px] text-[var(--color-panel-faint)] mt-1">Aprovar ou rejeitar avaliações pendentes</div>
+          </div>
+          <div class="flex gap-2">
+            <button class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-faint)] rounded-lg px-3.5 py-2 text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:border-[var(--color-lime-d)] hover:text-[var(--color-lime)]" onclick="carregarAvaliacoesPendentes()">🔄 Atualizar</button>
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="grid grid-cols-3 gap-3 mb-6 md:grid-cols-3 sm:grid-cols-1">
+          <div class="bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] border border-[var(--color-panel-border)]">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Pendentes</div>
+            <div class="font-fraunces text-[28px] font-light text-[var(--color-amber)]" id="avaliacoes-pendentes-count">0</div>
+          </div>
+          <div class="bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] border border-[var(--color-panel-border)]">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Aprovadas</div>
+            <div class="font-fraunces text-[28px] font-light text-[var(--color-teal)]" id="avaliacoes-aprovadas-count">0</div>
+          </div>
+          <div class="bg-[var(--color-panel-bg3)] rounded-[14px] p-[18px_20px] border border-[var(--color-panel-border)]">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Rejeitadas</div>
+            <div class="font-fraunces text-[28px] font-light text-[var(--color-rust)]" id="avaliacoes-rejeitadas-count">0</div>
+          </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="mb-6">
+          <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-panel-faint)]">📊 Desempenho</h3>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-4 sm:grid-cols-2" id="avaliacoes-analytics">
+            <div class="text-center py-8 col-span-full">
+              <div class="text-[40px] mb-3">⏳</div>
+              <div class="text-[var(--color-panel-faint)] text-[13px]">Carregando analytics...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de avaliações pendentes -->
+        <div id="avaliacoes-pendentes-container">
+          <h3 class="text-[14px] font-semibold mb-4 text-[var(--color-panel-faint)]">Avaliações Pendentes</h3>
+          <div id="avaliacoes-pendentes-list" class="flex flex-col gap-3">
+            <div class="text-center py-8 col-span-full">
+              <div class="text-[40px] mb-3">⏳</div>
+              <div class="text-[var(--color-panel-faint)] text-[13px]">Carregando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sem avaliações pendentes -->
+        <div id="avaliacoes-empty" class="hidden text-center py-12">
+          <div class="text-[40px] mb-3">✨</div>
+          <div class="text-[var(--color-panel-faint)] text-[13px] mb-2">Nenhuma avaliação pendente</div>
+          <div class="text-[var(--color-panel-faint)] text-[11px]">Todas as avaliações foram moderadas.</div>
+        </div>
+
+      </div>
+
+    </div><!-- /conteudo-pro -->
+
+  </main>
+</div><!-- /app-layout -->
+
+<!-- BOTTOM NAV (Mobile Only) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-panel-bg2)] border-t border-[var(--color-panel-border)] flex items-center justify-around py-3 z-[150]">
+  <a href="/painel" class="flex flex-col items-center gap-1 text-[var(--color-panel-faint)] hover:text-[var(--color-panel-text)] transition-colors no-underline">
+    <span class="text-[20px]">📅</span>
+    <span class="text-[10px] font-medium">Agenda</span>
+  </a>
+  <a href="/clientes" class="flex flex-col items-center gap-1 text-[var(--color-panel-faint)] hover:text-[var(--color-panel-text)] transition-colors no-underline">
+    <span class="text-[20px]">👥</span>
+    <span class="text-[10px] font-medium">Clientes</span>
+  </a>
+  <a href="/relatorio" class="flex flex-col items-center gap-1 text-[var(--color-lime)] transition-colors no-underline">
+    <span class="text-[20px]">📊</span>
+    <span class="text-[10px] font-medium">Relatórios</span>
+  </a>
+  <a href="/configuracoes" class="flex flex-col items-center gap-1 text-[var(--color-panel-faint)] hover:text-[var(--color-panel-text)] transition-colors no-underline">
+    <span class="text-[20px]">⚙️</span>
+    <span class="text-[10px] font-medium">Config</span>
+  </a>
 </div>
-</div><!-- /conteudo-pro -->
 
 <!-- DRAWER DE DETALHE DO CLIENTE -->
-<div class="fixed inset-0 bg-black/60 z-[100] hidden" id="drawer-overlay" onclick="fecharDrawer()"></div>
-<div class="fixed top-0 bottom-0 bg-[var(--color-bg-dark2)] border-l border-[var(--color-bord)] z-[101] overflow-y-auto py-7 px-6 pb-20 transition-[right] duration-300 ease-[cubic-bezier(.4,0,.2,1)] [@media(max-width:500px)]:w-full" style="right:-420px;width:400px" id="drawer">
-  <button class="absolute top-5 right-5 bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] text-[var(--color-muted)] w-7 h-7 rounded-md text-[14px] cursor-pointer flex items-center justify-center transition-colors hover:text-[var(--color-text)]" onclick="fecharDrawer()">✕</button>
+<div class="fixed inset-0 bg-black/60 z-[200] hidden" id="drawer-overlay" onclick="fecharDrawer()"></div>
+<div class="fixed top-0 bottom-0 bg-[var(--color-panel-bg2)] border-l border-[var(--color-panel-border)] z-[200] overflow-y-auto py-7 px-6 pb-20 transition-[right] duration-300 ease-[cubic-bezier(.4,0,.2,1)] md:w-full max-w-[420px] md:max-w-[420px]" style="right:-420px;width:400px" id="drawer">
+  <button class="absolute top-5 right-5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] text-[var(--color-panel-faint)] w-7 h-7 rounded-lg text-[14px] cursor-pointer flex items-center justify-center transition-colors hover:text-[var(--color-panel-text)]" onclick="fecharDrawer()">✕</button>
   <div id="drawer-body"></div>
 </div>
 
@@ -325,9 +520,9 @@ let filtroStatus  = null;
 window.setPeriod = function(meses, btn) {
   periodoMeses = meses;
   document.querySelectorAll('.period-btn-active, .period-btn').forEach(b => {
-    b.className = 'bg-transparent rounded-md px-2.5 py-1 text-[11px] font-semibold font-[\'Syne\',sans-serif] text-[var(--color-muted)] cursor-pointer transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)]';
+    b.className = 'bg-transparent rounded-md px-2.5 py-1 text-[11px] font-semibold text-[var(--color-panel-faint)] cursor-pointer transition-all hover:text-[var(--color-panel-text)] hover:bg-[var(--color-panel-bg3)]';
   });
-  btn.className = 'period-btn-active bg-[var(--color-bg-dark3)] text-[var(--color-text)] rounded-md px-2.5 py-1 text-[11px] font-semibold font-[\'Syne\',sans-serif] cursor-pointer transition-all';
+  btn.className = 'period-btn-active bg-[var(--color-panel-bg3)] text-[var(--color-panel-text)] rounded-md px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition-all';
   const subEl = document.querySelector('.chart-sub');
   if (subEl) subEl.textContent = `Últimos ${meses} meses`;
   carregarReceita();
@@ -363,6 +558,74 @@ window.limparFiltros = function() {
   carregarKPIs(); carregarReceita(); carregarServicos(); carregarDistribuicao();
 };
 
+// ── GET CHART COLORS (Adaptável para dark/light) ───────────────────────────
+function getChartColors() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    lime: isDark ? '#c8f060' : '#8ab830',
+    teal: '#5DCAA5',
+    amber: '#EF9F27',
+    blue: '#60a8f0',
+    purple: '#b060f0',
+    rust: '#f06048',
+    grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    text: isDark ? '#f0ede6' : '#0e0d0a',
+    faint: isDark ? '#8a8778' : '#6b6860',
+    bg: isDark ? '#1c1a16' : '#ffffff'
+  };
+}
+
+// Atualizar cores dos charts quando tema muda
+window.updateChartsColors = function() {
+  const colors = getChartColors();
+
+  if (chartReceitaMensal) {
+    chartReceitaMensal.data.datasets[0].borderColor = colors.lime;
+    chartReceitaMensal.data.datasets[0].pointBackgroundColor = colors.lime;
+    const grad = chartReceitaMensal.ctx.createLinearGradient(0,0,0,220);
+    grad.addColorStop(0, isDarkColor(colors.lime, 0.25));
+    grad.addColorStop(1, isDarkColor(colors.lime, 0));
+    chartReceitaMensal.data.datasets[0].backgroundColor = grad;
+    chartReceitaMensal.options.scales.x.grid.color = colors.grid;
+    chartReceitaMensal.options.scales.y.grid.color = colors.grid;
+    chartReceitaMensal.options.scales.x.ticks.color = colors.faint;
+    chartReceitaMensal.options.scales.y.ticks.color = colors.faint;
+    chartReceitaMensal.update();
+  }
+
+  if (chartServicos) {
+    chartServicos.data.datasets[0].borderColor = colors.bg;
+    chartServicos.update();
+  }
+
+  if (chartDias) {
+    chartDias.options.scales.x.ticks.color = colors.faint;
+    chartDias.options.scales.y.grid.color = colors.grid;
+    chartDias.options.scales.y.ticks.color = colors.faint;
+    chartDias.update();
+  }
+
+  if (chartHoras) {
+    chartHoras.options.scales.x.ticks.color = colors.faint;
+    chartHoras.options.scales.y.grid.color = colors.grid;
+    chartHoras.options.scales.y.ticks.color = colors.faint;
+    chartHoras.update();
+  }
+};
+
+function isDarkColor(hex, alpha) {
+  return hex.startsWith('#')
+    ? hexToRgba(hex, alpha)
+    : `rgba(${hex},${alpha})`;
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 async function init() {
   const [{ data: prestador }, { data: planoAtivo }] = await Promise.all([
@@ -371,10 +634,12 @@ async function init() {
   ]);
   const nome = prestador?.nome || session.user.user_metadata?.nome_completo || 'P';
   const isPro = planoAtivo === true;
-  const av = document.getElementById('topbar-avatar');
+  const av = document.getElementById('avatar-initials');
+  const userMenuName = document.getElementById('user-menu-name');
   if (av) av.textContent = nome[0].toUpperCase();
+  if (userMenuName) userMenuName.textContent = nome;
 
-  const badge = document.getElementById('badge-plano');
+  const badge = document.getElementById('badge-pro-topbar');
   if (badge) {
     if (prestador?.trial_ends_at) {
       const trialEnd = new Date(prestador.trial_ends_at);
@@ -382,15 +647,18 @@ async function init() {
       if (trialEnd > now) {
         const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000*60*60*24));
         badge.textContent = daysRemaining === 1 ? 'Trial (1 dia)' : `Trial (${daysRemaining} dias)`;
-        badge.className = 'text-[10px] font-bold tracking-wider uppercase px-2.5 py-[3px] rounded-[20px] bg-[var(--color-amber-t)] text-[var(--color-amber)] border border-[rgba(239,159,39,.3)]';
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-amber)] text-[var(--color-amber-ink)]';
+        badge.style.display = 'inline-flex';
         badge.style.animation = 'pulse-trial 2s ease-in-out infinite';
       } else {
         badge.textContent = isPro ? 'Pro' : 'Grátis';
-        badge.className = `text-[10px] font-bold tracking-wider uppercase px-2.5 py-[3px] rounded-[20px] ${isPro ? 'bg-[var(--color-lime-t)] text-[var(--color-lime)] border border-[rgba(200,240,96,.2)]' : 'bg-[var(--color-bg-dark3)] text-[var(--color-muted)] border border-[var(--color-bord)]'}`;
+        badge.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase ${isPro ? 'bg-[var(--color-lime)] text-[var(--color-lime-ink)]' : 'bg-[var(--color-panel-bg3)] text-[var(--color-panel-faint)] border border-[var(--color-panel-border)]'}`;
+        badge.style.display = 'inline-flex';
       }
     } else {
       badge.textContent = isPro ? 'Pro' : 'Grátis';
-      badge.className = `text-[10px] font-bold tracking-wider uppercase px-2.5 py-[3px] rounded-[20px] ${isPro ? 'bg-[var(--color-lime-t)] text-[var(--color-lime)] border border-[rgba(200,240,96,.2)]' : 'bg-[var(--color-bg-dark3)] text-[var(--color-muted)] border border-[var(--color-bord)]'}`;
+      badge.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase ${isPro ? 'bg-[var(--color-lime)] text-[var(--color-lime-ink)]' : 'bg-[var(--color-panel-bg3)] text-[var(--color-panel-faint)] border border-[var(--color-panel-border)]'}`;
+      badge.style.display = 'inline-flex';
     }
   }
 
@@ -415,11 +683,11 @@ async function init() {
       banner.innerHTML = `
         <div class="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <strong class="text-[14px] text-[var(--color-text)] font-['Syne',sans-serif]">📈 Veja gráficos completos e exporte seus relatórios!</strong>
-            <p class="text-[12px] text-[var(--color-muted)] font-['Syne',sans-serif] mt-1 leading-tight">No plano Pro você tem acesso a gráficos visuais, comparativos mensais e exportação em CSV.</p>
+            <strong class="text-[14px] text-[var(--color-panel-text)]">📈 Veja gráficos completos e exporte seus relatórios!</strong>
+            <p class="text-[12px] text-[var(--color-panel-faint)] mt-1 leading-tight">No plano Pro você tem acesso a gráficos visuais, comparativos mensais e exportação em CSV.</p>
           </div>
           <div>
-            <a href="/planos" class="bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-5 py-2 text-[12px] font-semibold no-underline transition-all hover:bg-[var(--color-lime-d)] font-['Syne',sans-serif]">Ver planos</a>
+            <a href="/planos" class="bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-5 py-2 text-[12px] font-semibold no-underline transition-all hover:bg-[var(--color-lime-d)]">Ver planos</a>
           </div>
         </div>`;
       panel.insertBefore(banner, panel.firstChild);
@@ -431,22 +699,22 @@ async function init() {
       clientesPanel.innerHTML = `
         <div class="flex items-center justify-between py-5 mb-4">
           <div>
-            <div class="font-['Fraunces',serif] text-[22px] font-light tracking-[-.02em]">🏆 Top 10 Clientes</div>
-            <div class="text-[12px] text-[var(--color-muted)] mt-1 font-['Syne',sans-serif]">Classificação por receita total gerada</div>
+            <div class="font-fraunces text-[22px] font-light tracking-[-.02em]">🏆 Top 10 Clientes</div>
+            <div class="text-[12px] text-[var(--color-panel-faint)] mt-1">Classificação por receita total gerada</div>
           </div>
-          <a href="/clientes" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-lime)] rounded-lg px-4 py-2 text-[12px] font-semibold no-underline font-['Syne',sans-serif]">Ver todos no CRM →</a>
+          <a href="/clientes" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-lime-d)] rounded-lg px-4 py-2 text-[12px] font-semibold no-underline">Ver todos no CRM →</a>
         </div>
-        <div class="text-center py-[60px] px-6 text-[var(--color-muted)]">
+        <div class="text-center py-[60px] px-6 text-[var(--color-panel-faint)]">
           <div class="text-[40px] mb-4 opacity-50">🏆</div>
-          <div class="font-['Fraunces',serif] text-[18px] font-light mb-2">Top 10 Clientes por Receita</div>
+          <div class="font-fraunces text-[18px] font-light mb-2">Top 10 Clientes por Receita</div>
           <div class="text-[13px] max-w-[300px] mx-auto">Veja seus melhores clientes classificados por quanto já gastaram com você. Disponível no plano Pro.</div>
-          <button onclick="window.location.href='/planos'" class="mt-5 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-8 py-3.5 text-[15px] font-bold cursor-pointer font-['Syne',sans-serif] transition-colors hover:bg-[#b8e050]">✦ Assinar Pro</button>
+          <button onclick="window.location.href='/planos'" class="mt-5 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-8 py-3.5 text-[15px] font-bold cursor-pointer transition-colors hover:bg-[#b8e050]">✦ Assinar Pro</button>
         </div>`;
     }
 
     const btnPdf = document.getElementById('btn-export');
     const btnCsv = document.getElementById('btn-export-csv');
-    if (btnPdf) { btnPdf.style.opacity = '.3'; btnCsv.style.cursor = 'not-allowed'; }
+    if (btnPdf) { btnPdf.style.opacity = '.3'; btnPdf.style.cursor = 'not-allowed'; }
     if (btnCsv) { btnCsv.style.opacity = '.3'; btnCsv.style.cursor = 'not-allowed'; }
 
     await carregarKPIsFree();
@@ -505,13 +773,13 @@ async function carregarTopServicos() {
   });
   const lista = Object.entries(mapa).map(([nome,d]) => ({nome,...d})).sort((a,b) => b.valor-a.valor).slice(0,3);
   const container = document.getElementById('top-servicos-list');
-  if (lista.length === 0) { container.innerHTML = '<div class="text-center py-12 text-[var(--color-muted)] text-[14px]">Nenhum agendamento este mês</div>'; return; }
+  if (lista.length === 0) { container.innerHTML = '<div class="text-center py-12 text-[var(--color-panel-faint)] text-[14px]">Nenhum agendamento este mês</div>'; return; }
   container.innerHTML = lista.map(s => `
-    <div class="flex items-center justify-between bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
-      <div class="text-[14px] font-medium font-['Syne',sans-serif]">${s.nome}</div>
+    <div class="flex items-center justify-between bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+      <div class="text-[14px] font-medium">${s.nome}</div>
       <div class="flex gap-4 text-[13px]">
-        <span class="text-[var(--color-muted)] font-['Syne',sans-serif]">${s.count} agend</span>
-        <span class="font-['DM_Mono',monospace] text-[var(--color-lime)] font-semibold">${formatMoeda(s.valor)}</span>
+        <span class="text-[var(--color-panel-faint)]">${s.count} agend</span>
+        <span class="font-mono text-[var(--color-lime-d)] font-semibold">${formatMoeda(s.valor)}</span>
       </div>
     </div>`).join('');
 }
@@ -530,10 +798,10 @@ window.abrirTab = function(tab) {
     p.className = 'panel-hidden';
   });
   document.querySelectorAll('#tab-receita,#tab-clientes,#tab-tempo-medio,#tab-avaliacoes').forEach(b => {
-    b.className = 'bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-muted)] flex items-center gap-1.5 transition-all hover:text-[var(--color-text)] hover:bg-[var(--color-bg-dark3)] font-[\'Syne\',sans-serif]';
+    b.className = 'bg-transparent border border-transparent rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--color-panel-faint)] flex items-center gap-1.5 transition-all hover:text-[var(--color-panel-text)] hover:bg-[var(--color-panel-bg3)]';
   });
   document.getElementById('panel-'+tab)?.setAttribute('class', 'panel-active');
-  document.getElementById('tab-'+tab)?.setAttribute('class', 'bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-text)] rounded-lg px-4 py-2 text-[13px] font-medium flex items-center gap-1.5 transition-all font-[\'Syne\',sans-serif]');
+  document.getElementById('tab-'+tab)?.setAttribute('class', 'bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-text)] rounded-lg px-4 py-2 text-[13px] font-medium flex items-center gap-1.5 transition-all');
   const d = tab==='receita' ? '' : 'none';
   const bp = document.getElementById('btn-export');
   const bc = document.getElementById('btn-export-csv');
@@ -618,10 +886,12 @@ async function carregarServicos() {
   (data||[]).forEach(a => { const n = a.servicos?.nome||'Outros'; mapa[n] = (mapa[n]||0)+Number(a.servicos?.preco||0); });
   const ordenado = Object.entries(mapa).sort((a,b) => b[1]-a[1]).slice(0,6);
   const labels = ordenado.map(([n]) => n); const valores = ordenado.map(([,v]) => v);
-  const CORES = ['#c8f060','#5DCAA5','#60a8f0','#EF9F27','#b060f0','#f06048'];
+  const colors = getChartColors();
+  const CORES = [colors.lime, colors.teal, colors.blue, colors.amber, colors.purple, colors.rust];
   if (chartServicos) {
     chartServicos.data.labels = labels; chartServicos.data.datasets[0].data = valores;
     chartServicos.data.datasets[0].backgroundColor = CORES.slice(0, labels.length);
+    chartServicos.data.datasets[0].borderColor = colors.bg;
     chartServicos.update();
   }
   const total = valores.reduce((s,v) => s+v, 0);
@@ -629,11 +899,11 @@ async function carregarServicos() {
   if (lc) {
     lc.innerHTML = ordenado.map(([nome,val],i) => {
       const pct = total>0 ? Math.round(val/total*100) : 0;
-      return `<div class="flex items-center justify-between text-[12px] font-['Syne',sans-serif]">
-        <div class="flex items-center gap-2 text-[var(--color-text)]">
+      return `<div class="flex items-center justify-between text-[12px]">
+        <div class="flex items-center gap-2 text-[var(--color-panel-text)]">
           <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${CORES[i]}"></div>${nome}
         </div>
-        <div class="font-['DM_Mono',monospace] text-[11px]" style="color:${CORES[i]}">R$${val.toLocaleString('pt-BR')} <span class="text-[var(--color-muted)] text-[10px]">${pct}%</span></div>
+        <div class="font-mono text-[11px]" style="color:${CORES[i]}">R$${val.toLocaleString('pt-BR')} <span class="text-[var(--color-panel-faint)] text-[10px]">${pct}%</span></div>
       </div>`;
     }).join('');
   }
@@ -649,41 +919,47 @@ async function carregarDistribuicao() {
   const {data} = await q;
   const porDia = Array(7).fill(0); const porHora = Array(24).fill(0);
   (data||[]).forEach(a => { const dt = new Date(a.data_hora); porDia[dt.getDay()]++; porHora[dt.getHours()]++; });
+  const colors = getChartColors();
   if (chartDias) {
     const maxD = Math.max(...porDia);
     chartDias.data.datasets[0].data = porDia;
-    chartDias.data.datasets[0].backgroundColor = porDia.map(v => v===maxD ? '#c8f060' : 'rgba(200,240,96,.2)');
+    chartDias.data.datasets[0].backgroundColor = porDia.map(v => v===maxD ? colors.lime : hexToRgba(colors.lime, 0.2));
     chartDias.update();
   }
   if (chartHoras) {
     const h8 = porHora.slice(8,20); const maxH = Math.max(...h8);
     chartHoras.data.datasets[0].data = h8;
-    chartHoras.data.datasets[0].backgroundColor = h8.map(v => v===maxH ? '#5DCAA5' : 'rgba(93,202,165,.2)');
+    chartHoras.data.datasets[0].backgroundColor = h8.map(v => v===maxH ? colors.teal : hexToRgba(colors.teal, 0.2));
     chartHoras.update();
   }
 }
 
 // ── CHARTS INIT ───────────────────────────────────────────────────────────
 function initCharts() {
-  Chart.defaults.color = '#8a8778'; Chart.defaults.font.family = "'DM Mono', monospace"; Chart.defaults.font.size = 11;
-  const TT = { backgroundColor:'#1c1a16', borderColor:'#2a2724', borderWidth:1, padding:10, titleColor:'#f0ede6', bodyColor:'#8a8778', titleFont:{family:"'Syne',sans-serif",weight:'600',size:12}, bodyFont:{family:"'DM Mono',sans-serif",size:11} };
+  const colors = getChartColors();
+  Chart.defaults.color = colors.faint;
+  Chart.defaults.font.family = "'DM Mono', monospace";
+  Chart.defaults.font.size = 11;
+  const TT = { backgroundColor:colors.bg, borderColor:colors.grid, borderWidth:1, padding:10, titleColor:colors.text, bodyColor:colors.faint, titleFont:{family:"'Syne',sans-serif",weight:'600',size:12}, bodyFont:{family:"'DM Mono',sans-serif",size:11} };
 
   const ctxRM = document.getElementById('chart-receita-mensal')?.getContext('2d');
   if (ctxRM) {
-    const grad = ctxRM.createLinearGradient(0,0,0,220); grad.addColorStop(0,'rgba(200,240,96,.25)'); grad.addColorStop(1,'rgba(200,240,96,0)');
-    chartReceitaMensal = new Chart(ctxRM, { type:'line', data:{labels:['','','','','',''],datasets:[{data:[0,0,0,0,0,0],borderColor:'#c8f060',backgroundColor:grad,borderWidth:2,pointRadius:4,pointBackgroundColor:'#c8f060',tension:0.35,fill:true}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`R$ ${c.parsed.y.toLocaleString('pt-BR')}`}}},scales:{x:{grid:{color:'#1e1c18'},ticks:{color:'#8a8778'}},y:{grid:{color:'#1e1c18'},ticks:{color:'#8a8778',callback:v=>`R$${(v/1000).toFixed(0)}k`}}}} });
+    const grad = ctxRM.createLinearGradient(0,0,0,220);
+    grad.addColorStop(0, hexToRgba(colors.lime, 0.25));
+    grad.addColorStop(1, hexToRgba(colors.lime, 0));
+    chartReceitaMensal = new Chart(ctxRM, { type:'line', data:{labels:['','','','','',''],datasets:[{data:[0,0,0,0,0,0],borderColor:colors.lime,backgroundColor:grad,borderWidth:2,pointRadius:4,pointBackgroundColor:colors.lime,tension:0.35,fill:true}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>`R$ ${c.parsed.y.toLocaleString('pt-BR')}`}}},scales:{x:{grid:{color:colors.grid},ticks:{color:colors.faint}},y:{grid:{color:colors.grid},ticks:{color:colors.faint,callback:v=>`R$${(v/1000).toFixed(0)}k`}}}} });
   }
   const ctxSV = document.getElementById('chart-servicos')?.getContext('2d');
   if (ctxSV) {
-    chartServicos = new Chart(ctxSV, { type:'doughnut', data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:'#1c1a16',borderWidth:3,hoverOffset:6}]}, options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` R$${c.parsed.toLocaleString('pt-BR')}`}}}} });
+    chartServicos = new Chart(ctxSV, { type:'doughnut', data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:colors.bg,borderWidth:3,hoverOffset:6}]}, options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` R$${c.parsed.toLocaleString('pt-BR')}`}}}} });
   }
   const ctxDD = document.getElementById('chart-dias')?.getContext('2d');
   if (ctxDD) {
-    chartDias = new Chart(ctxDD, { type:'bar', data:{labels:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],datasets:[{data:Array(7).fill(0),backgroundColor:Array(7).fill('rgba(200,240,96,.2)'),borderRadius:5,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{color:'#8a8778'}},y:{grid:{color:'#1e1c18'},ticks:{color:'#8a8778',beginAtZero:true}}}} });
+    chartDias = new Chart(ctxDD, { type:'bar', data:{labels:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],datasets:[{data:Array(7).fill(0),backgroundColor:Array(7).fill(hexToRgba(colors.lime, 0.2)),borderRadius:5,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{color:colors.faint}},y:{grid:{color:colors.grid},ticks:{color:colors.faint,beginAtZero:true}}}} });
   }
   const ctxHH = document.getElementById('chart-horas')?.getContext('2d');
   if (ctxHH) {
-    chartHoras = new Chart(ctxHH, { type:'bar', data:{labels:Array.from({length:12},(_,i)=>`${i+8}h`),datasets:[{data:Array(12).fill(0),backgroundColor:Array(12).fill('rgba(93,202,165,.2)'),borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{color:'#8a8778'}},y:{grid:{color:'#1e1c18'},ticks:{color:'#8a8778',beginAtZero:true}}}} });
+    chartHoras = new Chart(ctxHH, { type:'bar', data:{labels:Array.from({length:12},(_,i)=>`${i+8}h`),datasets:[{data:Array(12).fill(0),backgroundColor:Array(12).fill(hexToRgba(colors.teal, 0.2)),borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{color:colors.faint}},y:{grid:{color:colors.grid},ticks:{color:colors.faint,beginAtZero:true}}}} });
   }
 }
 
@@ -699,7 +975,7 @@ async function carregarTempoMedio() {
   const empty = document.getElementById('tempo-medio-empty');
   if (!grid) return;
 
-  grid.innerHTML = '<div class="text-center py-12 col-span-full"><div class="text-[40px] mb-3">⏳</div><div class="text-[var(--color-muted)] text-[13px]">Carregando análise...</div></div>';
+  grid.innerHTML = '<div class="text-center py-12 col-span-full"><div class="text-[40px] mb-3">⏳</div><div class="text-[var(--color-panel-faint)] text-[13px]">Carregando análise...</div></div>';
 
   const { data, error } = await supabase.rpc('tempo_medio_servicos', {
     p_prestador_id: userId
@@ -707,7 +983,7 @@ async function carregarTempoMedio() {
 
   if (error) {
     console.error('Erro ao carregar tempo médio:', error);
-    grid.innerHTML = '<div class="text-center py-12 col-span-full"><div class="text-[40px] mb-3">⚠️</div><div class="text-[var(--color-muted)] text-[13px]">Erro ao carregar dados</div></div>';
+    grid.innerHTML = '<div class="text-center py-12 col-span-full"><div class="text-[40px] mb-3">⚠️</div><div class="text-[var(--color-panel-faint)] text-[13px]">Erro ao carregar dados</div></div>';
     return;
   }
 
@@ -726,10 +1002,10 @@ async function carregarTempoMedio() {
     const acima = diferenca > 5;
     const colorClass = economiza ? 'border-[rgba(200,240,96,.3)] bg-[rgba(200,240,96,.05)]' :
                         acima ? 'border-[rgba(239,159,39,.3)] bg-[rgba(239,159,39,.05)]' :
-                        'border-[var(--color-bord)] bg-[var(--color-bg-dark3)]';
-    const textColor = economiza ? 'text-[var(--color-lime)]' :
+                        'border-[var(--color-panel-border)] bg-[var(--color-panel-bg3)]';
+    const textColor = economiza ? 'text-[var(--color-lime-d)]' :
                        acima ? 'text-[var(--color-amber)]' :
-                       'text-[var(--color-muted)]';
+                       'text-[var(--color-panel-faint)]';
     const setaIcon = economiza ? '⬇️' : acima ? '⬆️' : '➡️';
     const dica = economiza ? `💡 Dica: Reduza para ${Math.round(s.duracao_media)}min e ganhe mais slots!` :
                acima ? '⚠️ Está levando mais que o configurado' :
@@ -739,34 +1015,34 @@ async function carregarTempoMedio() {
       <div class="relative rounded-xl p-5 border ${colorClass}">
         <div class="flex justify-between items-start mb-3">
           <div>
-            <div class="font-['Fraunces',serif] text-[18px] font-semibold text-[var(--color-text)]">${s.servico_nome}</div>
-            <div class="text-[11px] text-[var(--color-muted)] mt-0.5">${s.total_agendamentos} agendamento${s.total_agendamentos > 1 ? 's' : ''}</div>
+            <div class="font-fraunces text-[18px] font-semibold text-[var(--color-panel-text)]">${s.servico_nome}</div>
+            <div class="text-[11px] text-[var(--color-panel-faint)] mt-0.5">${s.total_agendamentos} agendamento${s.total_agendamentos > 1 ? 's' : ''}</div>
           </div>
         </div>
 
         <div class="flex items-center gap-3 mb-4">
           <div class="text-center">
-            <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-1">Configurado</div>
-            <div class="font-['DM_Mono',monospace] text-[20px] font-semibold text-[var(--color-text)]">${s.duracao_configurada}min</div>
+            <div class="text-[10px] uppercase tracking-wider text-[var(--color-panel-faint)] mb-1">Configurado</div>
+            <div class="font-mono text-[20px] font-semibold text-[var(--color-panel-text)]">${s.duracao_configurada}min</div>
           </div>
-          <div class="text-[20px] text-[var(--color-muted)]">${setaIcon}</div>
+          <div class="text-[20px] text-[var(--color-panel-faint)]">${setaIcon}</div>
           <div class="text-center">
-            <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-1">Média real</div>
-            <div class="font-['DM_Mono',monospace] text-[20px] font-semibold ${textColor}">${Math.round(s.duracao_media)}min</div>
+            <div class="text-[10px] uppercase tracking-wider text-[var(--color-panel-faint)] mb-1">Média real</div>
+            <div class="font-mono text-[20px] font-semibold ${textColor}">${Math.round(s.duracao_media)}min</div>
           </div>
         </div>
 
         ${diferenca !== 0 ? `
-          <div class="flex items-center gap-2 py-2 px-3 rounded-lg ${economiza ? 'bg-[rgba(200,240,96,.1)]' : acima ? 'bg-[rgba(239,159,39,.1)]' : 'bg-[var(--color-bg-dark)]'}">
-            <span class="text-[12px] font-semibold ${economiza ? 'text-[var(--color-lime)]' : acima ? 'text-[var(--color-amber)]' : 'text-[var(--color-muted)]'}">
+          <div class="flex items-center gap-2 py-2 px-3 rounded-lg ${economiza ? 'bg-[rgba(200,240,96,.1)]' : acima ? 'bg-[rgba(239,159,39,.1)]' : 'bg-[var(--color-panel-bg)]'}">
+            <span class="text-[12px] font-semibold ${economiza ? 'text-[var(--color-lime-d)]' : acima ? 'text-[var(--color-amber)]' : 'text-[var(--color-panel-faint)]'}">
               ${diferenca > 0 ? '+' : ''}${diferenca}min
             </span>
           </div>
         ` : ''}
 
         ${dica ? `
-          <div class="mt-3 pt-3 border-t border-[var(--color-bord)]">
-            <div class="text-[11px] text-[var(--color-muted)] leading-relaxed">${dica}</div>
+          <div class="mt-3 pt-3 border-t border-[var(--color-panel-border)]">
+            <div class="text-[11px] text-[var(--color-panel-faint)] leading-relaxed">${dica}</div>
           </div>
         ` : ''}
       </div>
@@ -788,7 +1064,7 @@ window.carregarAvaliacoesPendentes = async function() {
 
   if (!listEl) return;
 
-  listEl.innerHTML = '<div class="text-center py-8 col-span-full"><div class="text-[40px] mb-3">⏳</div><div class="text-[var(--color-muted)] text-[13px]">Carregando...</div></div>';
+  listEl.innerHTML = '<div class="text-center py-8 col-span-full"><div class="text-[40px] mb-3">⏳</div><div class="text-[var(--color-panel-faint)] text-[13px]">Carregando...</div></div>';
 
   // Buscar avaliações pendentes
   const { data: pendentes, error: errPendentes } = await supabase
@@ -810,7 +1086,7 @@ window.carregarAvaliacoesPendentes = async function() {
 
   if (errPendentes) {
     console.error('Erro ao carregar avaliações:', errPendentes);
-    listEl.innerHTML = '<div class="text-center py-8 col-span-full"><div class="text-[40px] mb-3">⚠️</div><div class="text-[var(--color-muted)] text-[13px]">Erro ao carregar</div></div>';
+    listEl.innerHTML = '<div class="text-center py-8 col-span-full"><div class="text-[40px] mb-3">⚠️</div><div class="text-[var(--color-panel-faint)] text-[13px]">Erro ao carregar</div></div>';
     return;
   }
 
@@ -830,21 +1106,21 @@ window.carregarAvaliacoesPendentes = async function() {
     const inicial = av.cliente_nome?.charAt(0) || '?';
 
     return `
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
+      <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-[var(--color-bg-dark4)] rounded-full flex items-center justify-center text-[14px] font-semibold text-[var(--color-muted)]">${inicial}</div>
+            <div class="w-10 h-10 bg-[var(--color-panel-bg-elevated)] rounded-full flex items-center justify-center text-[14px] font-semibold text-[var(--color-panel-faint)]">${inicial}</div>
             <div>
-              <div class="font-semibold text-[14px] text-[var(--color-text)]">${av.cliente_nome || 'Cliente'}</div>
-              <div class="text-[11px] text-[var(--color-muted)]">${dataFmt}</div>
+              <div class="font-semibold text-[14px] text-[var(--color-panel-text)]">${av.cliente_nome || 'Cliente'}</div>
+              <div class="text-[11px] text-[var(--color-panel-faint)]">${dataFmt}</div>
             </div>
           </div>
           <div class="text-[18px] ${corEstrela}">${stars}</div>
         </div>
-        ${av.comentario ? `<div class="text-[13px] text-[var(--color-text)] bg-[var(--color-bg-dark4)] rounded-lg p-3 mb-3 italic">"${av.comentario}"</div>` : '<div class="text-[12px] text-[var(--color-muted)] mb-3">Sem comentário</div>'}
+        ${av.comentario ? `<div class="text-[13px] text-[var(--color-panel-text)] bg-[var(--color-panel-bg-elevated)] rounded-lg p-3 mb-3 italic">"${av.comentario}"</div>` : '<div class="text-[12px] text-[var(--color-panel-faint)] mb-3">Sem comentário</div>'}
         <div class="flex gap-2">
-          <button onclick="moderarAvaliacao('${av.id}', 'aprovar')" class="flex-1 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-0 rounded-lg px-4 py-2 text-[12px] font-semibold cursor-pointer transition-all hover:opacity-90 font-['Syne',sans-serif]">✅ Aprovar</button>
-          <button onclick="moderarAvaliacao('${av.id}', 'rejeitar')" class="flex-1 bg-[var(--color-bg-dark4)] text-[var(--color-rust)] border border-[var(--color-bord)] rounded-lg px-4 py-2 text-[12px] font-semibold cursor-pointer transition-all hover:border-[var(--color-rust)] font-['Syne',sans-serif]">❌ Rejeitar</button>
+          <button onclick="moderarAvaliacao('${av.id}', 'aprovar')" class="flex-1 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-0 rounded-lg px-4 py-2 text-[12px] font-semibold cursor-pointer transition-all hover:opacity-90">✅ Aprovar</button>
+          <button onclick="moderarAvaliacao('${av.id}', 'rejeitar')" class="flex-1 bg-[var(--color-panel-bg-elevated)] text-[var(--color-rust)] border border-[var(--color-panel-border)] rounded-lg px-4 py-2 text-[12px] font-semibold cursor-pointer transition-all hover:border-[var(--color-rust)]">❌ Rejeitar</button>
         </div>
       </div>
     `;
@@ -915,25 +1191,25 @@ async function carregarAnalyticsAvaliacoes() {
 
   // Renderizar cards
   grid.innerHTML = `
-    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
-      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">Avaliações (30d)</div>
-      <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-text)]">${totalAvaliacoes}</div>
-      <div class="text-[11px] text-[var(--color-muted)] mt-1">de ${totalConcluidos} concluídos</div>
+    <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Avaliações (30d)</div>
+      <div class="font-fraunces text-[28px] font-light text-[var(--color-panel-text)]">${totalAvaliacoes}</div>
+      <div class="text-[11px] text-[var(--color-panel-faint)] mt-1">de ${totalConcluidos} concluídos</div>
     </div>
-    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
-      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">Taxa de resposta</div>
-      <div class="font-['Fraunces',serif] text-[28px] font-light ${taxaResposta >= 50 ? 'text-[var(--color-lime)]' : 'text-[var(--color-amber)]'}">${taxaResposta}%</div>
-      <div class="text-[11px] text-[var(--color-muted)] mt-1">${taxaResposta >= 50 ? '👍 Bom' : '📈 Precisa melhorar'}</div>
+    <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Taxa de resposta</div>
+      <div class="font-fraunces text-[28px] font-light ${taxaResposta >= 50 ? 'text-[var(--color-lime-d)]' : 'text-[var(--color-amber)]'}">${taxaResposta}%</div>
+      <div class="text-[11px] text-[var(--color-panel-faint)] mt-1">${taxaResposta >= 50 ? '👍 Bom' : '📈 Precisa melhorar'}</div>
     </div>
-    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
-      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">Nota média</div>
-      <div class="font-['Fraunces',serif] text-[28px] font-light text-[var(--color-teal)]">${media}</div>
-      <div class="text-[11px] text-[var(--color-muted)] mt-1">★ média das avaliações</div>
+    <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Nota média</div>
+      <div class="font-fraunces text-[28px] font-light text-[var(--color-teal)]">${media}</div>
+      <div class="text-[11px] text-[var(--color-panel-faint)] mt-1">★ média das avaliações</div>
     </div>
-    <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4">
-      <div class="text-[10px] uppercase tracking-wider text-[var(--color-muted)] mb-2">NPS</div>
-      <div class="font-['Fraunces',serif] text-[28px] font-light ${nps !== null && nps >= 50 ? 'text-[var(--color-lime)]' : nps !== null ? 'text-[var(--color-amber)]' : 'text-[var(--color-muted)]'}">${nps !== null ? nps : '—'}</div>
-      <div class="text-[11px] text-[var(--color-muted)] mt-1">${nps !== null ? (nps >= 50 ? '🌟 Excelente' : nps >= 0 ? '👍 Bom' : '⚠️ Atenção') : 'aguarde dados'}</div>
+    <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4">
+      <div class="text-[10px] uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">NPS</div>
+      <div class="font-fraunces text-[28px] font-light ${nps !== null && nps >= 50 ? 'text-[var(--color-lime-d)]' : nps !== null ? 'text-[var(--color-amber)]' : 'text-[var(--color-panel-faint)]'}">${nps !== null ? nps : '—'}</div>
+      <div class="text-[11px] text-[var(--color-panel-faint)] mt-1">${nps !== null ? (nps >= 50 ? '🌟 Excelente' : nps >= 0 ? '👍 Bom' : '⚠️ Atenção') : 'aguarde dados'}</div>
     </div>
   `;
 }
@@ -942,14 +1218,15 @@ function renderTopClients(lista) {
   const grid = document.getElementById('top-clients-grid');
   if (!grid) return;
   if (lista.length === 0) {
-    grid.innerHTML = `<div class="text-center py-[60px] px-6 text-[var(--color-muted)] col-span-full">
+    grid.innerHTML = `<div class="text-center py-[60px] px-6 text-[var(--color-panel-faint)] col-span-full">
       <div class="text-[40px] mb-4 opacity-50">👥</div>
-      <div class="font-['Fraunces',serif] text-[18px] font-light mb-2">Nenhum cliente ainda</div>
+      <div class="font-fraunces text-[18px] font-light mb-2">Nenhum cliente ainda</div>
       <div class="text-[13px]">Quando você começar a atender, seus top clientes aparecerão aqui.</div>
     </div>`;
     return;
   }
-  const CORES = ['#c8f060','#5DCAA5','#60a8f0','#EF9F27','#b060f0','#f06048'];
+  const colors = getChartColors();
+  const CORES = [colors.lime, colors.teal, colors.blue, colors.amber, colors.purple, colors.rust];
   const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   grid.innerHTML = lista.map((c,i) => {
     const rank = i+1; const total = Number(c.total_gasto||0);
@@ -958,20 +1235,20 @@ function renderTopClients(lista) {
     const dt = c.ultimo_agendamento ? new Date(c.ultimo_agendamento) : null;
     const dtFmt = dt ? `${dt.getDate()} ${MESES_PT[dt.getMonth()]}` : '—';
     const medalha = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`${rank}.`;
-    const rankCls = rank===1?'text-[#FFD700]':rank===2?'text-[#C0C0C0]':rank===3?'text-[#CD7F32]':'text-[var(--color-muted)] text-[18px]';
-    return `<div class="flex items-center gap-3 bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-4 cursor-pointer transition-all hover:bg-[var(--color-bg-dark4)] hover:border-[var(--color-bord2)] hover:-translate-y-px" onclick="abrirDrawer('${(c.telefone||'').replace(/'/g,"\\'")}','${(c.nome||'').replace(/'/g,"\\'")}')">
+    const rankCls = rank===1?'text-[#FFD700]':rank===2?'text-[#C0C0C0]':rank===3?'text-[#CD7F32]':'text-[var(--color-panel-faint)] text-[18px]';
+    return `<div class="flex items-center gap-3 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-4 cursor-pointer transition-all hover:bg-[var(--tertiary )] hover:border-[var(--color-panel-border2)] hover:-translate-y-px" onclick="abrirDrawer('${(c.telefone||'').replace(/'/g,"\\'")}','${(c.nome||'').replace(/'/g,"\\'")}')">
       <div class="text-[24px] font-bold min-w-[32px] text-center flex-shrink-0 ${rankCls}">${medalha}</div>
       <div class="flex-1 min-w-0">
-        <div class="font-semibold text-[14px] whitespace-nowrap overflow-hidden text-ellipsis font-['Syne',sans-serif]">${c.nome||'—'}</div>
-        <div class="text-[11px] text-[var(--color-muted)] font-['DM_Mono',monospace] mt-0.5">${c.telefone||''}</div>
-        <div class="flex gap-3 mt-2 text-[11px] text-[var(--color-muted)] flex-wrap font-['Syne',sans-serif]">
-          <span><strong class="text-[var(--color-text)] font-semibold">${visitas}</strong> visita${visitas!==1?'s':''}</span>
-          <span>Último: <strong class="text-[var(--color-text)] font-semibold">${dtFmt}</strong></span>
+        <div class="font-semibold text-[14px] whitespace-nowrap overflow-hidden text-ellipsis">${c.nome||'—'}</div>
+        <div class="text-[11px] text-[var(--color-panel-faint)] font-mono mt-0.5">${c.telefone||''}</div>
+        <div class="flex gap-3 mt-2 text-[11px] text-[var(--color-panel-faint)] flex-wrap">
+          <span><strong class="text-[var(--color-panel-text)] font-semibold">${visitas}</strong> visita${visitas!==1?'s':''}</span>
+          <span>Último: <strong class="text-[var(--color-panel-text)] font-semibold">${dtFmt}</strong></span>
         </div>
       </div>
       <div class="text-right flex-shrink-0">
-        <div class="font-['Fraunces',serif] text-[20px] font-normal text-[var(--color-lime)]">${totalFmt}</div>
-        <div class="text-[10px] text-[var(--color-muted)] uppercase tracking-wider mt-0.5 font-['Syne',sans-serif]">Total gasto</div>
+        <div class="font-fraunces text-[20px] font-normal text-[var(--color-lime-d)]">${totalFmt}</div>
+        <div class="text-[10px] text-[var(--color-panel-faint)] uppercase tracking-wider mt-0.5">Total gasto</div>
       </div>
     </div>`;
   }).join('');
@@ -983,10 +1260,11 @@ window.abrirDrawer = async function(tel, nome) {
   document.getElementById('drawer')?.classList.add('drawer-open');
   const body = document.getElementById('drawer-body');
   if (!body) return;
-  body.innerHTML = '<div class="text-[var(--color-muted)] text-[13px] py-5">Carregando histórico…</div>';
+  body.innerHTML = '<div class="text-[var(--color-panel-faint)] text-[13px] py-5">Carregando histórico…</div>';
 
   const cliente = todosClients.find(c => c.telefone === tel);
-  const CORES = ['#c8f060','#5DCAA5','#60a8f0','#EF9F27','#b060f0','#f06048'];
+  const colors = getChartColors();
+  const CORES = [colors.lime, colors.teal, colors.blue, colors.amber, colors.purple, colors.rust];
   const corCliente = cliente?.cor || CORES[Math.floor(Math.random()*CORES.length)];
 
   const {data:hist} = await supabase.from('agendamentos').select('data_hora, servicos(nome, preco)').eq('prestador_id', userId).eq('cliente_tel', tel).in('status',['concluido','confirmado']).order('data_hora',{ascending:false}).limit(10);
@@ -996,11 +1274,11 @@ window.abrirDrawer = async function(tel, nome) {
   const histHtml = (hist||[]).map(h => {
     const dt = new Date(h.data_hora); const dtF = `${dt.getDate()} ${MESES_PT[dt.getMonth()]} ${dt.getFullYear()}`;
     const val = Number(h.servicos?.preco||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-    return `<div class="flex items-center justify-between py-2.5 border-b border-[var(--color-bord)] last:border-b-0">
-      <div><div class="text-[13px] font-medium font-['Syne',sans-serif]">${h.servicos?.nome||'—'}</div><div class="text-[11px] text-[var(--color-muted)] font-['DM_Mono',monospace] mt-0.5">${dtF}</div></div>
-      <div class="font-['DM_Mono',monospace] text-[13px] text-[var(--color-lime-d)]">${val}</div>
+    return `<div class="flex items-center justify-between py-2.5 border-b border-[var(--color-panel-border)] last:border-b-0">
+      <div><div class="text-[13px] font-medium">${h.servicos?.nome||'—'}</div><div class="text-[11px] text-[var(--color-panel-faint)] font-mono mt-0.5">${dtF}</div></div>
+      <div class="font-mono text-[13px] text-[var(--color-lime-d)]">${val}</div>
     </div>`;
-  }).join('') || '<div class="text-[var(--color-muted)] text-[13px] py-2">Nenhum histórico encontrado.</div>';
+  }).join('') || '<div class="text-[var(--color-panel-faint)] text-[13px] py-2">Nenhum histórico encontrado.</div>';
 
   const visitas = cliente?.total_visitas||0;
   const totalGasto = Number(cliente?.total_gasto||0);
@@ -1008,25 +1286,25 @@ window.abrirDrawer = async function(tel, nome) {
 
   body.innerHTML = `
     <div class="w-14 h-14 rounded-full text-[20px] font-bold flex items-center justify-center mb-3.5" style="background:${corCliente}22;color:${corCliente}">${nome[0]?.toUpperCase()||'?'}</div>
-    <div class="font-['Fraunces',serif] text-[22px] font-light mb-1">${nome}</div>
-    <div class="text-[13px] text-[var(--color-muted)] font-['DM_Mono',monospace] mb-5">${tel}</div>
+    <div class="font-fraunces text-[22px] font-light mb-1">${nome}</div>
+    <div class="text-[13px] text-[var(--color-panel-faint)] font-mono mb-5">${tel}</div>
     <div class="grid grid-cols-3 gap-2 mb-5">
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-3 text-center"><div class="font-['Fraunces',serif] text-[20px] font-light">${visitas}</div><div class="text-[10px] text-[var(--color-muted)] uppercase mt-0.5 font-['Syne',sans-serif]">visitas</div></div>
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-3 text-center"><div class="font-['Fraunces',serif] text-[15px] font-light">R$${ticketMedio}</div><div class="text-[10px] text-[var(--color-muted)] uppercase mt-0.5 font-['Syne',sans-serif]">ticket médio</div></div>
-      <div class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-xl p-3 text-center"><div class="font-['Fraunces',serif] text-[15px] font-light text-[var(--color-teal)]">R$${totalGasto.toLocaleString('pt-BR')}</div><div class="text-[10px] text-[var(--color-muted)] uppercase mt-0.5 font-['Syne',sans-serif]">total gasto</div></div>
+      <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-3 text-center"><div class="font-fraunces text-[20px] font-light">${visitas}</div><div class="text-[10px] text-[var(--color-panel-faint)] uppercase mt-0.5">visitas</div></div>
+      <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-3 text-center"><div class="font-fraunces text-[15px] font-light">R$${ticketMedio}</div><div class="text-[10px] text-[var(--color-panel-faint)] uppercase mt-0.5">ticket médio</div></div>
+      <div class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-xl p-3 text-center"><div class="font-fraunces text-[15px] font-light text-[var(--color-teal)]">R$${totalGasto.toLocaleString('pt-BR')}</div><div class="text-[10px] text-[var(--color-panel-faint)] uppercase mt-0.5">total gasto</div></div>
     </div>
 
-    <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 font-['Syne',sans-serif]">Histórico de atendimentos</div>
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2">Histórico de atendimentos</div>
     <div>${histHtml}</div>
 
-    <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 mt-5 font-['Syne',sans-serif]">Observações</div>
-    <textarea class="obs-area w-full min-h-[80px] bg-[var(--color-bg-dark3)] border border-[var(--color-bord)] rounded-lg p-3 text-[13px] text-[var(--color-text)] font-['Syne',sans-serif] resize-y mt-1 transition-colors focus:outline-none focus:border-[var(--color-lime-d)]" id="obs-input" placeholder="Anotações sobre o cliente, preferências, alergias…">${obsData?.observacoes||''}</textarea>
-    <button class="btn-salvar-obs bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-5 py-2.5 text-[12px] font-semibold cursor-pointer font-['Syne',sans-serif] mt-3 transition-colors hover:bg-[var(--color-lime-d)]" onclick="salvarObs('${tel.replace(/'/g,"\\'")}','${nome.replace(/'/g,"\\'")}')">Salvar observação</button>
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2 mt-5">Observações</div>
+    <textarea class="obs-area w-full min-h-[80px] bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg p-3 text-[13px] text-[var(--color-panel-text)] resize-y mt-1 transition-colors focus:outline-none focus:border-[var(--color-lime-d)]" id="obs-input" placeholder="Anotações sobre o cliente, preferências, alergias…">${obsData?.observacoes||''}</textarea>
+    <button class="btn-salvar-obs bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg px-5 py-2.5 text-[12px] font-semibold cursor-pointer mt-3 transition-colors hover:bg-[var(--color-lime-d)]" onclick="salvarObs('${tel.replace(/'/g,"\\'")}','${nome.replace(/'/g,"\\'")}')">Salvar observação</button>
 
-    <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2 mt-5 font-['Syne',sans-serif]">Ações rápidas</div>
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-panel-faint)] mb-2 mt-5">Ações rápidas</div>
     <div class="flex gap-2 flex-wrap">
-      <button onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}')" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-teal)] rounded-lg px-3.5 py-2 text-[12px] font-semibold font-['Syne',sans-serif] cursor-pointer transition-colors hover:bg-[var(--color-teal-t)]">💬 WhatsApp</button>
-      <button onclick="window.location.href='/painel'" class="bg-[var(--color-bg-dark3)] border border-[var(--color-bord2)] text-[var(--color-muted)] rounded-lg px-3.5 py-2 text-[12px] font-semibold font-['Syne',sans-serif] cursor-pointer transition-colors hover:text-[var(--color-text)]">📅 Ver agenda</button>
+      <button onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}')" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-teal)] rounded-lg px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors hover:bg-[var(--color-teal-t)]">💬 WhatsApp</button>
+      <button onclick="window.location.href='/painel'" class="bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-faint)] rounded-lg px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors hover:text-[var(--color-panel-text)]">📅 Ver agenda</button>
     </div>`;
 };
 

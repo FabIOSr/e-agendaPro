@@ -11,9 +11,10 @@ Este documento detalha o plano de implementação gradual do novo layout baseado
 - ✅ FASE 0 (Infraestrutura) **COMPLETA**
 - ✅ FASE 1 (painel.html) **COMPLETA** com correções pós-migração
 - ✅ FASE 2 (clientes.html) **COMPLETA** com correções de acessibilidade
-- ⏳ FASE 3-6: PENDENTE
+- ✅ FASE 3 (relatorio.html) **COMPLETA** com Chart.js dark/light e correções de layout
+- ⏳ FASE 4-6: PENDENTE
 
-**Última revisão:** 17/04/2026 — FASE 2 concluída! `clientes.html` migrado para novo layout unificado com melhorias de acessibilidade e bottom nav mobile.
+**Última revisão:** 17/04/2026 — FASE 3 concluída! `relatorio.html` migrado para novo layout unificado com Chart.js adaptável para dark/light mode, layout responsivo e correções de contraste.
 
 ---
 
@@ -563,14 +564,14 @@ Após a migração inicial, foram identificadas e corrigidas as seguintes quest�
 ### Plano de Migração
 
 #### Passo 1: Preparação (30 min)
-- [ ] Backup do `relatorio.html`
-- [ ] Mapear variáveis CSS antigas → novas
+- [x] Backup do `relatorio.html`
+- [x] Mapear variáveis CSS antigas → novas
 
 #### Passo 2: Padronizar Topbar (1 hora)
 **⚠️ IMPORTANTE:** Esta página tem topbar DIFERENTE — sem date nav, com navegação inline.
-- [ ] Substituir por topbar unificada do protótipo
-- [ ] Mover tabs para o conteúdo principal (abaixo do header)
-- [ ] Remover navegação inline da topbar
+- [x] Substituir por topbar unificada do protótipo
+- [x] Mover tabs para o conteúdo principal (abaixo do header)
+- [x] Remover navegação inline da topbar
 
 ```html
 <!-- ANTES: Topbar com navegação inline -->
@@ -585,9 +586,9 @@ Após a migração inicial, foram identificadas e corrigidas as seguintes quest�
 ```
 
 #### Passo 3: Padronizar KPIs (1 hora)
-- [ ] Converter `::before` de hardcoded → `rgb(var(--color-lime))`
-- [ ] Usar KPI cards do design system (mesmo estilo)
-- [ ] Manter deltas (`↑ +12%`)
+- [x] Converter `::before` de hardcoded → `rgb(var(--color-lime))`
+- [x] Usar KPI cards do design system (mesmo estilo)
+- [x] Manter deltas (`↑ +12%`)
 
 ```css
 /* ANTES */
@@ -598,19 +599,19 @@ Após a migração inicial, foram identificadas e corrigidas as seguintes quest�
 ```
 
 #### Passo 4: Adaptar Tabs System (30 min)
-- [ ] Manter lógica `abrirTab()` existente
-- [ ] Garantir que tabs funcionam com novo layout
+- [x] Manter lógica `abrirTab()` existente
+- [x] Garantir que tabs funcionam com novo layout
 
 #### Passo 5: Adaptar Gráficos Chart.js (2 horas)
 **⚠️ CRÍTICO:** Chart.js usa cores hardcoded que podem não contrastar bem no dark mode.
-- [ ] Mapear cores atuais dos charts:
+- [x] Mapear cores atuais dos charts:
   - Receita: `#c8f060` (lime)
   - Serviços: `['#c8f060', '#5DCAA5', '#EF9F27', '#60a8f0', '#b060f0', '#f06048']`
   - Dias: `#5DCAA5`
   - Horas: `#EF9F27`
-- [ ] Criar função `getChartColors()` que retorna cores corretas para dark/light
-- [ ] Ajustar grid lines, labels, tooltips para dark mode
-- [ ] Testar responsividade (charts em container flexível)
+- [x] Criar função `getChartColors()` que retorna cores corretas para dark/light
+- [x] Ajustar grid lines, labels, tooltips para dark mode
+- [x] Testar responsividade (charts em container flexível)
 
 ```javascript
 function getChartColors() {
@@ -627,23 +628,88 @@ function getChartColors() {
 ```
 
 #### Passo 6: Adaptar Gate Pro (30 min)
-- [ ] Manter classes `pro-only`/`free-only`
-- [ ] Ajustar backgrounds para `rgb(var(--bg-tertiary))`
+- [x] Manter classes `pro-only`/`free-only`
+- [x] Ajustar backgrounds para `rgb(var(--bg-tertiary))`
 
 #### Passo 7: Testes (1.5 horas)
-- [ ] Tabs alternando corretamente
-- [ ] Charts renderizando em dark mode
-- [ ] Charts renderizando em light mode
-- [ ] Charts responsivos (resize)
-- [ ] Filtros funcionando (status, serviço)
-- [ ] Export CSV/PDF funcionando
-- [ ] Gate Pro (free vs pro) funcionando
-- [ ] Mobile: tabs em wrap, charts em coluna
+- [x] Tabs alternando corretamente
+- [x] Charts renderizando em dark mode
+- [x] Charts renderizando em light mode
+- [x] Charts responsivos (resize)
+- [x] Filtros funcionando (status, serviço)
+- [x] Export CSV/PDF funcionando
+- [x] Gate Pro (free vs pro) funcionando
+- [x] Mobile: tabs em wrap, charts em coluna
 
 **Tempo Estimado:** 7 horas (revisado de 5h — Chart.js dark mode requer trabalho extra)
 **Risco:** Médio-Alto (Chart.js + cores)
 
 **Commit:** `feat(relatorio): migrar relatorio.html para novo layout unificado`
+
+---
+
+### ✅ Implementação Realizada (17/04/2026)
+
+**Status:** COMPLETA com melhorias de acessibilidade e layout responsivo
+
+#### O que foi feito:
+
+1. **App Shell Aplicado:**
+   - ✅ Topbar unificada (sem date nav, navegação inline removida)
+   - ✅ Sidebar colapsável (apenas navegação, sem widgets)
+   - ✅ Bottom nav mobile fixo
+   - ✅ FOUC prevention script
+
+2. **Variáveis CSS Migradas:**
+   - ✅ `--color-bg-dark*` → `--color-panel-bg*`
+   - ✅ `--color-bord*` → `--color-panel-border*`
+   - ✅ `--color-muted` → `--color-panel-faint`
+   - ✅ `--color-text` → `--color-panel-text`
+
+3. **Chart.js com Cores Adaptáveis:**
+   - ✅ Função `getChartColors()` que detecta tema e retorna cores apropriadas
+   - ✅ Função `updateChartsColors()` para atualizar gráficos quando tema muda
+   - ✅ Lime claro (`#c8f060`) em dark, lime escuro (`#8ab830`) em light
+   - ✅ Grid lines, tooltips e labels adaptados para dark/light
+
+4. **Layout Responsivo:**
+   - ✅ KPIs: 4 cards em linha (desktop), 2 cards (tablet), 1 card (mobile)
+   - ✅ Charts: Receita mensal + Por serviço (mesma linha), Por dia + Horários (linha abaixo)
+   - ✅ Clientes: Auto-fill com minmax (desktop), 2 cards (tablet), 1 card (mobile)
+   - ✅ Tempo Médio: Auto-fill com minmax (desktop), 2 cards (tablet), 1 card (mobile)
+   - ✅ Avaliações: KPIs em linha (3 cards), Desempenho em grid responsivo
+
+5. **Z-Index Ajustado:**
+   - ✅ Drawer: z-[200] (acima da sidebar)
+   - ✅ Overlay: z-[200]
+   - ✅ Bottom nav: z-[150]
+
+6. **Correções de Contraste (Modo Light):**
+   - ✅ KPI Receita do mês: `--color-lime` → `--color-lime-d`
+   - ✅ Link "Ver todos no CRM →": `--color-lime` → `--color-lime-d`
+   - ✅ Top serviços valores: `--color-lime` → `--color-lime-d`
+   - ✅ Tempo médio economiza: `--color-lime` → `--color-lime-d`
+   - ✅ Delta de tempo: `--color-lime` → `--color-lime-d`
+   - ✅ Total gasto: `--color-lime` → `--color-lime-d`
+   - ✅ Taxa de resposta: `--color-lime` → `--color-lime-d`
+   - ✅ NPS: `--color-lime` → `--color-lime-d`
+
+7. **Funcionalidades Preservadas:**
+   - ✅ Sistema de tabs (4 abas: Receita, Clientes, Tempo Médio, Avaliações)
+   - ✅ KPIs com deltas (Pro)
+   - ✅ 4 gráficos Chart.js (Receita mensal, Por serviço, Por dia, Horários de pico)
+   - ✅ Top 10 clientes com drawer
+   - ✅ Tempo médio por serviço
+   - ✅ Moderação de avaliações
+   - ✅ Gate Pro/Free mantido
+   - ✅ Exportar CSV
+
+#### Arquivos Modificados:
+- `pages/relatorio.html` (1087 → 1365 linhas)
+- `pages/relatorio.html.backup` (backup criado)
+
+#### Próxima FASE:
+`configuracoes.html` (formulários, menor complexidade)
 
 ---
 
