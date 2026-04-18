@@ -12,9 +12,10 @@ Este documento detalha o plano de implementação gradual do novo layout baseado
 - ✅ FASE 1 (painel.html) **COMPLETA** com correções pós-migração
 - ✅ FASE 2 (clientes.html) **COMPLETA** com correções de acessibilidade
 - ✅ FASE 3 (relatorio.html) **COMPLETA** com Chart.js dark/light e correções de layout
-- ⏳ FASE 4-6: PENDENTE
+- ✅ FASE 4 (configuracoes.html) **COMPLETA** com tabs navigation e ajustes mobile
+- ⏳ FASE 5-6: PENDENTE
 
-**Última revisão:** 17/04/2026 — FASE 3 concluída! `relatorio.html` migrado para novo layout unificado com Chart.js adaptável para dark/light mode, layout responsivo e correções de contraste.
+**Última revisão:** 18/04/2026 — FASE 4 concluída! `configuracoes.html` migrado para novo layout unificado com sistema de tabs (8 seções), avatar initials fix, e ajustes responsivos para mobile (serviços sem quebra de linha).
 
 ---
 
@@ -713,49 +714,202 @@ function getChartColors() {
 
 ---
 
-## ⚙️ FASE 4: configuracoes.html
+## ⚙️ FASE 4: configuracoes.html ✅ **COMPLETA**
 
 ### Análise da Página Atual
 
-**Arquivo:** `pages/configuracoes.html`
-**Complexidade:** BAIXA-MÉDIA
-**Risco:** BAIXO (formulários)
-**Benefício:** MÉDIO (usabilidade)
+**Arquivo:** `pages/configuracoes.html` (3500+ linhas)
+**Complexidade:** MÉDIA (8 seções de configuração)
+**Risco:** BAIXO (formulários e CRUD)
+**Benefício:** ALTO (página muito usada)
 
-**⚠️ NOTA:** Esta página não foi lida em detalhe na análise inicial. Assumir estrutura padrão de formulários com:
-- Profile form (foto, nome, bio)
-- Serviços CRUD
-- Notificações toggles
-- Integrações (WhatsApp, Google Calendar)
+### Estrutura Atual Real
+
+```html
+<!-- TOPBAR: Logo + "Sair" + Avatar -->
+<div class="topbar h-[54px]">...</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  ├── Título "Configurações"
+  └── Status do plano
+</div>
+
+<!-- 8 SEÇÕES DE CONFIGURAÇÃO -->
+<main>
+  <!-- 1. PERFIL -->
+  <div class="section">Foto, nome, bio, especialidade</div>
+
+  <!-- 2. SERVIÇOS -->
+  <div class="section">CRUD de serviços + preços</div>
+
+  <!-- 3. GALERIA -->
+  <div class="section">Upload de fotos (Pro only)</div>
+
+  <!-- 4. AGENDA -->
+  <div class="section">Configurações de horário/dias</div>
+
+  <!-- 5. NOTIFICAÇÕES -->
+  <div class="section">Toggles para WhatsApp/Email</div>
+
+  <!-- 6. PLANO -->
+  <div class="section">Status do plano + upgrade</div>
+
+  <!-- 7. SENHA -->
+  <div class="section">Alterar senha</div>
+
+  <!-- 8. CONTA -->
+  <div class="section">Deletar conta</div>
+</main>
+```
+
+### Componentes Únicos
+
+1. **Tabs Navigation (implementado na migração)**:
+   - 8 tabs: Perfil, Serviços, Galeria, Agenda, Notificações, Plano, Senha, Conta
+   - Desktop: ícone + texto
+   - Mobile: ícone apenas (horizontal scroll)
+   - Acessibilidade: `role="tablist"`, `aria-selected`
+
+2. **Serviços CRUD**:
+   - Inputs grid: Nome (flex), Duração (70px), Preço (80px)
+   - Toggle ativo/inativo
+   - Delete button (X)
+   - Descrição + preço visível toggle
+
+3. **Galeria Upload**:
+   - Grid de fotos
+   - Upload com Supabase Storage
+   - Gate Pro (free não acessa)
+
+4. **Agenda Config**:
+   - Dias da semana (seg-dom)
+   - Horários (início/fim)
+   - Botão "Adicionar bloqueio"
 
 ### Plano de Migração
 
-#### Passo 1: Leitura Inicial (30 min)
-- [ ] Ler `configuracoes.html` completamente
-- [ ] Identificar componentes únicos
-- [ ] Mapear variáveis CSS
+#### Passo 1: Leitura Inicial (30 min) - ✅ COMPLETO
+- [x] Ler `configuracoes.html` completamente
+- [x] Identificar componentes únicos
+- [x] Mapear variáveis CSS
 
-#### Passo 2: Aplicar App Shell (1 hora)
-- [ ] Topbar unificada
-- [ ] Sidebar colapsável
-- [ ] Bottom nav mobile
+#### Passo 2: Aplicar App Shell (1 hora) - ✅ COMPLETO
+- [x] Topbar unificada
+- [x] Sidebar colapsável
+- [x] Bottom nav mobile
 
-#### Passo 3: Adaptar Formulários (2 horas)
-- [ ] Garantir que todos os inputs funcionam com novo design system
-- [ ] Testar validation states
-- [ ] Testar file upload (foto de perfil)
-- [ ] Ajustar toggles/switches
+#### Passo 3: Implementar Tabs Navigation (1 hora) - ✅ COMPLETO
+- [x] Criar navegação por tabs (8 seções)
+- [x] Desktop: ícone + texto
+- [x] Mobile: ícone apenas com horizontal scroll
+- [x] Atualizar função `irSecao()` para trabalhar com tabs
 
-#### Passo 4: Testes (30 min)
-- [ ] Formulários submetendo
-- [ ] Validações funcionando
-- [ ] Upload de foto funcionando
-- [ ] Mobile: formulários usáveis
+#### Passo 4: Fix Avatar Initials (30 min) - ✅ COMPLETO
+- [x] Extrair iniciais do nome do prestador
+- [x] Exibir no badge do avatar
+- [x] Atualizar nome no dropdown do menu
 
-**Tempo Estimado:** 4 horas (pode variar conforme complexidade real)
+#### Passo 5: Mobile Layout Fixes (1 hora) - ✅ COMPLETO
+- [x] Serviços: prevenir quebra de linha (`flex-wrap: nowrap`)
+- [x] Reduzir tamanhos: grid columns, gaps, botões
+- [x] Card footer: botões cancelar/salvar visíveis
+- [x] Toggle e delete buttons acessíveis
+
+#### Passo 6: Testes (30 min) - ✅ COMPLETO
+- [x] Formulários submetendo
+- [x] Validações funcionando
+- [x] Upload de foto funcionando
+- [x] Mobile: formulários usáveis
+- [x] Tabs navegando corretamente
+
+**Tempo Real:** 4 horas
 **Risco:** Baixo
 
-**Commit:** `feat(configuracoes): migrar configuracoes.html para novo layout unificado`
+**Commits:**
+- `feat(configuracoes): complete FASE 4 migration with App Shell` — Migração inicial
+- `feat(configuracoes): add tabs navigation and fix avatar initials` — Tabs + avatar
+- `fix(configuracoes): mobile layout adjustments for services section` — Ajustes mobile
+
+---
+
+### ✅ Implementação Realizada (18/04/2026)
+
+**Status:** COMPLETA com melhorias de navegação e responsividade
+
+#### O que foi feito:
+
+1. **App Shell Aplicado:**
+   - ✅ Topbar unificada com toggle sidebar
+   - ✅ Sidebar colapsável (apenas navegação)
+   - ✅ Bottom nav mobile fixo
+   - ✅ FOUC prevention script
+
+2. **Sistema de Tabs Navigation:**
+   - ✅ 8 tabs: Perfil (👤), Serviços (✂️), Galeria (🖼️), Agenda (📅), Notificações (🔔), Plano (💳), Senha (🔒), Conta (🗑️)
+   - ✅ Desktop: ícone + texto com gap 8px
+   - ✅ Mobile (max-width: 768px): ícone apenas (18px), horizontal scroll
+   - ✅ Active state com cor de destaque
+   - ✅ Acessibilidade: `role="tablist"`, `aria-selected`, `tabindex`
+
+3. **Avatar Initials Fix:**
+   - ✅ Extrai nome do `session.user.user_metadata` (nome, name, ou email fallback)
+   - ✅ Gera iniciais (primeiras 2 palavras, primeira letra maiúscula)
+   - ✅ Exibe no badge do avatar
+   - ✅ Atualiza nome no dropdown do menu
+
+4. **Mobile Layout Adjustments:**
+   - ✅ Serviços: `flex-wrap: nowrap !important` previne quebra de linha
+   - ✅ Grid columns reduzidas: `1fr 70px 80px` → `1fr 60px 70px`
+   - ✅ Gaps reduzidos: `8px` → `6px`
+   - ✅ Toggle button: `36px` → `32px`
+   - ✅ Delete button: `28px` → `26px`
+   - ✅ Input font size: `13px` → `12px`
+   - ✅ Card footer buttons responsivos com `flex: 1`
+
+5. **Variáveis CSS Migradas:**
+   - ✅ Uso consistente de `--bg`, `--bord`, `--muted`, `--text`
+   - ✅ Cores de destaque: `--lime`, `--rust`, `--teal`, `--amber`
+
+6. **Funcionalidades Mantidas:**
+   - ✅ CRUD de serviços completo
+   - ✅ Upload de foto de perfil
+   - ✅ Galeria (Supabase Storage)
+   - ✅ Configurações de agenda (dias/horários)
+   - ✅ Notificações (WhatsApp/Email)
+   - ✅ Gate Pro (free vs Pro)
+   - ✅ Alteração de senha
+   - ✅ Deleção de conta
+
+#### Arquivos Modificados:
+- `pages/configuracoes.html` (3500+ linhas)
+- `pages/configuracoes.html.backup` (backup criado)
+
+#### CSS Adicionado:
+```css
+/* Tabs navigation (linhas 139-203) */
+.config-tabs { display: flex; gap: 8px; overflow-x: auto; }
+.config-tab { display: flex; align-items: center; gap: 8px; ... }
+
+/* Mobile services adjustments (linhas 492-540) */
+@media (max-width: 640px) {
+  .servico-row > div:first-child { flex-wrap: nowrap !important; }
+  .srv-inputs { grid-template-columns: 1fr 60px 70px; gap: 6px; }
+  .toggle-ativo { width: 32px; height: 18px; }
+  .btn-del { width: 26px; height: 26px; }
+}
+
+/* Card footer mobile (linhas 243-259) */
+@media (max-width: 640px) {
+  .card-footer { flex-wrap: wrap; gap: 6px; }
+  .card-footer .btn-save, .card-footer .btn-ghost {
+    flex: 1; min-width: 0; padding: 9px 12px;
+  }
+}
+```
+
+#### Próxima FASE:
+`planos.html` (página de upgrade - sem sidebar)
 
 ---
 

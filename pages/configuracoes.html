@@ -240,6 +240,24 @@
       gap: 8px;
     }
 
+    /* Mobile: ajustar card-footer */
+    @media (max-width: 640px) {
+      .card-footer {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px 14px;
+      }
+
+      .card-footer .btn-save,
+      .card-footer .btn-ghost {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 12px;
+        font-size: 12px;
+        text-align: center;
+      }
+    }
+
     /* form */
     .field {
       margin-bottom: 16px;
@@ -469,6 +487,56 @@
       display: grid;
       grid-template-columns: 1fr 70px 80px;
       gap: 8px;
+    }
+
+    /* Mobile: ajustar layout para caber sem quebrar */
+    @media (max-width: 640px) {
+      .servico-row > div:first-child {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+
+      .srv-inputs {
+        grid-template-columns: 1fr 60px 70px;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .srv-i {
+        font-size: 12px;
+        padding: 7px 8px;
+      }
+
+      .toggle-ativo {
+        width: 32px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      .toggle-ativo::after {
+        width: 12px;
+        height: 12px;
+      }
+
+      .toggle-ativo.on::after {
+        left: 16px;
+      }
+
+      .btn-del {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .srv-desc-row {
+        flex-wrap: wrap;
+      }
+
+      .srv-preco-toggle {
+        font-size: 10px;
+      }
     }
 
     .srv-desc-row {

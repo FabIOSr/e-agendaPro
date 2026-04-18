@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2026-04-18
+
+#### FASE 4: configuracoes.html Migration
+- **Configurações page migrada para novo layout unificado**
+  - App Shell aplicado (topbar unificada, sidebar colapsável, bottom nav mobile)
+  - Sistema de tabs navigation para 8 seções (Perfil, Serviços, Galeria, Agenda, Notificações, Plano, Senha, Conta)
+  - Desktop: ícone + texto, Mobile: ícone apenas com horizontal scroll
+  - Avatar initials fix (exibe iniciais do profissional em vez de "-")
+  - Ajustes responsivos para mobile (serviços sem quebra de linha)
+
+- **Mobile Layout Improvements**
+  - Serviços: `flex-wrap: nowrap !important` previne quebra de linha
+  - Grid columns reduzidas: `1fr 70px 80px` → `1fr 60px 70px`
+  - Botões menores: toggle (32px), delete (26px)
+  - Card footer buttons responsivos com `flex: 1`
+
+- **Tabs Navigation CSS** (configuracoes.html:139-203)
+  - `.config-tabs` - Container com gap e overflow scroll
+  - `.config-tab` - Botões com active state e acessibilidade
+  - Mobile: labels hidden, ícones de 18px
+
+- **Avatar Initials Fix** (configuracoes.html:2049-2060)
+  - Extrai nome de `session.user.user_metadata` (nome, name, ou email)
+  - Gera iniciais (primeiras 2 palavras, primeira letra maiúscula)
+  - Atualiza badge do avatar e nome no dropdown
+
 ### Added - 2026-04-14
 
 #### Layout Infrastructure (FASE 0)
