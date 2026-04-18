@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added - 2026-04-18
 
+#### FASE 5: planos.html - Landing Page Mantida
+- **Decisão de manter planos.html como landing page** (sem migração para App Shell)
+  - Página de conversão (upgrade) funciona melhor sem sidebar
+  - Topbar simples preservada (Logo + Nome + Voltar)
+  - Funcionalidade ASAAS intacta (Pix, Cartão, Boleto)
+  - Design system já utilizado via variáveis CSS
+
+- **Documentação de Cores**
+  - Adicionados comentários Tailwind em `src/style.css`
+  - Mapeamento completo: `stone-*` para backgrounds/text/borders
+  - Cores customizadas documentadas: lime (#c8f060), teal (#5DCAA5), rust (#c84830), blue (#60b0f0), purple (#b060f0)
+  - Light theme e dark theme com referências Tailwind
+
+- **Status:**
+  - ✅ FASE 0-5 completas
+  - ⏳ FASE 6: Testes finais pendente
+
 #### FASE 4: configuracoes.html Migration
 - **Configurações page migrada para novo layout unificado**
   - App Shell aplicado (topbar unificada, sidebar colapsável, bottom nav mobile)

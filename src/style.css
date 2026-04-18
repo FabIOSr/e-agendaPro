@@ -16,142 +16,142 @@ html, body { margin: 0; padding: 0; }
 
 :root {
   /* LIGHT THEME (padrão) */
-  
+
   /* Backgrounds */
-  --bg-primary: #f5f2eb;
-  --bg-secondary: #ede9df;
-  --bg-tertiary: #e5e1d7;
-  --bg-elevated: #ffffff;
-  
+  --bg-primary: #f5f2eb; /* ── Tailwind: stone-100 (#f5f5f4) ── */
+  --bg-secondary: #ede9df; /* ── Tailwind: stone-200 (#e7e5e4) ── */
+  --bg-tertiary: #e5e1d7; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --bg-elevated: #ffffff; /* ── Tailwind: white (#ffffff) ── */
+
   /* Auth/Dark pages */
-  --color-bg: #f5f2eb;
-  --color-bg2: #ede9df;
-  --color-bg3: #e5e1d7;
-  
+  --color-bg: #f5f2eb; /* ── Tailwind: stone-100 (#f5f5f4) ── */
+  --color-bg2: #ede9df; /* ── Tailwind: stone-200 (#e7e5e4) ── */
+  --color-bg3: #e5e1d7; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+
   /* Text */
-  --color-text: #0e0d0a;
-  --color-faint: #8a8778;
-  --color-muted: #6b6860;
-  
+  --color-text: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --color-faint: #8a8778; /* ── Tailwind: stone-400 (#a8a29e) ── */
+  --color-muted: #6b6860; /* ── Tailwind: stone-500 (#78716c) ── */
+
   /* Landing page */
-  --color-ink: #0e0d0a;
-  --color-paper: #f5f2eb;
-  --color-paper2: #ede9df;
-  --color-paper3: #e4dfd2;
-  --color-cream: #faf8f3;
-  
+  --color-ink: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --color-paper: #f5f2eb; /* ── Tailwind: stone-100 (#f5f5f4) ── */
+  --color-paper2: #ede9df; /* ── Tailwind: stone-200 (#e7e5e4) ── */
+  --color-paper3: #e4dfd2; /* ── Tailwind: stone-200 (#e7e5e4) ── */
+  --color-cream: #faf8f3; /* ── Tailwind: stone-50 (#fafaf9) ── */
+
   /* Bordas */
-  --color-border: #d8d4c8;
-  --color-border-light: #d8d4c8;
-  --color-border-light2: #c4c0b4;
-  --color-border-dark: #d8d4c8;
-  --color-bord: #d8d4c8;
-  --color-bord2: #c4c0b4;
-  
+  --color-border: #d8d4c8; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-border-light: #d8d4c8; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-border-light2: #c4c0b4; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-border-dark: #d8d4c8; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-bord: #d8d4c8; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-bord2: #c4c0b4; /* ── Tailwind: stone-400 (#a8a29e) ── */
+
   /* Cores principais */
-  --color-lime: #c8f060;
-  --color-lime-d: #8ab830;
-  --color-lime-ink: #1a2a08;
-  --color-lime-t: rgba(200, 240, 96, 0.12);
-  --color-lime-l: #eef6d8;
-  
-  --color-rust: #c84830;
-  --color-rust-dark: #f06048;
-  --color-rust-t: rgba(240, 96, 72, 0.12);
-  --color-rust-l: #fdf0ed;
-  
-  --color-gold: #d4a820;
-  --color-teal: #5DCAA5;
-  --color-teal-t: rgba(93, 202, 165, 0.1);
-  --color-amber: #EF9F27;
-  --color-amber-t: rgba(239, 159, 39, 0.12);
-  
+  --color-lime: #c8f060; /* ── Tailwind: lime-300 (#d9f99d) - customizado ── */
+  --color-lime-d: #8ab830; /* ── Tailwind: lime-600 (#65a30d) - customizado ── */
+  --color-lime-ink: #1a2a08; /* ── Tailwind: lime-950 (#1a2e05) ── */
+  --color-lime-t: rgba(200, 240, 96, 0.12); /* ── Tailwind: lime-950 / 10% - customizado ── */
+  --color-lime-l: #eef6d8; /* ── Tailwind: lime-100 (#ecfccb) ── */
+
+  --color-rust: #c84830; /* ── Tailwind: orange-700 (#c2410c) - customizado ── */
+  --color-rust-dark: #f06048; /* ── Tailwind: orange-600 (#ea580c) ── */
+  --color-rust-t: rgba(240, 96, 72, 0.12); /* ── Tailwind: orange-600 / 10% ── */
+  --color-rust-l: #fdf0ed; /* ── Tailwind: orange-50 (#fff7ed) ── */
+
+  --color-gold: #d4a820; /* ── Tailwind: yellow-600 (#ca8a04) ── */
+  --color-teal: #5DCAA5; /* ── Tailwind: teal-400 (#2dd4bf) - customizado ── */
+  --color-teal-t: rgba(93, 202, 165, 0.1); /* ── Tailwind: teal-400 / 10% - customizado ── */
+  --color-amber: #EF9F27; /* ── Tailwind: amber-500 (#f59e0b) ── */
+  --color-amber-t: rgba(239, 159, 39, 0.12); /* ── Tailwind: amber-500 / 10% ── */
+
   /* Painel */
-  --color-panel-bg: #f5f2eb;
-  --color-panel-bg2: #ede9df;
-  --color-panel-bg3: #e5e1d7;
-  --color-panel-bg-elevated: #ffffff;
-  --color-panel-border: #d8d4c8;
-  --color-panel-border2: #c4c0b4;
-  --color-panel-text: #0e0d0a;
-  --color-panel-faint: #8a8778;
-  --color-panel-secondary: #6b6860;
-  --color-panel-accent: #c8f060;
-  --color-panel-accent2: #7dd3a8;
-  --color-panel-warn: #f0a060;
-  --color-panel-danger: #f06060;
-  --color-panel-blue: #60b0f0;
-  --color-panel-purple: #b060f0;
+  --color-panel-bg: #f5f2eb; /* ── Tailwind: stone-100 (#f5f5f4) ── */
+  --color-panel-bg2: #ede9df; /* ── Tailwind: stone-200 (#e7e5e4) ── */
+  --color-panel-bg3: #e5e1d7; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-panel-bg-elevated: #ffffff; /* ── Tailwind: white (#ffffff) ── */
+  --color-panel-border: #d8d4c8; /* ── Tailwind: stone-300 (#d6d3d1) ── */
+  --color-panel-border2: #c4c0b4; /* ── Tailwind: stone-400 (#a8a29e) ── */
+  --color-panel-text: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --color-panel-faint: #8a8778; /* ── Tailwind: stone-400 (#a8a29e) ── */
+  --color-panel-secondary: #6b6860; /* ── Tailwind: stone-500 (#78716c) ── */
+  --color-panel-accent: #c8f060; /* ── Tailwind: lime-300 (#d9f99d) - customizado ── */
+  --color-panel-accent2: #7dd3a8; /* ── Tailwind: emerald-400 (#34d399) - customizado ── */
+  --color-panel-warn: #f0a060; /* ── Tailwind: orange-400 (#fb923c) - customizado ── */
+  --color-panel-danger: #f06060; /* ── Tailwind: red-500 (#ef4444) ── */
+  --color-panel-blue: #60b0f0; /* ── Tailwind: sky-400 (#38bdf8) - customizado ── */
+  --color-panel-purple: #b060f0; /* ── Tailwind: purple-500 (#a855f7) - customizado ── */
 }
 
 [data-theme="dark"] {
   /* DARK THEME */
-  
+
   /* Backgrounds */
-  --bg-primary: #0e0d0a;
-  --bg-secondary: #141310;
-  --bg-tertiary: #1c1a16;
-  --bg-elevated: #242118;
-  
+  --bg-primary: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --bg-secondary: #141310; /* ── Tailwind: stone-950 (#1c1917) - customizado ── */
+  --bg-tertiary: #1c1a16; /* ── Tailwind: stone-900 (#1c1917) - customizado ── */
+  --bg-elevated: #242118; /* ── Tailwind: stone-900 (#292524) - customizado ── */
+
   /* Auth/Dark pages */
-  --color-bg: #0e0d0a;
-  --color-bg2: #181714;
-  --color-bg3: #222018;
-  
+  --color-bg: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --color-bg2: #181714; /* ── Tailwind: stone-950 (#1c1917) - customizado ── */
+  --color-bg3: #222018; /* ── Tailwind: stone-900 (#1c1917) - customizado ── */
+
   /* Text */
-  --color-text: #f0ede6;
-  --color-faint: #3e3c36;
-  --color-muted: #6b6860;
-  
+  --color-text: #f0ede6; /* ── Tailwind: stone-100 (#f5f5f4) - customizado ── */
+  --color-faint: #3e3c36; /* ── Tailwind: stone-700 (#44403c) ── */
+  --color-muted: #6b6860; /* ── Tailwind: stone-500 (#78716c) ── */
+
   /* Landing page */
-  --color-ink: #f0ede6;
-  --color-paper: #0e0d0a;
-  --color-paper2: #141310;
-  --color-paper3: #1c1a16;
-  --color-cream: #181714;
-  
+  --color-ink: #f0ede6; /* ── Tailwind: stone-100 (#f5f5f4) - customizado ── */
+  --color-paper: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --color-paper2: #141310; /* ── Tailwind: stone-950 (#1c1917) - customizado ── */
+  --color-paper3: #1c1a16; /* ── Tailwind: stone-900 (#1c1917) - customizado ── */
+  --color-cream: #181714; /* ── Tailwind: stone-950 (#1c1917) - customizado ── */
+
   /* Bordas */
-  --color-border: #2e2b24;
-  --color-border-light: #2e2b24;
-  --color-border-light2: #3e3b32;
-  --color-border-dark: #2e2b24;
-  --color-bord: #2a2724;
-  --color-bord2: #383430;
-  
+  --color-border: #2e2b24; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-border-light: #2e2b24; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-border-light2: #3e3b32; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-border-dark: #2e2b24; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-bord: #2a2724; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-bord2: #383430; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+
   /* Cores principais */
-  --color-lime: #c8f060;
-  --color-lime-d: #8ab830;
-  --color-lime-ink: #1a2a08;
-  --color-lime-t: rgba(200, 240, 96, 0.12);
-  --color-lime-l: #1a2a08;
-  
-  --color-rust: #f06048;
-  --color-rust-dark: #f06048;
-  --color-rust-t: rgba(240, 96, 72, 0.12);
-  --color-rust-l: #fdf0ed;
-  
-  --color-gold: #d4a820;
-  --color-teal: #5DCAA5;
-  --color-teal-t: rgba(93, 202, 165, 0.1);
-  --color-amber: #EF9F27;
-  --color-amber-t: rgba(239, 159, 39, 0.12);
-  
+  --color-lime: #c8f060; /* ── Tailwind: lime-300 (#d9f99d) - customizado ── */
+  --color-lime-d: #8ab830; /* ── Tailwind: lime-600 (#65a30d) - customizado ── */
+  --color-lime-ink: #1a2a08; /* ── Tailwind: lime-950 (#1a2e05) ── */
+  --color-lime-t: rgba(200, 240, 96, 0.12); /* ── Tailwind: lime-950 / 10% - customizado ── */
+  --color-lime-l: #1a2a08; /* ── Tailwind: lime-950 (#1a2e05) ── */
+
+  --color-rust: #f06048; /* ── Tailwind: orange-600 (#ea580c) ── */
+  --color-rust-dark: #f06048; /* ── Tailwind: orange-600 (#ea580c) ── */
+  --color-rust-t: rgba(240, 96, 72, 0.12); /* ── Tailwind: orange-600 / 10% ── */
+  --color-rust-l: #fdf0ed; /* ── Tailwind: orange-50 (#fff7ed) ── */
+
+  --color-gold: #d4a820; /* ── Tailwind: yellow-600 (#ca8a04) ── */
+  --color-teal: #5DCAA5; /* ── Tailwind: teal-400 (#2dd4bf) - customizado ── */
+  --color-teal-t: rgba(93, 202, 165, 0.1); /* ── Tailwind: teal-400 / 10% - customizado ── */
+  --color-amber: #EF9F27; /* ── Tailwind: amber-500 (#f59e0b) ── */
+  --color-amber-t: rgba(239, 159, 39, 0.12); /* ── Tailwind: amber-500 / 10% ── */
+
   /* Painel */
-  --color-panel-bg: #0e0d0a;
-  --color-panel-bg2: #141310;
-  --color-panel-bg3: #1c1a16;
-  --color-panel-bg-elevated: #242118;
-  --color-panel-border: #2a2724;
-  --color-panel-border2: #383430;
-  --color-panel-text: #f0ede6;
-  --color-panel-faint: #3e3c36;
-  --color-panel-secondary: #6b6860;
-  --color-panel-accent: #c8f060;
-  --color-panel-accent2: #7dd3a8;
-  --color-panel-warn: #f0a060;
-  --color-panel-danger: #f06060;
-  --color-panel-blue: #60b0f0;
-  --color-panel-purple: #b060f0;
+  --color-panel-bg: #0e0d0a; /* ── Tailwind: stone-950 (#1c1917) ── */
+  --color-panel-bg2: #141310; /* ── Tailwind: stone-950 (#1c1917) - customizado ── */
+  --color-panel-bg3: #1c1a16; /* ── Tailwind: stone-900 (#1c1917) - customizado ── */
+  --color-panel-bg-elevated: #242118; /* ── Tailwind: stone-900 (#292524) - customizado ── */
+  --color-panel-border: #2a2724; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-panel-border2: #383430; /* ── Tailwind: stone-800 (#292524) - customizado ── */
+  --color-panel-text: #f0ede6; /* ── Tailwind: stone-100 (#f5f5f4) - customizado ── */
+  --color-panel-faint: #3e3c36; /* ── Tailwind: stone-700 (#44403c) ── */
+  --color-panel-secondary: #6b6860; /* ── Tailwind: stone-500 (#78716c) ── */
+  --color-panel-accent: #c8f060; /* ── Tailwind: lime-300 (#d9f99d) - customizado ── */
+  --color-panel-accent2: #7dd3a8; /* ── Tailwind: emerald-400 (#34d399) - customizado ── */
+  --color-panel-warn: #f0a060; /* ── Tailwind: orange-400 (#fb923c) - customizado ── */
+  --color-panel-danger: #f06060; /* ── Tailwind: red-500 (#ef4444) ── */
+  --color-panel-blue: #60b0f0; /* ── Tailwind: sky-400 (#38bdf8) - customizado ── */
+  --color-panel-purple: #b060f0; /* ── Tailwind: purple-500 (#a855f7) - customizado ── */
 }
 
 /* ── [x-cloak] para Alpine.js ── */
