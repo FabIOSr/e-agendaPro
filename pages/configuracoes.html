@@ -5,22 +5,50 @@
   <script src="/config.js"></script>
   <script src="/modules/sentry.js"></script>
   <script src="/modules/ui-helpers.js"></script>
+
+  <!-- ⚡ FOUC Prevention -->
+  <script>
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    if (sidebarCollapsed) {
+      document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+    }
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgendaPro — Configurações</title>
+  <title>Configurações — AgendaPro</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
     rel="stylesheet">
   <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root {
+      /* LIGHT THEME */
+      --bg: #f5f2eb;
+      --bg2: #ede9df;
+      --bg3: #e5e1d7;
+      --bg4: #dcd8ce;
+      --bord: #d8d4c8;
+      --bord2: #c4c0b4;
+      --text: #0e0d0a;
+      --muted: #8a8778;
+      --faint: #9a9790;
+      --lime: #c8f060;
+      --lime-d: #8ab830;
+      --lime-ink: #1a2a08;
+      --lime-t: rgba(200, 240, 96, .1);
+      --teal: #5DCAA5;
+      --teal-t: rgba(93, 202, 165, .1);
+      --rust: #c84830;
+      --rust-t: rgba(240, 96, 72, .1);
+      --radius: 12px;
     }
 
-    :root {
+    [data-theme="dark"] {
+      /* DARK THEME */
       --bg: #0e0d0a;
       --bg2: #141310;
       --bg3: #1c1a16;
@@ -38,7 +66,6 @@
       --teal-t: rgba(93, 202, 165, .1);
       --rust: #f06048;
       --rust-t: rgba(240, 96, 72, .1);
-      --radius: 12px;
     }
 
     body {
@@ -48,136 +75,28 @@
       min-height: 100vh;
     }
 
-    /* ── CONTAINER MAIN ── */
+    /* ── APP LAYOUT (estrutura apenas) ── */
+    .app-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+    @media (max-width: 768px) {
+      .app-layout { display: block; }
+    }
+    [data-sidebar-collapsed="true"] .app-layout {
+      grid-template-columns: 64px 1fr;
+    }
+    [data-sidebar-collapsed="true"] .sidebar-widgets,
+    [data-sidebar-collapsed="true"] .nav-item-label {
+      display: none !important;
+    }
+
+    /* Container para banner */
     .container-main {
       max-width: 960px;
       margin: 0 auto;
       padding: 0 24px;
-    }
-
-    /* ── TOPBAR ── */
-    .topbar {
-      height: 54px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      border-bottom: 1px solid var(--bord);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(14, 13, 10, .92);
-      backdrop-filter: blur(12px);
-    }
-
-    .logo {
-      font-family: 'Fraunces', serif;
-      font-size: 17px;
-      font-weight: 400;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .logo-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--lime);
-      border-radius: 50%;
-      box-shadow: 0 0 8px rgba(200, 240, 96, .5);
-    }
-
-    .back-btn {
-      background: none;
-      border: 1px solid var(--bord);
-      color: var(--muted);
-      border-radius: 8px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'Syne', sans-serif;
-      transition: all .2s;
-    }
-
-    .back-btn:hover {
-      border-color: var(--bord2);
-      color: var(--text);
-    }
-
-    /* ── LAYOUT ── */
-    .layout {
-      display: flex;
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 32px 24px 80px;
-      gap: 28px;
-    }
-
-    @media (max-width:700px) {
-      .layout {
-        flex-direction: column;
-      }
-    }
-
-    /* sidebar nav */
-    .side-nav {
-      width: 200px;
-      flex-shrink: 0;
-    }
-
-    @media (max-width:700px) {
-      .side-nav {
-        width: 100%;
-      }
-    }
-
-    .nav-group {
-      margin-bottom: 24px;
-    }
-
-    .nav-group-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--faint);
-      margin-bottom: 6px;
-      padding: 0 4px;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all .15s;
-    }
-
-    .nav-item:hover {
-      background: var(--bg3);
-      color: var(--text);
-    }
-
-    .nav-item.active {
-      background: var(--bg3);
-      color: var(--text);
-      border: 1px solid var(--bord2);
-    }
-
-    .nav-item span {
-      font-size: 15px;
-    }
-
-    /* conteúdo */
-    .main {
-      flex: 1;
-      min-width: 0;
     }
 
     /* seções */
@@ -1327,54 +1246,207 @@
   </style>
 </head>
 
-<body>
+<body class="bg-[var(--color-panel-bg)] text-[var(--color-panel-text)] font-sans min-h-screen">
 
-  <!-- TOPBAR -->
-  <div class="topbar">
-    <div class="logo">
-      <div class="logo-dot"></div>AgendaPro
-    </div>
-    <button class="back-btn" onclick="history.back()">← Voltar ao painel</button>
+<!-- TOPBAR UNIFICADA -->
+<div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">
+  <!-- Topbar Left -->
+  <div class="flex items-center gap-4">
+    <button
+      onclick="toggleSidebar()"
+      id="sidebarToggle"
+      class="hidden p-2 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] transition-all duration-200 md:flex items-center justify-center bg-transparent border-0 cursor-pointer"
+      aria-label="Toggle sidebar"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M3 10h18M3 14h18"/>
+      </svg>
+    </button>
+    <a href="/painel" class="font-fraunces text-[18px] font-normal flex items-center gap-2 no-underline text-[var(--color-panel-text)]">
+      <div class="w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5); animation:pulse-dot 2s ease-in-out infinite"></div>
+      AgendaPro
+    </a>
   </div>
 
-  <!-- BANNER FREE (Pro-only feature promo) -->
-  <div class="container-main">
-    <div class="banner-free" id="banner-free" style="display: none;">
-      <div class="banner-content">
-        <div class="banner-text">
-          <strong>📱 WhatsApp automático disponível no plano Pro!</strong>
-          <p>Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
+  <!-- Topbar Center -->
+  <div class="flex items-center gap-2 hide-mobile">
+    <span class="text-[14px] font-medium text-[var(--color-panel-text)]">Configurações</span>
+  </div>
+
+  <!-- Topbar Right -->
+  <div class="flex items-center gap-3">
+    <button
+      onclick="toggleTheme()"
+      id="themeToggle"
+      class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+      title="Alternar tema"
+      aria-label="Alternar tema claro/escuro"
+    >
+      🌙
+    </button>
+    <span id="badge-pro-topbar" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-lime)] text-[var(--color-lime-ink)]" style="display:none;">
+      Pro
+    </span>
+    <!-- Avatar com dropdown -->
+    <div class="relative">
+      <div class="w-8 h-8 bg-[var(--color-lime)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-lime-ink)] cursor-pointer hover:scale-105 transition-transform duration-200" id="avatar-initials" title="Meu perfil" onclick="toggleUserMenu()">
+        —
+      </div>
+      <!-- Dropdown menu -->
+      <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg shadow-lg py-1 hidden" style="z-index: 200;">
+        <div class="px-4 py-2 border-b border-[var(--color-panel-border)]">
+          <div class="text-[11px] text-[var(--color-panel-faint)]">Logado como</div>
+          <div class="text-[13px] font-medium text-[var(--color-panel-text)] truncate" id="user-menu-name">Profissional</div>
         </div>
-        <div class="banner-actions">
-          <a href="/planos" class="btn-banner">Ver planos</a>
-          <button class="btn-banner-close" onclick="fecharBannerFree()">×</button>
-        </div>
+        <button onclick="fazerLogout()" class="w-full text-left px-4 py-2 text-[13px] text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg2)] hover:text-[var(--color-panel-text)] transition-colors cursor-pointer border-none bg-transparent">
+          Sair
+        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="layout">
+<!-- Script para dropdown do avatar -->
+<script>
+window.toggleUserMenu = function() {
+  const menu = document.getElementById('user-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
 
-    <!-- SIDEBAR NAV -->
-    <div class="side-nav">
-      <div class="nav-group">
-        <div class="nav-group-label">Perfil</div>
-        <div class="nav-item active" id="ni-perfil" onclick="irSecao('perfil')"><span>👤</span> Meu perfil</div>
-        <div class="nav-item" id="ni-servicos" onclick="irSecao('servicos')"><span>✂️</span> Serviços</div>
-        <div class="nav-item" id="ni-galeria" onclick="irSecao('galeria')"><span>🖼️</span> Galeria</div>
-        <div class="nav-item" id="ni-agenda" onclick="irSecao('agenda')"><span>📅</span> Agenda</div>
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const avatar = document.getElementById('avatar-initials');
+  if (menu && !menu.classList.contains('hidden') && !avatar?.contains(e.target) && !menu?.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+// Layout functions
+window.toggleSidebar = function() {
+  const layout = document.getElementById('appLayout');
+  if (!layout) return;
+
+  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
+
+  // Sincronizar data attribute
+  if (isCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  } else {
+    document.documentElement.removeAttribute('data-sidebar-collapsed');
+  }
+
+  // Salvar preferência
+  localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+  // Atualizar ícone
+  const toggle = document.getElementById('sidebarToggle');
+  if (toggle) {
+    toggle.innerHTML = isCollapsed
+      ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
+  }
+};
+
+window.toggleTheme = function() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+
+  // Atualizar ícone
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+};
+
+// Inicializar ícone do theme toggle
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  }
+});
+</script>
+
+<!-- BANNER FREE -->
+<div class="container-main">
+  <div class="banner-free" id="banner-free" style="display: none;">
+    <div class="banner-content">
+      <div class="banner-text">
+        <strong>📱 WhatsApp automático disponível no plano Pro!</strong>
+        <p>Seus clientes recebem confirmação e lembrete por WhatsApp. Reduza o no-show em até 70%.</p>
       </div>
-      <div class="nav-group">
-        <div class="nav-group-label">Conta</div>
-        <div class="nav-item" id="ni-notif" onclick="irSecao('notif')"><span>🔔</span> Notificações</div>
-        <div class="nav-item" id="ni-plano" onclick="irSecao('plano')"><span>⭐</span> Plano</div>
-        <div class="nav-item" id="ni-senha" onclick="irSecao('senha')"><span>🔑</span> Senha</div>
-        <div class="nav-item" id="ni-perigo" onclick="irSecao('perigo')"><span>⚠️</span> Conta</div>
+      <div class="banner-actions">
+        <a href="/planos" class="btn-banner">Ver planos</a>
+        <button class="btn-banner-close" onclick="fecharBannerFree()">×</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- MAIN -->
-    <div class="main">
+<!-- LAYOUT GRID (App Layout) -->
+<div class="app-layout" id="appLayout">
+
+  <!-- SIDEBAR COLAPSÁVEL (apenas navegação, sem widgets) -->
+    <aside id="sidebar"
+      class="bg-[var(--color-panel-bg2)] border-r border-[var(--color-panel-border)] flex flex-col overflow-hidden transition-all duration-300">
+      <!-- Sidebar Header -->
+      <div class="p-4 border-b border-[var(--color-panel-border)] flex items-center justify-between">
+        <span class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)]">Menu</span>
+        <button onclick="toggleSidebar()"
+          class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Sidebar Navigation -->
+      <nav class="p-3 flex flex-col gap-1">
+        <a href="/painel"
+          class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">📅</span>
+          <span class="nav-item-label flex-1">Agenda</span>
+        </a>
+        <a href="/clientes"
+          class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">👥</span>
+          <span class="nav-item-label flex-1">Clientes</span>
+        </a>
+        <a href="/relatorio"
+          class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-text)] bg-[var(--color-panel-bg3)] font-semibold no-underline">
+          <span class="text-[18px] flex-shrink-0">📊</span>
+          <span class="nav-item-label flex-1">Relatórios</span>
+        </a>
+        <a href="/configuracoes"
+          class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">⚙️</span>
+          <span class="nav-item-label flex-1">Configurações</span>
+        </a>
+        <a href="/planos"
+          class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+          <span class="text-[18px] flex-shrink-0">⭐</span>
+          <span class="nav-item-label flex-1">Plano</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+  <main class="main-content p-6 overflow-y-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="font-fraunces text-[28px] font-light mb-2">Configurações</h1>
+      <p class="text-[14px] text-[var(--color-panel-faint)]">Personalize sua AgendaPro</p>
+    </div>
+
+    <!-- Conteúdo principal -->
 
       <!-- ── PERFIL ── -->
       <div class="section active" id="sec-perfil">
@@ -1877,8 +1949,28 @@
         </div>
       </div>
 
-    </div><!-- /main -->
-  </div><!-- /layout -->
+    </div><!-- /main-content -->
+  </div><!-- /app-layout -->
+
+<!-- BOTTOM NAV (MOBILE ONLY) -->
+<nav class="show-mobile-only flex fixed bottom-0 left-0 right-0 z-[100] bg-[var(--color-panel-bg3)] border-t border-[var(--color-panel-border)] p-2 justify-around shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[max(8px,env(safe-area-inset-bottom))]">
+  <a href="/painel" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[var(--color-panel-faint)] no-underline transition-all duration-200" aria-label="Agenda">
+    <span class="text-[20px]">📅</span>
+    <span class="text-[10px] font-medium">Agenda</span>
+  </a>
+  <a href="/clientes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[var(--color-panel-faint)] no-underline transition-all duration-200" aria-label="Clientes">
+    <span class="text-[20px]">👥</span>
+    <span class="text-[10px] font-medium">Clientes</span>
+  </a>
+  <a href="/relatorio" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[var(--color-panel-faint)] no-underline transition-all duration-200" aria-label="Relatórios">
+    <span class="text-[20px]">📊</span>
+    <span class="text-[10px] font-medium">Relatórios</span>
+  </a>
+  <a href="/configuracoes" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[var(--color-panel-text)] no-underline transition-all duration-200" aria-label="Configurações">
+    <span class="text-[20px]">⚙️</span>
+    <span class="text-[10px] font-medium">Config</span>
+  </a>
+</nav>
 
   <!-- MODAL CANCEL SURVEY -->
   <div class="modal-overlay" id="modal-cancel-survey" style="display:none">
