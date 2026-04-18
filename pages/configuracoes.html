@@ -136,6 +136,72 @@
       line-height: 1.6;
     }
 
+    /* Tabs de navegação */
+    .config-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .config-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .config-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: transparent;
+      border: 1px solid var(--bord);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .config-tab:hover {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: var(--bord2);
+    }
+
+    .config-tab.active {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: var(--bord2);
+      font-weight: 600;
+    }
+
+    .tab-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .tab-label {
+      font-size: 13px;
+    }
+
+    /* Mobile: apenas ícones */
+    @media (max-width: 768px) {
+      .config-tab {
+        padding: 10px 14px;
+      }
+      .tab-label {
+        display: none;
+      }
+      .tab-icon {
+        font-size: 18px;
+      }
+    }
+
     /* card */
     .card {
       background: var(--bg3);
@@ -1446,6 +1512,90 @@ document.addEventListener('DOMContentLoaded', () => {
       <p class="text-[14px] text-[var(--color-panel-faint)]">Personalize sua AgendaPro</p>
     </div>
 
+    <!-- TABS DE NAVEGAÇÃO -->
+    <nav class="config-tabs mb-6" role="tablist">
+      <button
+        class="config-tab active"
+        onclick="irSecao('perfil')"
+        role="tab"
+        aria-selected="true"
+        id="tab-perfil"
+      >
+        <span class="tab-icon">👤</span>
+        <span class="tab-label">Perfil</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('servicos')"
+        role="tab"
+        aria-selected="false"
+        id="tab-servicos"
+      >
+        <span class="tab-icon">✂️</span>
+        <span class="tab-label">Serviços</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('galeria')"
+        role="tab"
+        aria-selected="false"
+        id="tab-galeria"
+      >
+        <span class="tab-icon">🖼️</span>
+        <span class="tab-label">Galeria</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('agenda')"
+        role="tab"
+        aria-selected="false"
+        id="tab-agenda"
+      >
+        <span class="tab-icon">📅</span>
+        <span class="tab-label">Agenda</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('notif')"
+        role="tab"
+        aria-selected="false"
+        id="tab-notif"
+      >
+        <span class="tab-icon">🔔</span>
+        <span class="tab-label">Notificações</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('plano')"
+        role="tab"
+        aria-selected="false"
+        id="tab-plano"
+      >
+        <span class="tab-icon">⭐</span>
+        <span class="tab-label">Plano</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('senha')"
+        role="tab"
+        aria-selected="false"
+        id="tab-senha"
+      >
+        <span class="tab-icon">🔑</span>
+        <span class="tab-label">Senha</span>
+      </button>
+      <button
+        class="config-tab"
+        onclick="irSecao('perigo')"
+        role="tab"
+        aria-selected="false"
+        id="tab-perigo"
+      >
+        <span class="tab-icon">⚠️</span>
+        <span class="tab-label">Conta</span>
+      </button>
+    </nav>
+
     <!-- Conteúdo principal -->
 
       <!-- ── PERFIL ── -->
@@ -2045,6 +2195,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { window.location.href = '/auth'; }
     const userId = session.user.id;
+
+    // Preencher iniciais do avatar
+    const nomePrestador = session.user?.user_metadata?.nome
+      || session.user?.user_metadata?.name
+      || session.user.email
+      || 'Prestador';
+    const iniciais = nomePrestador.split(' ').slice(0, 2).map(p => p[0].toUpperCase()).join('');
+    const avatarEl = document.getElementById('avatar-initials');
+    if (avatarEl) avatarEl.textContent = iniciais;
+
+    // Atualizar nome no dropdown do menu
+    const userMenuName = document.getElementById('user-menu-name');
+    if (userMenuName) userMenuName.textContent = nomePrestador;
 
     window.fazerLogout = async () => {
       await supabase.auth.signOut();
@@ -3281,10 +3444,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.irSecao = function (id) {
+      // Remover active de todas as seções
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById('sec-' + id).classList.add('active');
-      document.getElementById('ni-' + id).classList.add('active');
+      // Remover active de todas as tabs
+      document.querySelectorAll('.config-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      // Adicionar active na seção e tab correspondentes
+      const secao = document.getElementById('sec-' + id);
+      const tab = document.getElementById('tab-' + id);
+      if (secao) secao.classList.add('active');
+      if (tab) {
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+      }
+      // Scroll suave para o topo
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
