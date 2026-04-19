@@ -5,8 +5,12 @@
 // para evitar fazer 30 requisições (uma por dia).
 //
 // Uso: POST /slots-mes
-// Body: { prestador_slug, servico_id, mes: "2024-04" }
+// Body: { prestador_slug, servico_id, mes: "2024-04", data_inicio?: "2024-04-15" }
 // Retorno: { "2024-04-15": { total_disponiveis: 5, primeiro_slot: "10:00" }, ... }
+//
+// Parâmetros:
+// - mes: YYYY-MM (obrigatório)
+// - data_inicio: YYYY-MM-DD (opcional) - Só retorna dias a partir desta data
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as Sentry from "https://esm.sh/@sentry/deno@8.0.0";
@@ -134,17 +138,31 @@ Deno.serve(async (req: Request) => {
       prestador_slug,
       servico_id,
       mes,             // "2024-04"
+      data_inicio,     // "2024-04-15" (opcional)
     } = await req.json();
 
     errorContext.prestador_slug = prestador_slug;
     errorContext.servico_id = servico_id;
     errorContext.mes = mes;
+    errorContext.data_inicio = data_inicio;
 
     if (!prestador_slug || !servico_id || !mes) {
       return Response.json(
         { erro: "Campos obrigatórios: prestador_slug, servico_id, mes" },
         { status: 400, headers: cors }
       );
+    }
+
+    // Valida data_inicio se fornecida
+    let dataInicioMin: Date | null = null;
+    if (data_inicio) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data_inicio)) {
+        return Response.json(
+          { erro: "Formato de data_inicio inválido. Use YYYY-MM-DD" },
+          { status: 400, headers: cors }
+        );
+      }
+      dataInicioMin = new Date(`${data_inicio}T00:00:00Z`);
     }
 
     // Parse mes (YYYY-MM)
@@ -288,9 +306,10 @@ Deno.serve(async (req: Request) => {
       const dataISO = formatDate(dia);
       const diaSemana = dia.getUTCDay();
 
-      // Pula dias passados
+      // Pula dias passados (ou antes de data_inicio se fornecida)
       const diaMeiaNoite = new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth(), dia.getUTCDate()));
-      if (diaMeiaNoite < new Date(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate())) {
+      const dataLimite = dataInicioMin || new Date(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate());
+      if (diaMeiaNoite < dataLimite) {
         continue;
       }
 

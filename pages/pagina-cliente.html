@@ -1770,6 +1770,11 @@
     let calAno = new Date().getFullYear();
     let calMes = new Date().getMonth();
 
+    // Limite de 60 dias para agendamento
+    const LIMITE_DIAS = 60;
+    const dataLimite = new Date();
+    dataLimite.setDate(dataLimite.getDate() + LIMITE_DIAS);
+
     // Dias da semana disponíveis (busca do Supabase)
     let diasDisponiveis = new Set([1, 2, 3, 4, 5]); // fallback Seg-Sex
 
@@ -1995,9 +2000,21 @@
     }
 
     window.mudarMes = function (delta) {
-      calMes += delta;
-      if (calMes > 11) { calMes = 0; calAno++; }
-      if (calMes < 0) { calMes = 11; calAno--; }
+      const novoMes = calMes + delta;
+      let novoAno = calAno;
+
+      if (novoMes > 11) { novoMes = 0; novoAno++; }
+      if (novoMes < 0) { novoMes = 11; novoAno--; }
+
+      // Verifica se está além do limite de 60 dias
+      const primeiroDiaNovoMes = new Date(Date.UTC(novoAno, novoMes, 1));
+      if (primeiroDiaNovoMes > dataLimite) {
+        console.log('Navegação bloqueada: além do limite de 60 dias');
+        return;
+      }
+
+      calMes = novoMes;
+      calAno = novoAno;
       renderCalendario();
     };
 
@@ -2104,6 +2121,13 @@
         return cached;
       }
 
+      // Calcula data_inicio: se for mês atual, usa hoje; senão usa dia 1 do mês
+      const hoje = new Date();
+      const isMesAtual = ano === hoje.getFullYear() && mes === hoje.getMonth();
+      const dataInicio = isMesAtual
+        ? `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
+        : undefined;
+
       // Busca da Edge Function
       try {
         const res = await fetch(`${window.SUPABASE_URL}/functions/v1/slots-mes`, {
@@ -2115,7 +2139,8 @@
           body: JSON.stringify({
             prestador_slug: SLUG,
             servico_id: servicoId,
-            mes: `${ano}-${String(mes + 1).padStart(2, '0')}`
+            mes: `${ano}-${String(mes + 1).padStart(2, '0')}`,
+            ...(dataInicio && { data_inicio: dataInicio })
           })
         });
 
