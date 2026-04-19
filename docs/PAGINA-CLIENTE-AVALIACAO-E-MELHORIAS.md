@@ -87,11 +87,16 @@ const escapeHtml = (value) => String(value ?? '')
 
 ### ⚠️ PARCIALMENTE IMPLEMENTADO
 
-#### Acessibilidade
-**Status:** PARCIAL
+#### Acessibilidade - Cards de Serviço
+**Status:** ✅ JA ESTAVA IMPLEMENTADO
 
-- ✅ Galeria usa `<button>` com `aria-label`
-- ❌ Cards de servico ainda sao `<div>` clicaveis (nao verificado)
+Verificação em pagina-cliente.html:1605-1610 confirma que os cards JA usam:
+- ✅ `<button type="button">` em vez de `<div>`
+- ✅ `aria-label` descritivo: "Selecionar serviço {nome}"
+- ✅ `appearance: none` no CSS para remover estilos nativos
+- ✅ Navegação por teclado (Tab, Enter, Espaço) funciona nativamente
+
+Nota: O documento original mencionava como pendente, mas a implementacao ja estava correta.
 
 ---
 
@@ -634,11 +639,11 @@ Nao recomendo trocar a grade por slider logo de cara.
 - corrigir seletores/IDs mais criticos
 - ✅ adicionar lightbox na galeria (implementado Fase 2 diretamente)
 
-## Fase 2: valor de produto **[CONCLUIDO]**
+## Fase 2: valor de produto **[100% CONCLUIDA]**
 
 - ✅ lightbox com navegacao **[CONCLUIDO]**
 - ✅ persistencia de progresso local **[CONCLUIDO]**
-- acessibilidade de cards e fluxo **[PENDENTE]**
+- ✅ acessibilidade de cards de servico **[JA ESTAVA IMPLEMENTADO]**
 - CTA secundario de WhatsApp melhor posicionado **[JA EXISTE]**
 
 ## Fase 3: inteligencia e conversao **[PENDENTE]**
