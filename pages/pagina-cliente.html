@@ -1308,7 +1308,7 @@
         <input class="form-input" id="input-tel" placeholder="(11) 99999-0000" oninput="mascaraTel(this);validarForm()">
       </div>
       <div class="form-group">
-        <label class="form-label">Email (opcional)</label>
+        <label class="form-label">Email *</label>
         <input class="form-input" id="input-email" type="email" placeholder="seu@email.com" oninput="validarForm()">
       </div>
       <div class="aviso-box">
@@ -1905,7 +1905,7 @@
           (state.step === 1 && state.servico) ||
           (state.step === 2 && state.data) ||
           (state.step === 3 && state.hora) ||
-          (state.step === 4 && state.nome && state.tel.replace(/\D/g, '').length >= 10);
+          (state.step === 4 && state.nome && state.tel.replace(/\D/g, '').length >= 10 && state.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email));
         btnEl.disabled = !podeAvancar;
       }
     }
@@ -2009,7 +2009,7 @@
       // Verifica se está além do limite de 60 dias
       const primeiroDiaNovoMes = new Date(Date.UTC(novoAno, novoMes, 1));
       if (primeiroDiaNovoMes > dataLimite) {
-        console.log('Navegação bloqueada: além do limite de 60 dias');
+        toast('Agendamento disponível até 60 dias. Para datas futuras, entre em contato pelo WhatsApp.', 'warning', 4000);
         return;
       }
 
@@ -2411,7 +2411,12 @@
     window.validarForm = function () {
       state.nome = document.getElementById('input-nome')?.value.trim() || '';
       state.email = document.getElementById('input-email')?.value.trim() || '';
-      const ok = state.nome.length >= 2 && state.tel.replace(/\D/g, '').length >= 10;
+      // Valida: nome (2+ chars), telefone (10+ digits), email (básico)
+      const emailValido = !state.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email);
+      const ok = state.nome.length >= 2
+        && state.tel.replace(/\D/g, '').length >= 10
+        && state.email.length > 0
+        && emailValido;
       const btn = document.getElementById('btn-confirmar');
       if (btn) btn.disabled = !ok;
       salvarState();
@@ -2578,6 +2583,28 @@
         set('s-servico', (state.icone || '') + ' ' + state.servico);
         set('s-data', `${sem[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} às ${state.hora}`);
         set('s-prestador', PRESTADOR.nome || '—');
+
+        // Atualiza mensagem de sucesso dinamicamente baseada em email/WhatsApp
+        const successSub = document.querySelector('.success-sub');
+        const temEmail = state.email && state.email.trim();
+        const temWhatsapp = PRESTADOR.whatsapp;
+
+        if (temEmail && temWhatsapp) {
+          successSub.textContent = 'Enviamos confirmação por email e WhatsApp. Até lá! 😊';
+        } else if (temEmail) {
+          successSub.textContent = 'Enviamos confirmação por email. Até lá! 😊';
+        } else {
+          successSub.textContent = 'Enviamos confirmação por WhatsApp. Até lá! 😊';
+        }
+
+        // Toast de sucesso
+        const msgToast = temEmail && temWhatsapp
+          ? '✓ Agendamento confirmado! Confirmação enviada por email e WhatsApp.'
+          : temEmail
+          ? '✓ Agendamento confirmado! Confirmação enviada por email.'
+          : '✓ Agendamento confirmado! Confirmação enviada por WhatsApp.';
+        toast(msgToast, 'success', 4000);
+
         window.irPara(6);
         document.getElementById('sticky-footer')?.classList.remove('visible');
 
@@ -2588,6 +2615,7 @@
         console.error('Erro ao confirmar:', err);
         const msg = err.message || 'Erro ao confirmar agendamento. Tente novamente.';
         mostrarErroBanner(msg);
+        toast('Erro ao confirmar. Tente novamente.', 'error', 4000);
         if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
       }
     };
