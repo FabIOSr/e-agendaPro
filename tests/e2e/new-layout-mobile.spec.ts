@@ -28,7 +28,7 @@ test.describe('Novo Layout: Mobile Layout', () => {
       // Buscar links dentro da mobile nav
       const navItems = page.locator('nav.show-mobile-only a');
       const count = await navItems.count();
-      expect(count).toBeGreaterThan(0); // Pelo menos 1 link
+      expect(count).toBe(4);
     });
 
     test('bottom nav links devem funcionar', async ({ page }) => {
@@ -158,25 +158,25 @@ test.describe('Novo Layout: Configurações Mobile', () => {
       await page.waitForLoadState('domcontentloaded');
       await page.waitForSelector('#tab-servicos', { timeout: 10000 });
 
+      // Garantir estado inicial antes do clique
+      await expect(page.locator('#tab-perfil')).toHaveClass(/active/);
+      await expect(page.locator('#sec-perfil')).toHaveClass(/active/);
+
       // Clicar na tab de serviços com timeout maior
       await page.locator('#tab-servicos').click({ timeout: 10000 });
       await page.waitForTimeout(500); // Esperar transição
 
-      // Tentar verificar que seção foi ativada (pode falhar em mobile)
       const servicosSection = page.locator('#sec-servicos');
-      const hasClass = await servicosSection.evaluate((el: HTMLElement) => {
-        return el.classList.contains('active');
-      }).catch(() => false);
+      const perfilSection = page.locator('#sec-perfil');
+      const servicosTab = page.locator('#tab-servicos');
+      const perfilTab = page.locator('#tab-perfil');
 
-      // Em mobile, a classe pode não ser aplicada corretamente
-      // O importante é que o clique não quebrou
-      if (!hasClass) {
-        console.log('Seção não recebeu classe active (pode variar em mobile)');
-      }
-
-      // Verificar que pelo menos a tab foi clicada (não tem erro de JS)
-      const tab = page.locator('#tab-servicos');
-      await expect(tab).toBeVisible();
+      await expect(servicosTab).toHaveClass(/active/);
+      await expect(servicosTab).toHaveAttribute('aria-selected', 'true');
+      await expect(perfilTab).not.toHaveClass(/active/);
+      await expect(perfilTab).toHaveAttribute('aria-selected', 'false');
+      await expect(servicosSection).toHaveClass(/active/);
+      await expect(perfilSection).not.toHaveClass(/active/);
     });
   });
 });
