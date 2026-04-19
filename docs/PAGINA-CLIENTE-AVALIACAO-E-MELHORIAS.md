@@ -180,38 +180,48 @@ Prioridade: alta
 
 ### 1.3 ✅ Calendário com estado mais inteligente **[IMPLEMENTADO]**
 
-**Status:** IMPLEMENTADO (2026-04-19)
+**Status:** IMPLEMENTADO E OTIMIZADO (2026-04-19)
 
 **O que foi feito:**
 - Criada Edge Function `slots-mes` com batch queries (~18 queries vs 150)
 - Cache de 5 minutos para slots do mês completo
 - Marcação visual de dias sem slots (classe `.no-slots` com × e texto riscado)
 - Reaproveita 100% da lógica existente de `generateSlots()`
+- ✅ **OTIMIZADO**: Mês atual busca apenas a partir de hoje
+- ✅ **OTIMIZADO**: Navegação limitada a 60 dias
 
 **Arquivos:**
 - `supabase/functions/slots-mes/index.ts` - Nova Edge Function
 - `pages/pagina-cliente.html` - Cache do mês e marcação visual
 
 **Como funciona:**
-1. Frontend chama `/slots-mes?mes=2024-04&servico=xyz`
+1. Frontend chama `/slots-mes?mes=2024-04&servico=xyz&data_inicio=2024-04-15`
 2. Edge Function busca dados do mês em batch (agendamentos, bloqueios, etc)
-3. Para cada dia do mês, chama `generateSlots()` com dados filtrados
+3. Para cada dia do mês (a partir de `data_inicio`), chama `generateSlots()` com dados filtrados
 4. Frontend cacheia resultado por 5 minutos
 5. Dias sem slots ficam marcados visualmente (não clicáveis)
+6. Navegação bloqueada além de 60 dias
 
 **Impacto:**
 - ✅ Reduz de 150 para ~18 queries (88% menos)
 - ✅ Usuário vê dias sem vagas ANTES de clicar
 - ✅ Cache de 5min evita requisições duplicadas
 - ✅ Sem reescrever regras de negócio
+- ✅ **~50% menos processamento no mês atual** (só dias futuros)
+- ✅ **Limite claro de 60 dias** para agendamento
 
-**Limitação atual:**
-- Busca mês completo (do dia 1 ao último)
-- Inclui dias passados no mês atual
+**Exemplo de otimização:**
+```
+Hoje: 15/04/2026
 
-**Próxima otimização:**
-- Mês atual: buscar a partir de hoje (não do dia 1)
-- Limitar navegação a 60 dias
+Antes:
+- Abril: 01/04 a 30/04 (30 dias, incluindo 14 passados ❌)
+
+Depois:
+- Abril: 15/04 a 30/04 (16 dias, só futuros ✅)
+- Maio: 01/05 a 31/05 (31 dias)
+- Junho: BLOQUEIA (passou de 60 dias)
+```
 
 Prioridade: alta
 
