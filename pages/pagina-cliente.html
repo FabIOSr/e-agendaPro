@@ -703,6 +703,21 @@
       opacity: .45;
     }
 
+    .cal-day.no-slots {
+      color: var(--error);
+      opacity: .6;
+      text-decoration: line-through;
+    }
+
+    .cal-day.no-slots::before {
+      content: '×';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 10px;
+      opacity: .5;
+    }
+
     .cal-day.empty {
       cursor: default;
     }
@@ -1906,6 +1921,13 @@
       state.preco = servico.preco;
       state.exibirPreco = servico.exibirPreco !== false;
       state.icone = servico.icone;
+
+      // Limpa cache do mês ao trocar de serviço
+      if (state.servicoId) {
+        const mesKey = `${calAno}-${String(calMes + 1).padStart(2, '0')} ${state.servicoId}`;
+        clearMesCache(mesKey);
+      }
+
       salvarState();
       atualizarStickyFooter();
     }
@@ -1914,7 +1936,7 @@
     const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const DIAS_S = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
-    function renderCalendario() {
+    async function renderCalendario() {
       const grid = document.getElementById('cal-grid');
       if (!grid) return;
       grid.innerHTML = '';
@@ -1929,6 +1951,12 @@
       const primeiroDia = new Date(calAno, calMes, 1).getDay();
       const totalDias = new Date(calAno, calMes + 1, 0).getDate();
 
+      // Busca slots do mês se tiver serviço selecionado
+      let slotsDoMes = {};
+      if (state.servicoId) {
+        slotsDoMes = await buscarSlotsDoMes(calAno, calMes, state.servicoId);
+      }
+
       for (let i = 0; i < primeiroDia; i++) {
         const el = document.createElement('div');
         el.className = 'cal-day empty'; grid.appendChild(el);
@@ -1939,11 +1967,19 @@
         el.textContent = d;
         const passado = data < hoje;
         const off = !diasDisponiveis.has(data.getDay());
+
+        // Verifica se dia tem slots disponíveis
+        const dataISO = `${calAno}-${String(calMes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const infoDia = slotsDoMes[dataISO];
+        const semSlots = infoDia?.todos_cheios || false;
+
         el.className = 'cal-day' + (passado || off ? ' disabled' : '')
-          + (data.toDateString() === hoje.toDateString() ? ' today' : '');
+          + (data.toDateString() === hoje.toDateString() ? ' today' : '')
+          + (semSlots ? ' no-slots' : '');
+
         if (state.data && data.toDateString() === state.data.toDateString())
           el.classList.add('selected');
-        if (!passado && !off) {
+        if (!passado && !off && !semSlots) {
           el.onclick = () => {
             state.data = data;
             state.dataLabel = `${d} de ${MESES[calMes].toLowerCase().slice(0, 3)}`;
@@ -2010,6 +2046,94 @@
         console.warn('Erro ao limpar cache:', e);
       }
       delete slotsCache[cacheKey];
+    }
+
+    // ── CACHE DO MÊS (para calendário inteligente) ─────────────────────────────
+    const mesCache = {}; // chave: "YYYY-MM servicoId"
+    const MES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+    function getMesCache(mesKey) {
+      try {
+        const stored = localStorage.getItem(`mes_slots_${mesKey}`);
+        if (!stored) return null;
+        const { dados, expiraEm } = JSON.parse(stored);
+
+        // Verifica expiração
+        if (Date.now() > expiraEm) {
+          localStorage.removeItem(`mes_slots_${mesKey}`);
+          return null;
+        }
+        return dados;
+      } catch (e) {
+        console.warn('Erro ao ler cache do mês:', e);
+        return null;
+      }
+    }
+
+    function setMesCache(mesKey, dados) {
+      try {
+        localStorage.setItem(`mes_slots_${mesKey}`, JSON.stringify({
+          dados,
+          expiraEm: Date.now() + MES_CACHE_DURATION
+        }));
+        mesCache[mesKey] = dados;
+      } catch (e) {
+        console.warn('Erro ao salvar cache do mês:', e);
+        mesCache[mesKey] = dados; // Fallback para memória
+      }
+    }
+
+    function clearMesCache(mesKey) {
+      try {
+        localStorage.removeItem(`mes_slots_${mesKey}`);
+      } catch (e) {
+        console.warn('Erro ao limpar cache do mês:', e);
+      }
+      delete mesCache[mesKey];
+    }
+
+    // Busca slots de todo o mês (para marcar dias sem vagas)
+    // Formato de retorno: { "2024-04-15": { total_disponiveis: 5, primeiro_slot: "10:00" }, ... }
+    async function buscarSlotsDoMes(ano, mes, servicoId) {
+      const mesKey = `${ano}-${String(mes + 1).padStart(2, '0')} ${servicoId}`;
+
+      // Tenta cache primeiro
+      const cached = getMesCache(mesKey);
+      if (cached) {
+        console.log('Cache do mês hit para:', mesKey);
+        return cached;
+      }
+
+      // Busca da Edge Function
+      try {
+        const res = await fetch(`${window.SUPABASE_URL}/functions/v1/slots-mes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.SUPABASE_ANON}`
+          },
+          body: JSON.stringify({
+            prestador_slug: SLUG,
+            servico_id: servicoId,
+            mes: `${ano}-${String(mes + 1).padStart(2, '0')}`
+          })
+        });
+
+        if (!res.ok) {
+          console.warn('Erro ao buscar slots do mês:', res.status);
+          return {};
+        }
+
+        const data = await res.json();
+        const dias = data.dias || {};
+
+        // Salva no cache
+        setMesCache(mesKey, dias);
+        return dias;
+      } catch (e) {
+        console.error('Erro ao buscar slots do mês:', e);
+        return {};
+      }
     }
 
     function horaParaMinutosListaEspera(hora) {
@@ -2418,6 +2542,10 @@
         // Usa data local (não UTC) para invalidar a chave correta em BRT
         const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` + '_' + state.servicoId;
         clearSlotsCache(chave);
+
+        // Limpa cache do mês também
+        const mesKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')} ${state.servicoId}`;
+        clearMesCache(mesKey);
 
         // Tela de sucesso
         const sem = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];

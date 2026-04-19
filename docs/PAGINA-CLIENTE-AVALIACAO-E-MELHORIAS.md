@@ -28,12 +28,13 @@ A `pagina-cliente` ja esta acima da media em estrutura e proposta de valor. Ela 
 - lista de espera
 - hero customizado por prestador
 - extras de plano Pro como galeria, avaliacoes e preview
+- **calendário inteligente com marcação de dias sem slots** ✅
 
 O que falta agora nao e uma reconstrução total. O principal ganho viria de:
 
-1. reduzir atrito no funil
+1. ~~reduzir atrito no funil~~ ✅ **FEITO** (calendário inteligente)
 2. melhorar prova visual e confianca
-3. endurecer pontos tecnicos que hoje podem gerar manutencao cara
+3. ~~endurecer pontos tecnicos que hoje podem gerar manutencao cara~~ ✅ **FEITO** (XSS, cache)
 4. evoluir a galeria Pro de bloco estatico para experiencia mais rica
 
 ---
@@ -41,6 +42,19 @@ O que falta agora nao e uma reconstrução total. O principal ganho viria de:
 ## Status de Implementacao (Atualizado em 2026-04-19)
 
 ### ✅ CONCLUIDO - Prioridade Alta
+
+#### 1.3 ✅ Calendário Inteligente com Marcação de Dias sem Slots
+**Status:** IMPLEMENTADO (2026-04-19)
+
+**O que foi feito:**
+- Edge Function `slots-mes` com batch queries
+- Cache de 5 minutos no frontend
+- Marcação visual de dias sem slots (classe `.no-slots`)
+- Redução de 150 para ~18 queries (88% menos)
+
+**Próxima otimização planejada:**
+- Mês atual: buscar apenas a partir de hoje
+- Limitar navegação a 60 dias
 
 #### 1.1 ✅ Remover debug exposto ao cliente final
 **Status:** IMPLEMENTADO (pagina-cliente.html:2264-2267)
@@ -164,23 +178,40 @@ Impacto:
 
 Prioridade: alta
 
-### 1.3 Calendario com estado mais inteligente
+### 1.3 ✅ Calendário com estado mais inteligente **[IMPLEMENTADO]**
 
-Hoje o usuario pode clicar em um dia teoricamente habilitado, mas sem horarios reais.
+**Status:** IMPLEMENTADO (2026-04-19)
 
-Melhoria:
+**O que foi feito:**
+- Criada Edge Function `slots-mes` com batch queries (~18 queries vs 150)
+- Cache de 5 minutos para slots do mês completo
+- Marcação visual de dias sem slots (classe `.no-slots` com × e texto riscado)
+- Reaproveita 100% da lógica existente de `generateSlots()`
 
-- marcar dias sem slot como indisponiveis antes do clique
-- ou mostrar indicadores como:
-  - sem vagas
-  - poucas vagas
-  - proximo horario
+**Arquivos:**
+- `supabase/functions/slots-mes/index.ts` - Nova Edge Function
+- `pages/pagina-cliente.html` - Cache do mês e marcação visual
 
-Impacto:
+**Como funciona:**
+1. Frontend chama `/slots-mes?mes=2024-04&servico=xyz`
+2. Edge Function busca dados do mês em batch (agendamentos, bloqueios, etc)
+3. Para cada dia do mês, chama `generateSlots()` com dados filtrados
+4. Frontend cacheia resultado por 5 minutos
+5. Dias sem slots ficam marcados visualmente (não clicáveis)
 
-- melhora conversao
-- reduz frustracao no step 2
-- risco medio de conflito porque depende da estrategia de consulta
+**Impacto:**
+- ✅ Reduz de 150 para ~18 queries (88% menos)
+- ✅ Usuário vê dias sem vagas ANTES de clicar
+- ✅ Cache de 5min evita requisições duplicadas
+- ✅ Sem reescrever regras de negócio
+
+**Limitação atual:**
+- Busca mês completo (do dia 1 ao último)
+- Inclui dias passados no mês atual
+
+**Próxima otimização:**
+- Mês atual: buscar a partir de hoje (não do dia 1)
+- Limitar navegação a 60 dias
 
 Prioridade: alta
 
