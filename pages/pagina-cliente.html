@@ -1967,6 +1967,50 @@
 
     // ── STEP 3 — SLOTS (via Edge Function) ───────────────────────────────────
     const slotsCache = {}; // chave: "YYYY-MM-DD"
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+    // Cache com expiração em localStorage
+    function getSlotsCache(cacheKey) {
+      try {
+        const stored = localStorage.getItem(`slots_${cacheKey}`);
+        if (!stored) return null;
+
+        const { slots, expiraEm } = JSON.parse(stored);
+
+        // Verifica expiração
+        if (Date.now() > expiraEm) {
+          localStorage.removeItem(`slots_${cacheKey}`);
+          return null;
+        }
+
+        return slots;
+      } catch (e) {
+        console.warn('Erro ao ler cache:', e);
+        return null;
+      }
+    }
+
+    function setSlotsCache(cacheKey, slots) {
+      try {
+        localStorage.setItem(`slots_${cacheKey}`, JSON.stringify({
+          slots,
+          expiraEm: Date.now() + CACHE_DURATION
+        }));
+        slotsCache[cacheKey] = slots; // Mantém cache em memória também
+      } catch (e) {
+        console.warn('Erro ao salvar cache:', e);
+        slotsCache[cacheKey] = slots; // Fallback para memória
+      }
+    }
+
+    function clearSlotsCache(cacheKey) {
+      try {
+        localStorage.removeItem(`slots_${cacheKey}`);
+      } catch (e) {
+        console.warn('Erro ao limpar cache:', e);
+      }
+      delete slotsCache[cacheKey];
+    }
 
     function horaParaMinutosListaEspera(hora) {
       if (!hora) return null;
@@ -2021,9 +2065,11 @@
       const cacheKey = dataStr + '_' + state.servicoId;
       let slots = [];
 
-      // Usa cache se disponível (invalida ao confirmar)
-      if (slotsCache[cacheKey]) {
-        slots = slotsCache[cacheKey];
+      // Tenta obter do cache (com expiração de 5min)
+      const cachedSlots = getSlotsCache(cacheKey);
+      if (cachedSlots) {
+        slots = cachedSlots;
+        console.log('Cache hit para:', cacheKey);
       } else {
         // Tenta Edge Function
         try {
@@ -2055,7 +2101,8 @@
           slots = await gerarSlotsFallback();
         }
 
-        slotsCache[cacheKey] = slots;
+        // Salva no cache com expiração de 5min
+        setSlotsCache(cacheKey, slots);
       }
 
       grid.innerHTML = '';
@@ -2370,7 +2417,7 @@
         // Limpa cache do dia e serviço para que na próxima visita os slots sejam rebuscados
         // Usa data local (não UTC) para invalidar a chave correta em BRT
         const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` + '_' + state.servicoId;
-        delete slotsCache[chave];
+        clearSlotsCache(chave);
 
         // Tela de sucesso
         const sem = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
