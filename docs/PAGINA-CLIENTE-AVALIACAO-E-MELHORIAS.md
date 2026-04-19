@@ -87,14 +87,6 @@ const escapeHtml = (value) => String(value ?? '')
 
 ### ⚠️ PARCIALMENTE IMPLEMENTADO
 
-#### 1.4 ⚠️ Persistir progresso local
-**Status:** PARCIAL (pagina-cliente.html:2737-2746)
-
-- ✅ Salva estado do banner CTA em `sessionStorage`
-- ❌ NAO salva: servico, data, hora, nome, telefone, email do cliente
-
-**Recomendacao:** Completar persistencia do fluxo de agendamento
-
 #### Acessibilidade
 **Status:** PARCIAL
 
@@ -642,10 +634,10 @@ Nao recomendo trocar a grade por slider logo de cara.
 - corrigir seletores/IDs mais criticos
 - ✅ adicionar lightbox na galeria (implementado Fase 2 diretamente)
 
-## Fase 2: valor de produto **[PARCIALMENTE CONCLUIDO]**
+## Fase 2: valor de produto **[CONCLUIDO]**
 
 - ✅ lightbox com navegacao **[CONCLUIDO]**
-- ⚠️ persistencia de progresso local **[PARCIAL - apenas CTA banner]**
+- ✅ persistencia de progresso local **[CONCLUIDO]**
 - acessibilidade de cards e fluxo **[PENDENTE]**
 - CTA secundario de WhatsApp melhor posicionado **[JA EXISTE]**
 

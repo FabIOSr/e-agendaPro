@@ -1605,6 +1605,7 @@
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'servico-card';
+        card.setAttribute('data-servico-id', s.id);
         card.setAttribute('aria-label', `Selecionar serviço ${s.nome}`);
 
         const icon = document.createElement('div');
@@ -1677,6 +1678,79 @@
       nome: '', tel: '', email: '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Detecta timezone do browser
     };
+
+    // ── PERSISTÊNCIA LOCAL (SessionStorage) ───────────────────────────────────
+    const STATE_KEY = `agendamento_${SLUG}`;
+
+    function salvarState() {
+      try {
+        const stateParaSalvar = {
+          step: state.step,
+          servicoId: state.servicoId,
+          servico: state.servico,
+          duracaoMin: state.duracaoMin,
+          preco: state.preco,
+          icone: state.icone,
+          exibirPreco: state.exibirPreco,
+          data: state.data?.toISOString(),
+          dataLabel: state.dataLabel,
+          hora: state.hora,
+          nome: state.nome,
+          tel: state.tel,
+          email: state.email,
+          timezone: state.timezone,
+          _expiraEm: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
+        };
+        sessionStorage.setItem(STATE_KEY, JSON.stringify(stateParaSalvar));
+      } catch(e) {
+        console.warn('Erro ao salvar state:', e);
+      }
+    }
+
+    function carregarState() {
+      try {
+        const salvo = sessionStorage.getItem(STATE_KEY);
+        if (!salvo) return false;
+        const stateSalvo = JSON.parse(salvo);
+
+        // Verifica expiração (24h)
+        if (stateSalvo._expiraEm && Date.now() > stateSalvo._expiraEm) {
+          console.log('Estado expirado (> 24h), limpando...');
+          sessionStorage.removeItem(STATE_KEY);
+          return false;
+        }
+
+        if (stateSalvo.servicoId) {
+          state.servicoId = stateSalvo.servicoId;
+          state.servico = stateSalvo.servico;
+          state.duracaoMin = stateSalvo.duracaoMin;
+          state.preco = stateSalvo.preco;
+          state.icone = stateSalvo.icone;
+          state.exibirPreco = stateSalvo.exibirPreco;
+        }
+        if (stateSalvo.data) {
+          state.data = new Date(stateSalvo.data);
+          state.dataLabel = stateSalvo.dataLabel;
+        }
+        if (stateSalvo.hora) state.hora = stateSalvo.hora;
+        if (stateSalvo.nome) state.nome = stateSalvo.nome;
+        if (stateSalvo.tel) state.tel = stateSalvo.tel;
+        if (stateSalvo.email) state.email = stateSalvo.email;
+        if (stateSalvo.timezone) state.timezone = stateSalvo.timezone;
+        return true;
+      } catch(e) {
+        console.warn('Erro ao carregar state:', e);
+        return false;
+      }
+    }
+
+    function limparState() {
+      try {
+        sessionStorage.removeItem(STATE_KEY);
+      } catch(e) {
+        console.warn('Erro ao limpar state:', e);
+      }
+    }
 
     let calAno = new Date().getFullYear();
     let calMes = new Date().getMonth();
@@ -1832,6 +1906,7 @@
       state.preco = servico.preco;
       state.exibirPreco = servico.exibirPreco !== false;
       state.icone = servico.icone;
+      salvarState();
       atualizarStickyFooter();
     }
 
@@ -1873,6 +1948,7 @@
             state.data = data;
             state.dataLabel = `${d} de ${MESES[calMes].toLowerCase().slice(0, 3)}`;
             state.hora = null;
+            salvarState();
             renderCalendario();
             atualizarStickyFooter();
             setTimeout(() => window.irPara(3), 200);
@@ -2020,6 +2096,7 @@
             state.hora = hora;
             document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
             el.classList.add('selected');
+            salvarState();
             atualizarStickyFooter();
             setTimeout(() => window.irPara(4), 160);
           };
@@ -2130,6 +2207,7 @@
       el.value = v;
       if (el.id === 'input-tel') {
         state.tel = v;
+        salvarState();
         atualizarStickyFooter();
       }
     };
@@ -2140,6 +2218,7 @@
       const ok = state.nome.length >= 2 && state.tel.replace(/\D/g, '').length >= 10;
       const btn = document.getElementById('btn-confirmar');
       if (btn) btn.disabled = !ok;
+      salvarState();
       atualizarStickyFooter();
     };
 
@@ -2301,6 +2380,9 @@
         set('s-prestador', PRESTADOR.nome || '—');
         window.irPara(6);
         document.getElementById('sticky-footer')?.classList.remove('visible');
+
+        // Limpa estado após sucesso
+        limparState();
 
       } catch (err) {
         console.error('Erro ao confirmar:', err);
@@ -2874,7 +2956,74 @@
     // ── INIT ──────────────────────────────────────────────────────────────────
     atualizarStepsNav();
     const ok = await carregarPrestador();
-    if (ok) await Promise.all([carregarDisponibilidade(), exibirHorarioFuncionamento(), verificarDonoDaPagina()]);
+    if (ok) {
+      await Promise.all([carregarDisponibilidade(), exibirHorarioFuncionamento(), verificarDonoDaPagina()]);
+
+      // Carrega estado salvo e restaura UI
+      const estadoRecuperado = carregarState();
+      if (estadoRecuperado) {
+        // Restaura seleção de serviço
+        if (state.servicoId) {
+          const servicoCard = document.querySelector(`[data-servico-id="${state.servicoId}"]`);
+          if (servicoCard) {
+            document.querySelectorAll('.servico-card').forEach(c => c.classList.remove('selected'));
+            servicoCard.classList.add('selected');
+            const ch = servicoCard.querySelector('.check-icon');
+            if (ch) ch.textContent = '✓';
+          }
+        }
+
+        // Restaura seleção de data
+        if (state.data) {
+          renderCalendario();
+        }
+
+        // Restora seleção de horário
+        if (state.data && state.hora) {
+          renderSlots().then(() => {
+            document.querySelectorAll('.slot').forEach(s => {
+              s.classList.remove('selected');
+              if (s.textContent === state.hora) {
+                s.classList.add('selected');
+              }
+            });
+          });
+        }
+
+        // Restaura formulário
+        if (state.nome) {
+          const nomeInput = document.getElementById('input-nome');
+          if (nomeInput) nomeInput.value = state.nome;
+        }
+        if (state.tel) {
+          const telInput = document.getElementById('input-tel');
+          if (telInput) telInput.value = state.tel;
+        }
+        if (state.email) {
+          const emailInput = document.getElementById('input-email');
+          if (emailInput) emailInput.value = state.email;
+        }
+
+        // Valida formulário restaurado para habilitar botão corretamente
+        if (state.nome || state.tel || state.email) {
+          window.validarForm();
+        }
+
+        // Atualiza step e footer
+        if (state.hora) {
+          state.step = 4;
+          preencherResumo();
+        } else if (state.data) {
+          state.step = 3;
+        } else if (state.servicoId) {
+          state.step = 2;
+        }
+        atualizarStepsNav();
+        atualizarStickyFooter();
+        // Navega para o step correto para exibir o conteúdo adequado
+        window.irPara(state.step);
+      }
+    }
   </script>
 
   <!-- MODAL LISTA DE ESPERA -->
