@@ -29,7 +29,7 @@
       { "source": "/admin/financeiro", "destination": "/pages/admin/financeiro.html" },
       { "source": "/admin/acoes",   "destination": "/pages/admin/acoes.html" },
       { "source": "/admin/configuracoes", "destination": "/pages/admin/configuracoes.html" },
-      { "source": "/:slug",         "destination": "/pages/pagina-cliente.html" }
+      { "source": "**",             "destination": "/pages/pagina-cliente.html" }
     ],
     "headers": [
       {

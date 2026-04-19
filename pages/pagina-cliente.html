@@ -205,12 +205,128 @@
     .galeria-item {
       aspect-ratio: 1; border-radius: 10px; overflow: hidden;
       background: var(--bg2);
+      cursor: zoom-in;
+      border: none;
+      padding: 0;
     }
     .galeria-item img {
       width: 100%; height: 100%; object-fit: cover;
       transition: transform .3s;
+      display: block;
     }
     .galeria-item:hover img { transform: scale(1.05); }
+
+    .galeria-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(10, 10, 10, .82);
+      backdrop-filter: blur(8px);
+    }
+
+    .galeria-lightbox.visible {
+      display: flex;
+    }
+
+    .galeria-lightbox-dialog {
+      position: relative;
+      width: min(100%, 920px);
+      max-height: calc(100vh - 48px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .galeria-lightbox-img {
+      width: 100%;
+      max-height: calc(100vh - 120px);
+      object-fit: contain;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .galeria-lightbox-close,
+    .galeria-lightbox-nav {
+      position: absolute;
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, .12);
+      backdrop-filter: blur(6px);
+      transition: background .15s, transform .15s;
+    }
+
+    .galeria-lightbox-close:hover,
+    .galeria-lightbox-nav:hover {
+      background: rgba(255, 255, 255, .2);
+    }
+
+    .galeria-lightbox-close {
+      top: 14px;
+      right: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .galeria-lightbox-nav {
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      font-size: 24px;
+    }
+
+    .galeria-lightbox-nav.prev { left: 14px; }
+    .galeria-lightbox-nav.next { right: 14px; }
+
+    .galeria-lightbox-caption {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, .45);
+      color: rgba(255, 255, 255, .88);
+      padding: 7px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+      .galeria-lightbox {
+        padding: 12px;
+      }
+
+      .galeria-lightbox-dialog {
+        max-height: calc(100vh - 24px);
+      }
+
+      .galeria-lightbox-img {
+        max-height: calc(100vh - 88px);
+        border-radius: 14px;
+      }
+
+      .galeria-lightbox-close,
+      .galeria-lightbox-nav {
+        width: 40px;
+        height: 40px;
+      }
+
+      .galeria-lightbox-nav.prev { left: 8px; }
+      .galeria-lightbox-nav.next { right: 8px; }
+      .galeria-lightbox-close { top: 8px; right: 8px; }
+    }
 
     /* Gallery placeholder (preview) */
     .galeria-placeholder {
@@ -388,6 +504,10 @@
       transition: border-color .2s, box-shadow .2s, transform .15s;
       position: relative;
       overflow: hidden;
+      width: 100%;
+      text-align: left;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     .servico-card::before {
@@ -1305,12 +1425,28 @@
     </div>
   </div>
 
+  <div class="galeria-lightbox" id="galeria-lightbox" role="dialog" aria-modal="true" aria-label="Visualização da galeria" aria-hidden="true" inert onclick="fecharGaleriaExpandida(event)">
+    <div class="galeria-lightbox-dialog">
+      <button class="galeria-lightbox-close" type="button" id="galeria-lightbox-close" aria-label="Fechar imagem" onclick="fecharGaleriaExpandida(event)">×</button>
+      <button class="galeria-lightbox-nav prev" type="button" id="galeria-lightbox-prev" aria-label="Imagem anterior" onclick="navegarGaleriaExpandida(-1, event)">‹</button>
+      <img class="galeria-lightbox-img" id="galeria-lightbox-img" alt="Imagem da galeria ampliada">
+      <button class="galeria-lightbox-nav next" type="button" id="galeria-lightbox-next" aria-label="Próxima imagem" onclick="navegarGaleriaExpandida(1, event)">›</button>
+      <div class="galeria-lightbox-caption" id="galeria-lightbox-caption"></div>
+    </div>
+  </div>
+
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
     // Helper compartilhado: hex → rgb
     const hexToRgb = h => { const n = parseInt(h.replace('#',''), 16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
     // ── LÊ SLUG DA URL ────────────────────────────────────────────────────────
     // Suporta /ana-cabelos e /pagina-cliente?slug=ana-cabelos (dev local)
@@ -1321,6 +1457,9 @@
     // ── BUSCA PRESTADOR + SERVIÇOS ────────────────────────────────────────────
     let PRESTADOR = null;
     let SERVICOS = [];
+    let GALERIA_URLS = [];
+    let galeriaIndexAtual = 0;
+    let ultimoFocoGaleria = null;
 
     async function carregarPrestador() {
       if (!SLUG) {
@@ -1454,29 +1593,79 @@
         container.innerHTML = '<div style="text-align:center;padding:40px 0;color:#999">Nenhum serviço disponível no momento.</div>';
         return;
       }
-      container.innerHTML = SERVICOS.map((s, i) => {
+      container.innerHTML = '';
+
+      SERVICOS.forEach((s, i) => {
         const icone = ICONES_PADRAO[i % ICONES_PADRAO.length];
         const exibirPreco = s.exibir_preco !== false;
         const preco = exibirPreco
           ? (s.preco > 0 ? `R$${Number(s.preco).toFixed(0)}` : 'Consultar')
           : 'Sob consulta';
-        const descHtml = s.descricao
-          ? `<div class="servico-desc">${s.descricao}</div>`
-          : '';
-        return `
-      <div class="servico-card" onclick="selecionarServico(this, '${s.nome.replace(/'/g, "\\'")}', ${s.duracao_min}, ${s.preco || 0}, ${s.exibir_preco !== false}, '${icone}', '${s.id}')">
-        <div class="servico-icon">${icone}</div>
-        <div class="servico-info">
-          <div class="servico-nome">${s.nome}</div>
-          <div class="servico-meta"><span>${s.duracao_min} min</span></div>
-          ${descHtml}
-        </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div class="servico-preco">${preco}</div>
-          <div class="check-icon"></div>
-        </div>
-      </div>`;
-      }).join('');
+
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'servico-card';
+        card.setAttribute('aria-label', `Selecionar serviço ${s.nome}`);
+
+        const icon = document.createElement('div');
+        icon.className = 'servico-icon';
+        icon.textContent = icone;
+
+        const info = document.createElement('div');
+        info.className = 'servico-info';
+
+        const nome = document.createElement('div');
+        nome.className = 'servico-nome';
+        nome.textContent = s.nome || 'Serviço';
+
+        const meta = document.createElement('div');
+        meta.className = 'servico-meta';
+        const metaDur = document.createElement('span');
+        metaDur.textContent = `${s.duracao_min} min`;
+        meta.appendChild(metaDur);
+
+        info.appendChild(nome);
+        info.appendChild(meta);
+
+        if (s.descricao) {
+          const desc = document.createElement('div');
+          desc.className = 'servico-desc';
+          desc.textContent = s.descricao;
+          info.appendChild(desc);
+        }
+
+        const right = document.createElement('div');
+        right.style.display = 'flex';
+        right.style.alignItems = 'center';
+        right.style.gap = '10px';
+
+        const precoEl = document.createElement('div');
+        precoEl.className = 'servico-preco';
+        precoEl.textContent = preco;
+
+        const check = document.createElement('div');
+        check.className = 'check-icon';
+
+        right.appendChild(precoEl);
+        right.appendChild(check);
+
+        card.appendChild(icon);
+        card.appendChild(info);
+        card.appendChild(right);
+
+        card.addEventListener('click', () => {
+          selecionarServicoCard(card, {
+            id: s.id,
+            nome: s.nome,
+            duracaoMin: s.duracao_min,
+            preco: s.preco || 0,
+            exibirPreco: s.exibir_preco !== false,
+            icone,
+          });
+        });
+
+        container.appendChild(card);
+      });
     }
 
     // ── ESTADO ────────────────────────────────────────────────────────────────
@@ -1628,7 +1817,7 @@
     }
 
      // ── STEP 1 — SERVIÇOS ─────────────────────────────────────────────────────
-    window.selecionarServico = function (el, nome, dur, preco, exibirPreco, icone, servicoId) {
+    function selecionarServicoCard(el, servico) {
       document.querySelectorAll('.servico-card').forEach(c => {
         c.classList.remove('selected');
         const ch = c.querySelector('.check-icon');
@@ -1637,14 +1826,14 @@
       el.classList.add('selected');
       const ch = el.querySelector('.check-icon');
       if (ch) ch.textContent = '✓';
-      state.servicoId = servicoId || null;
-      state.servico = nome;
-      state.duracaoMin = dur;
-      state.preco = preco;
-      state.exibirPreco = exibirPreco !== false;
-      state.icone = icone;
+      state.servicoId = servico.id || null;
+      state.servico = servico.nome;
+      state.duracaoMin = servico.duracaoMin;
+      state.preco = servico.preco;
+      state.exibirPreco = servico.exibirPreco !== false;
+      state.icone = servico.icone;
       atualizarStickyFooter();
-    };
+    }
 
     // ── STEP 2 — CALENDÁRIO ───────────────────────────────────────────────────
     const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -1939,8 +2128,10 @@
       else if (v.length >= 3) v = '(' + v.slice(0, 2) + ') ' + v.slice(2);
       else if (v.length >= 1) v = '(' + v;
       el.value = v;
-      state.tel = v;
-      atualizarStickyFooter();
+      if (el.id === 'input-tel') {
+        state.tel = v;
+        atualizarStickyFooter();
+      }
     };
 
     window.validarForm = function () {
@@ -2073,7 +2264,7 @@
           const msg = resultado.erro || 'Horário não disponível. Por favor, escolha outro horário.';
           console.log('Erro de conflito:', msg, 'hora:', state.hora, 'dataHora UTC:', dataHoraISO);
           console.log('Debug:', resultado.debug);
-          mostrarErroBanner(msg + ' (debug: ' + JSON.stringify(resultado.debug) + ')');
+          mostrarErroBanner('Este horário acabou de ficar indisponível. Escolha outro horário para continuar.');
           window.irPara(3);
           if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
           return;
@@ -2398,12 +2589,79 @@
       const grid    = document.getElementById('galeria-grid');
       const ph      = document.getElementById('galeria-placeholder');
       if (!section || !grid || !urls?.length) return;
+      GALERIA_URLS = urls.slice(0, 9);
       section.style.display = 'block';
       if (ph) ph.style.display = 'none';
-      grid.innerHTML = urls.slice(0, 9).map(url =>
-        `<div class="galeria-item"><img src="${url}" alt="Trabalho" loading="lazy" onerror="this.closest('.galeria-item').style.display='none'"></div>`
+      grid.innerHTML = GALERIA_URLS.map((url, index) =>
+        `<button type="button" class="galeria-item" aria-label="Abrir imagem ${index + 1} da galeria" onclick="abrirGaleriaExpandida(${index})"><img src="${escapeHtml(url)}" alt="Trabalho ${index + 1}" loading="lazy" onerror="this.closest('.galeria-item').style.display='none'"></button>`
       ).join('');
     }
+
+    function atualizarLightboxGaleria() {
+      const img = document.getElementById('galeria-lightbox-img');
+      const caption = document.getElementById('galeria-lightbox-caption');
+      const prev = document.getElementById('galeria-lightbox-prev');
+      const next = document.getElementById('galeria-lightbox-next');
+      const total = GALERIA_URLS.length;
+      if (!img || !caption || !total) return;
+
+      const url = GALERIA_URLS[galeriaIndexAtual];
+      img.src = url;
+      img.alt = `Imagem ${galeriaIndexAtual + 1} da galeria`;
+      caption.textContent = `${galeriaIndexAtual + 1} de ${total}`;
+      if (prev) prev.style.display = total > 1 ? 'inline-flex' : 'none';
+      if (next) next.style.display = total > 1 ? 'inline-flex' : 'none';
+    }
+
+    window.abrirGaleriaExpandida = function(index) {
+      if (!GALERIA_URLS.length) return;
+      galeriaIndexAtual = index;
+      const lightbox = document.getElementById('galeria-lightbox');
+      const closeButton = document.getElementById('galeria-lightbox-close');
+      ultimoFocoGaleria = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      atualizarLightboxGaleria();
+      if (lightbox) {
+        lightbox.removeAttribute('inert');
+        lightbox.classList.add('visible');
+        lightbox.setAttribute('aria-hidden', 'false');
+      }
+      document.body.style.overflow = 'hidden';
+      closeButton?.focus();
+    };
+
+    window.navegarGaleriaExpandida = function(delta, event) {
+      if (event) event.stopPropagation();
+      if (!GALERIA_URLS.length) return;
+      galeriaIndexAtual = (galeriaIndexAtual + delta + GALERIA_URLS.length) % GALERIA_URLS.length;
+      atualizarLightboxGaleria();
+    };
+
+    window.fecharGaleriaExpandida = function(event) {
+      if (event && event.target && event.target.id && event.target.id !== 'galeria-lightbox') {
+        const isCloseButton = event.target.closest('.galeria-lightbox-close');
+        if (!isCloseButton) return;
+      }
+      const lightbox = document.getElementById('galeria-lightbox');
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      if (lightbox) {
+        lightbox.classList.remove('visible');
+        lightbox.setAttribute('aria-hidden', 'true');
+        lightbox.setAttribute('inert', '');
+      }
+      document.body.style.overflow = '';
+      ultimoFocoGaleria?.focus?.();
+      ultimoFocoGaleria = null;
+    };
+
+    document.addEventListener('keydown', (event) => {
+      const lightbox = document.getElementById('galeria-lightbox');
+      if (!lightbox?.classList.contains('visible')) return;
+      if (event.key === 'Escape') window.fecharGaleriaExpandida();
+      if (event.key === 'ArrowLeft') window.navegarGaleriaExpandida(-1);
+      if (event.key === 'ArrowRight') window.navegarGaleriaExpandida(1);
+    });
 
     window.irParaAgendamento = function() {
       // Volta ao step 1 (serviços) e faz scroll
