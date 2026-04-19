@@ -1526,7 +1526,7 @@
       if (bioEl)  bioEl.textContent  = data.bio  || '';
       if (avEl) {
         if (data.foto_url) {
-          avEl.innerHTML = `<img src="${data.foto_url}" alt="${data.nome}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+          avEl.innerHTML = `<img src="${escapeHtml(data.foto_url)}" alt="${escapeHtml(data.nome || 'Profissional')}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
         } else {
           avEl.textContent = (data.nome || 'P')[0].toUpperCase();
         }
@@ -2166,7 +2166,7 @@
       if (container) {
         // Monta link do WhatsApp se o prestador tiver número cadastrado
         const tel = PRESTADOR?.whatsapp?.replace(/\D/g, '');
-        const nomePrest = PRESTADOR?.nome || 'o profissional';
+        const nomePrest = escapeHtml(PRESTADOR?.nome || 'o profissional');
         const linkWpp = tel
           ? `<a class="btn-whatsapp" href="https://wa.me/55${tel}" target="_blank" rel="noopener">
            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -2199,7 +2199,7 @@
       banner.innerHTML = `
         <div style="font-size:24px;margin-bottom:8px">⚠️</div>
         <div style="font-size:16px;font-weight:600;color:#856404;margin-bottom:4px">Horário indisponível</div>
-        <div style="font-size:13px;color:#856404;line-height:1.5">${mensagem}</div>
+        <div style="font-size:13px;color:#856404;line-height:1.5">${escapeHtml(mensagem)}</div>
       `;
       banner.style.display = 'block';
       setTimeout(() => { banner.style.display = 'none'; }, 5000);
@@ -2510,8 +2510,8 @@
         if (listaEl) {
           const comComentario = avs.filter(a => a.comentario).slice(0, 3);
           listaEl.innerHTML = comComentario.map(a => {
-            const inicial  = (a.cliente_nome || '?')[0].toUpperCase();
-            const primeiro = (a.cliente_nome || '').split(' ')[0];
+            const inicial  = escapeHtml((a.cliente_nome || '?')[0]).toUpperCase();
+            const primeiro = escapeHtml((a.cliente_nome || '').split(' ')[0]);
             const dataFmt  = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
             const estrelas = '★'.repeat(a.nota) + '☆'.repeat(5 - a.nota);
             return `<div class="av-card">
@@ -2523,7 +2523,7 @@
                 </div>
                 <div class="av-stars" style="margin-left:auto">${estrelas}</div>
               </div>
-              <div class="av-comentario">"${a.comentario}"</div>
+              <div class="av-comentario">"${escapeHtml(a.comentario || '')}"</div>
             </div>`;
           }).join('');
         }

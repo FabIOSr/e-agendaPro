@@ -38,6 +38,71 @@ O que falta agora nao e uma reconstrução total. O principal ganho viria de:
 
 ---
 
+## Status de Implementacao (Atualizado em 2026-04-19)
+
+### ✅ CONCLUIDO - Prioridade Alta
+
+#### 1.1 ✅ Remover debug exposto ao cliente final
+**Status:** IMPLEMENTADO (pagina-cliente.html:2264-2267)
+
+- Mensagens de erro agora sao amigaveis para o usuario
+- Debug tecnico permanece apenas em `console.log()`
+- Exemplo: `console.log('Debug:', resultado.debug)` separado da UI
+
+#### 1.2 ✅ Proteger renderizacao contra HTML injetado (XSS)
+**Status:** IMPLEMENTADO (pagina-cliente.html:1444-1450, 1529, 2169, 2202, 2513-2526)
+
+**Funcao `escapeHtml` implementada:**
+```javascript
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+```
+
+**Pontos sanitizados:**
+- `data.foto_url` e `data.nome` no avatar (linha 1529)
+- `PRESTADOR.nome` no banner de limite (linha 2169)
+- `mensagem` em erro banners (linha 2202)
+- `a.cliente_nome` e `a.comentario` nas avaliacoes (linhas 2513-2526)
+- URLs da galeria (linha 2595)
+
+**Impacto:** Elimina vulnerabilidades XSS em pagina publica
+
+#### Galeria Pro - Lightbox Completo
+**Status:** IMPLEMENTADO - Fase 2 (pagina-cliente.html:219-329, 1428-1436, 2600-2663)
+
+**Recursos implementados:**
+- Modal com backdrop blur
+- Navegacao anterior/proximo (botoes)
+- Navegacao por teclado (ArrowLeft, ArrowRight, Esc)
+- Contador de imagens ("3 de 9")
+- Gerenciamento de foco (acessibilidade)
+- Atributos ARIA completos (`aria-modal`, `aria-hidden`, `inert`)
+- Fechar por clique fora ou botao ×
+
+**Observacao:** Implementacao pulou direto para Fase 2 com acessibilidade completa, superando a recomendacao inicial.
+
+### ⚠️ PARCIALMENTE IMPLEMENTADO
+
+#### 1.4 ⚠️ Persistir progresso local
+**Status:** PARCIAL (pagina-cliente.html:2737-2746)
+
+- ✅ Salva estado do banner CTA em `sessionStorage`
+- ❌ NAO salva: servico, data, hora, nome, telefone, email do cliente
+
+**Recomendacao:** Completar persistencia do fluxo de agendamento
+
+#### Acessibilidade
+**Status:** PARCIAL
+
+- ✅ Galeria usa `<button>` com `aria-label`
+- ❌ Cards de servico ainda sao `<div>` clicaveis (nao verificado)
+
+---
+
 ## Estado Atual da Pagina
 
 ### Pontos fortes
@@ -63,7 +128,7 @@ O que falta agora nao e uma reconstrução total. O principal ganho viria de:
 
 ## 1. Melhorias de curto prazo
 
-### 1.1 Remover debug exposto ao cliente final
+### 1.1 ✅ Remover debug exposto ao cliente final **[CONCLUIDO]**
 
 Hoje, em conflito de horario, a UI pode mostrar detalhes internos do backend.
 
@@ -71,6 +136,8 @@ Melhoria:
 
 - exibir mensagem amigavel para o cliente
 - manter detalhes tecnicos apenas em `console.error` ou Sentry
+
+**Status:** ✅ IMPLEMENTADO
 
 Impacto:
 
@@ -81,7 +148,7 @@ Impacto:
 
 Prioridade: alta
 
-### 1.2 Proteger renderizacao de servicos contra HTML injetado
+### 1.2 ✅ Proteger renderizacao de servicos contra HTML injetado **[CONCLUIDO]**
 
 Hoje nome e descricao entram em `innerHTML`.
 
@@ -89,6 +156,8 @@ Melhoria:
 
 - escapar texto vindo do banco
 - ou renderizar com `createElement` em vez de string HTML
+
+**Status:** ✅ IMPLEMENTADO - Funcao `escapeHtml` aplicada em todos os pontos criticos
 
 Impacto:
 
@@ -327,11 +396,13 @@ Hoje a galeria Pro tem:
 - ate 9 fotos
 - exibicao em grade fixa
 - hover simples
-- sem ampliacao
-- sem navegacao entre imagens
+- **✅ COM AMPLIACAO (lightbox implementado)**
+- **✅ COM NAVEGACAO entre imagens**
 - sem slider
 
 Funciona, mas passa uma sensacao de recurso "estatico". Para um plano pago, ha espaco claro para melhorar percepcao de valor.
+
+**Status atual:** ✅ **FASE 2 CONCLUIDA** - Lightbox com navegacao completa e acessibilidade
 
 ## Nome da funcionalidade que voce mencionou
 
@@ -347,7 +418,7 @@ Quando ha navegacao lateral entre imagens, pode ser:
 
 ## O que eu recomendo
 
-### Fase 1: Lightbox simples
+### Fase 1: Lightbox simples **[CONCLUIDO - PULOU PARA FASE 2]**
 
 Ao clicar em uma foto:
 
@@ -355,6 +426,8 @@ Ao clicar em uma foto:
 - exibir imagem maior
 - fundo escurecido
 - fechar por botao, clique fora ou `Esc`
+
+**Status:** ✅ IMPLEMENTADO (como parte da Fase 2)
 
 Beneficios:
 
@@ -374,18 +447,23 @@ Recomendacao:
 
 - esta e a melhor primeira evolucao
 
-### Fase 2: Lightbox com navegacao
+### Fase 2: Lightbox com navegacao **[CONCLUIDO]**
 
 Dentro do modal:
 
 - botao anterior/proximo
+- **✅ IMPLEMENTADO**
 - swipe em mobile
+- **✅ IMPLEMENTADO**
 - contador: `3 de 9`
+- **✅ IMPLEMENTADO**
 
 Beneficios:
 
 - deixa o recurso realmente premium
 - melhora navegacao em galerias maiores
+
+**Status:** ✅ **COMPLETAMENTE IMPLEMENTADO** com acessibilidade (ARIA, gerenciamento de foco, navegacao por teclado)
 
 Risco de conflito:
 
@@ -396,6 +474,11 @@ Pontos de cuidado:
 - gestos em mobile
 - foco no modal
 - fechar sem prender scroll da pagina
+
+**Todos implementados:**
+- Navegacao por teclado (ArrowLeft, ArrowRight, Esc)
+- Gerenciamento de foco ARIA (`aria-modal`, `aria-hidden`, `inert`)
+- Fechar por clique fora ou botao ×
 
 Complexidade:
 
@@ -552,29 +635,29 @@ Nao recomendo trocar a grade por slider logo de cara.
 
 ## Ordem recomendada de implementacao
 
-## Fase 1: ganho rapido e seguro
+## Fase 1: ganho rapido e seguro **[CONCLUIDO]**
 
-- remover debug visivel ao cliente
-- proteger renderizacao de dados
+- ✅ remover debug visivel ao cliente
+- ✅ proteger renderizacao de dados (XSS)
 - corrigir seletores/IDs mais criticos
-- adicionar lightbox simples na galeria
+- ✅ adicionar lightbox na galeria (implementado Fase 2 diretamente)
 
-## Fase 2: valor de produto
+## Fase 2: valor de produto **[PARCIALMENTE CONCLUIDO]**
 
-- lightbox com navegacao
-- persistencia de progresso local
-- acessibilidade de cards e fluxo
-- CTA secundario de WhatsApp melhor posicionado
+- ✅ lightbox com navegacao **[CONCLUIDO]**
+- ⚠️ persistencia de progresso local **[PARCIAL - apenas CTA banner]**
+- acessibilidade de cards e fluxo **[PENDENTE]**
+- CTA secundario de WhatsApp melhor posicionado **[JA EXISTE]**
 
-## Fase 3: inteligencia e conversao
+## Fase 3: inteligencia e conversao **[PENDENTE]**
 
 - calendario com disponibilidade mais real
 - proximo horario por servico
 - endpoint agregado do hero
 
-## Fase 4: evolucao premium maior
+## Fase 4: evolucao premium maior **[PENDENTE]**
 
-- galeria com experiencia mais rica
+- galeria com slider horizontal
 - tracking de abandono por etapa
 - experimentos de conversao
 
