@@ -74,7 +74,7 @@ async function enviarEmail(destinatario: string, nome: string, link: string, nom
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email: destinatario }] }],
-        from: { email: "nao-responda@agendapro.com.br", name: "AgendaPro" },
+        from: { email: Deno.env.get('EMAIL_FROM') || 'nao-responda@agendapro.com.br', name: "AgendaPro" },
         subject: "Lembrete: Como foi seu atendimento? ⭐",
         content: [{ type: "text/html", value: html }],
       }),

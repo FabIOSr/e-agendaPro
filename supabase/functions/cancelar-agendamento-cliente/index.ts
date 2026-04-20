@@ -48,7 +48,12 @@ async function enviarWhatsApp(telefone: string, mensagem: string) {
 
 async function enviarEmail(to: string, subject: string, html: string) {
   const sendgridKey = Deno.env.get("SENDGRID_API_KEY");
-  if (!sendgridKey) return;
+  const EMAIL_FROM = Deno.env.get('EMAIL_FROM') || 'nao-responda@agendapro.com.br';
+
+  if (!sendgridKey) {
+    console.warn('SENDGRID_API_KEY não configurado');
+    return;
+  }
 
   try {
     const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -59,7 +64,7 @@ async function enviarEmail(to: string, subject: string, html: string) {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
+        from: { email: EMAIL_FROM, name: "AgendaPro" },
         subject,
         content: [{ type: "text/html", value: html }],
       }),
@@ -113,6 +118,8 @@ async function cancelar() {
 }
 
 Deno.serve(async (req: Request) => {
+  const EMAIL_FROM = Deno.env.get('EMAIL_FROM') || 'nao-responda@agendapro.com.br';
+
   const origin = req.headers.get("origin");
 
   if (req.method === "OPTIONS") {

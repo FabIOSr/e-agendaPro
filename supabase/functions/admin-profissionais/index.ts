@@ -1,36 +1,118 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createRateLimiter, RATE_LIMITS, rateLimitHeaders } from '../_shared/rate-limit.ts';
+import { corsHeaders, validateOrigin, handleCorsPreflight } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type, x-admin-token',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const limiter = createRateLimiter('admin-profissionais');
 
-// Valida token admin (mesma lógica das outras functions)
+// ── JWT usando Web Crypto API (HMAC-SHA256) ─────────────────────────────────
+const JWT_SECRET = Deno.env.get('ADMIN_JWT_SECRET');
+if (!JWT_SECRET) {
+  throw new Error('ADMIN_JWT_SECRET environment variable is required');
+}
+const JWT_ISSUER = 'agendapro-admin';
+const JWT_AUDIENCE = 'agendapro-admin-dashboard';
+
+interface JWTPayload {
+  iss: string;
+  aud: string;
+  iat: number;
+  exp: number;
+  sub: string;
+}
+
+// Converte string para Uint8Array
+async function importKey(secret: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  return await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+}
+
+// Decodifica base64url
+function base64UrlDecode(str: string): Uint8Array {
+  let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) base64 += '=';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+// Verifica JWT assinado com HMAC-SHA256
 async function validateAdminToken(req: Request): Promise<boolean> {
   const adminToken = req.headers.get('x-admin-token');
   if (!adminToken) return false;
 
   try {
-    const decoded = JSON.parse(atob(adminToken));
-    const age = Date.now() - decoded.timestamp;
-    const maxAge = 24 * 60 * 60 * 1000; // 24 horas
-    return age <= maxAge;
+    const parts = adminToken.split('.');
+    if (parts.length !== 3) return false;
+
+    const [encodedHeader, encodedPayload, encodedSignature] = parts;
+    const encoder = new TextEncoder();
+    const data = `${encodedHeader}.${encodedPayload}`;
+
+    // Verifica assinatura
+    const key = await importKey(JWT_SECRET);
+    const signature = base64UrlDecode(encodedSignature);
+    const isValid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      signature,
+      encoder.encode(data)
+    );
+
+    if (!isValid) return false;
+
+    // Decodifica payload
+    const payload: JWTPayload = JSON.parse(new TextDecoder().decode(base64UrlDecode(encodedPayload)));
+
+    // Verifica expiração
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp < now) return false;
+
+    // Verifica issuer e audience
+    if (payload.iss !== JWT_ISSUER || payload.aud !== JWT_AUDIENCE) return false;
+
+    return true;
   } catch {
     return false;
   }
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+
+  // CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return handleCorsPreflight(origin) ?? new Response('Forbidden', { status: 403 });
   }
+
+  if (!validateOrigin(origin)) {
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  const cors = corsHeaders(origin);
 
   if (req.method !== 'GET') {
     return new Response(
       JSON.stringify({ error: 'Método não permitido' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 405, headers: { ...cors, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Rate limiting
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const rateResult = limiter.check(ip, RATE_LIMITS.adminDashboard);
+  if (!rateResult.allowed) {
+    return new Response(
+      JSON.stringify({ error: 'Muitas tentativas. Tente novamente mais tarde.' }),
+      { status: 429, headers: { ...cors, ...rateLimitHeaders(rateResult), 'Content-Type': 'application/json' } }
     );
   }
 
@@ -38,7 +120,7 @@ serve(async (req) => {
   if (!isValid) {
     return new Response(
       JSON.stringify({ error: 'Não autorizado' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -87,7 +169,7 @@ serve(async (req) => {
       console.error('Erro ao buscar prestadores:', error);
       return new Response(
         JSON.stringify({ error: 'Erro ao buscar dados' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -175,14 +257,14 @@ serve(async (req) => {
         limit,
         total_pages: totalPages,
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Erro em admin-profissionais:', error);
     return new Response(
       JSON.stringify({ error: 'Erro interno no servidor' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   }
 });

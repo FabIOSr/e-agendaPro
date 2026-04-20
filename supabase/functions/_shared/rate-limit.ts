@@ -18,6 +18,11 @@
  *
  * Configs disponiveis:
  *   - adminValidate:        5req / 15min  (brute force)
+ *   - adminDashboard:       20req / 1min  (dashboard stats)
+ *   - adminActions:         30req / 1min  (admin actions)
+ *   - adminFinanceiro:      20req / 1min  (financeiro queries)
+ *   - adminConfiguracoes:   10req / 1min  (config changes)
+ *   - adminProfissionais:   20req / 1min  (list profissionais)
  *   - criarAgendamento:     10req / 1min  (anti-spam)
  *   - horariosDisponiveis:  30req / 1min  (browsing)
  *   - lembretesWhatsApp:    5req / 1min   (custos)
@@ -42,6 +47,11 @@ export interface RateLimitResult {
 
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   adminValidate:        { max: 5,  windowMs: 15 * 60 * 1000 },
+  adminDashboard:       { max: 20, windowMs: 60 * 1000 },
+  adminActions:         { max: 30, windowMs: 60 * 1000 },
+  adminFinanceiro:      { max: 20, windowMs: 60 * 1000 },
+  adminConfiguracoes:   { max: 10, windowMs: 60 * 1000 },
+  adminProfissionais:   { max: 20, windowMs: 60 * 1000 },
   criarAgendamento:     { max: 10, windowMs: 60 * 1000 },
   horariosDisponiveis:  { max: 30, windowMs: 60 * 1000 },
   lembretesWhatsApp:    { max: 5,  windowMs: 60 * 1000 },

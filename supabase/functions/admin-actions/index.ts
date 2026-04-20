@@ -1,5 +1,90 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
 import { corsHeaders, validateOrigin, handleCorsPreflight } from "../_shared/cors.ts";
+import { createRateLimiter, RATE_LIMITS, rateLimitHeaders } from '../_shared/rate-limit.ts';
+
+const limiter = createRateLimiter('admin-actions');
+
+// ── JWT usando Web Crypto API (HMAC-SHA256) ─────────────────────────────────
+const JWT_SECRET = Deno.env.get('ADMIN_JWT_SECRET');
+if (!JWT_SECRET) {
+  throw new Error('ADMIN_JWT_SECRET environment variable is required');
+}
+const JWT_ALGORITHM = 'HS256';
+const JWT_ISSUER = 'agendapro-admin';
+const JWT_AUDIENCE = 'agendapro-admin-dashboard';
+
+interface JWTPayload {
+  iss: string;
+  aud: string;
+  iat: number;
+  exp: number;
+  sub: string;
+}
+
+// Converte string para Uint8Array
+async function importKey(secret: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  return await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+}
+
+// Decodifica base64url
+function base64UrlDecode(str: string): Uint8Array {
+  let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) base64 += '=';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+// Verifica JWT assinado com HMAC-SHA256
+async function verifyJWT(token: string): Promise<{ valid: boolean; expired: boolean; payload?: JWTPayload }> {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return { valid: false, expired: false };
+
+    const [encodedHeader, encodedPayload, encodedSignature] = parts;
+    const encoder = new TextEncoder();
+    const data = `${encodedHeader}.${encodedPayload}`;
+
+    // Verifica assinatura
+    const key = await importKey(JWT_SECRET);
+    const signature = base64UrlDecode(encodedSignature);
+    const isValid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      signature,
+      encoder.encode(data)
+    );
+
+    if (!isValid) return { valid: false, expired: false };
+
+    // Decodifica payload
+    const payload: JWTPayload = JSON.parse(new TextDecoder().decode(base64UrlDecode(encodedPayload)));
+
+    // Verifica expiração
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp < now) {
+      return { valid: false, expired: true };
+    }
+
+    // Verifica issuer e audience
+    if (payload.iss !== JWT_ISSUER || payload.aud !== JWT_AUDIENCE) {
+      return { valid: false, expired: false };
+    }
+
+    return { valid: true, expired: false, payload };
+  } catch {
+    return { valid: false, expired: false };
+  }
+}
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
@@ -18,9 +103,33 @@ Deno.serve(async (req: Request) => {
     return new Response("Method not allowed", { status: 405, headers: cors });
   }
 
+  // Rate limiting
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const rateResult = limiter.check(ip, RATE_LIMITS.adminActions);
+  if (!rateResult.allowed) {
+    return Response.json(
+      { error: 'Muitas tentativas. Tente novamente mais tarde.' },
+      { status: 429, headers: { ...cors, ...rateLimitHeaders(rateResult) } }
+    );
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // ── VERIFICAÇÃO DE TOKEN ADMIN ────────────────────────────────
+  const adminToken = req.headers.get('x-admin-token');
+  if (!adminToken) {
+    return Response.json({ error: 'Token admin obrigatório' }, { status: 401, headers: cors });
+  }
+
+  const tokenResult = await verifyJWT(adminToken);
+  if (!tokenResult.valid) {
+    if (tokenResult.expired) {
+      return Response.json({ error: 'Token expirado' }, { status: 401, headers: cors });
+    }
+    return Response.json({ error: 'Token inválido' }, { status: 401, headers: cors });
+  }
 
   try {
     const body = await req.json();

@@ -121,31 +121,31 @@ CREATE TABLE IF NOT EXISTS public.clientes (
 -- ============================================================
 -- ÍNDICES
 -- ============================================================
-CREATE INDEX IF NOT EXISTS idx_agendamentos_prestador_data
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_agendamentos_prestador_data
   ON public.agendamentos(prestador_id, data_hora);
-CREATE INDEX IF NOT EXISTS idx_agendamentos_cancel_token
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_agendamentos_cancel_token
   ON public.agendamentos(cancel_token);
-CREATE INDEX IF NOT EXISTS idx_agendamentos_status
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_agendamentos_status
   ON public.agendamentos(prestador_id, status, data_hora)
   WHERE status = 'confirmado';
-CREATE INDEX IF NOT EXISTS idx_agendamentos_avaliacao
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_agendamentos_avaliacao
   ON public.agendamentos(status, avaliacao_solicitada, data_hora)
   WHERE status = 'concluido' AND avaliacao_solicitada = false;
-CREATE INDEX IF NOT EXISTS idx_servicos_prestador
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_servicos_prestador
   ON public.servicos(prestador_id);
-CREATE INDEX IF NOT EXISTS idx_disponibilidade_prestador
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_disponibilidade_prestador
   ON public.disponibilidade(prestador_id, dia_semana);
-CREATE INDEX IF NOT EXISTS idx_bloqueios_prestador
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_bloqueios_prestador
   ON public.bloqueios(prestador_id, inicio, fim);
-CREATE INDEX IF NOT EXISTS idx_avaliacoes_prestador
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_avaliacoes_prestador
   ON public.avaliacoes(prestador_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pagamentos_prestador
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pagamentos_prestador
   ON public.pagamentos(prestador_id);
-CREATE INDEX IF NOT EXISTS idx_prestadores_asaas
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_prestadores_asaas
   ON public.prestadores(asaas_customer_id);
-CREATE INDEX IF NOT EXISTS idx_prestadores_slug
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_prestadores_slug
   ON public.prestadores(slug);
-CREATE INDEX IF NOT EXISTS idx_clientes_prestador
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_clientes_prestador
   ON public.clientes(prestador_id, nome);
 
 -- ============================================================

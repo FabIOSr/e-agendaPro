@@ -1,9 +1,11 @@
 // tests/cancel-survey.test.js
 // Testes unitários para lógica do Cancel Survey (R-2)
+// Execute com: node --test tests/cancel-survey.test.js
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
+// Wrapper principal para node --test (test ao invés de describe)
 describe('Cancel Survey - Lógica de Validação', () => {
   
   describe('Validação de motivo', () => {
@@ -239,6 +241,3 @@ describe('Cancel Survey - Lógica de Validação', () => {
     });
   });
 });
-
-console.log('✅ Testes do Cancel Survey prontos para execução');
-console.log('Execute com: node --test tests/cancel-survey.test.js');

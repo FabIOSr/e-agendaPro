@@ -82,7 +82,7 @@ async function enviarEmail(to: string, subject: string, html: string) {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: "fabio-s-ramos@hotmail.com", name: "AgendaPro" },
+        from: { email: Deno.env.get('EMAIL_FROM') || 'nao-responda@agendapro.com.br', name: "AgendaPro" },
         subject,
         content: [{ type: "text/html", value: html }],
       }),

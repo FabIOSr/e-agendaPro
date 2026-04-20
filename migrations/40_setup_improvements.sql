@@ -24,10 +24,10 @@
 --  agendamentos_servico_id_fkey without a covering index.
 --  This can lead to suboptimal query performance."
 --
--- SOLUÇÃO: Criar índice CONCURRENT (não bloqueia a tabela)
+-- SOLUÇÃO: Criar índice CONCURRENTLY (não bloqueia a tabela)
 -- para permitir queries da aplicação durante a criação.
 
-CREATE INDEX IF NOT EXISTS idx_agendamentos_servico_id
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_agendamentos_servico_id
   ON public.agendamentos(servico_id);
 
 -- ============================================
@@ -53,8 +53,7 @@ WHERE tablename = 'agendamentos'
 -- TEMPO ESPERADO DE EXECUÇÃO
 -- ============================================
 
--- CREATE INDEX: 5-30 segundos (depende do tamanho da tabela)
+-- CREATE INDEX CONCURRENTLY: 5-30 segundos (depende do tamanho da tabela)
 --
--- NOTA: Índice vai bloquear escritas na tabela durante criação.
--- Para tabelas grandes ou produção com muito tráfego, considere
--- executar via CLI em período de menor movimento.
+-- NOTA: Índice CONCURRENTLY NÃO bloqueia escritas na tabela durante criação.
+-- Pode ser executado em produção sem downtime.
