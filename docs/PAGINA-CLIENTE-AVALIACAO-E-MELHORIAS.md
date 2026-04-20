@@ -338,7 +338,72 @@ Beneficio:
 
 Prioridade: media ✅ CONCLUIDO
 
-### 2.2 Mais prova social no topo
+### 2.2 ✅ Skeleton Loading com Transições Suaves **[IMPLEMENTADO]**
+
+**Status:** ✅ CONCLUIDO (2026-04-19)
+
+**Problema resolvido:**
+- Hero mostrava "A" hardcoded antes de carregar dados reais (flash feio)
+- Serviços mostravam "Carregando serviços…" (estático)
+- Slots mostravam "Buscando horários…" (estático)
+
+**O que foi implementado:**
+
+1. **Skeleton animations:**
+   - Avatar pulse (círculo animado)
+   - Título e bio pulse (linhas animadas)
+   - Cards de serviço skeleton (3 cards)
+   - Slots skeleton (8 slots)
+
+2. **Transições suaves (fade-in + stagger):**
+   - Fade-in do hero (0.4s)
+   - Cards de serviço aparecem um por um (60ms de delay)
+   - Slots aparecem um por um (40ms de delay)
+   - Scale suave nos slots (0.95 → 1.0)
+
+3. **CSS de animação:**
+```css
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.servico-card {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.servico-card.loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+```
+
+**Como funciona:**
+1. HTML inicial carrega com skeleton elements
+2. Quando dados chegam:
+   - Remove skeleton elements
+   - Mostra conteúdo real com classe `.fade-in`
+   - Adiciona classe `.loaded` com delay (stagger)
+
+**Benefícios:**
+- ✅ UX profissional (não mais conteúdo hardcoded)
+- ✅ Percepção de carregamento mais rápido
+- ✅ Transições suaves e elegantes
+- ✅ Animação de stagger (conteúdo aparece em sequência)
+
+**Arquivos modificados:**
+- `pages/pagina-cliente.html` (CSS + HTML + JavaScript)
+
+Prioridade: alta ✅ CONCLUIDO
+
+### 2.3 Mais prova social no topo
 
 Sugestoes:
 

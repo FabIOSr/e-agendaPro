@@ -380,6 +380,134 @@
     }
     .agendapro-footer a:hover { text-decoration: underline; }
 
+    /* ── SKELETON LOADING ── */
+    @keyframes skeleton-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fade-in 0.4s ease-out forwards;
+    }
+
+    .fade-in-up {
+      animation: fade-in-up 0.5s ease-out forwards;
+    }
+
+    .skeleton {
+      background: linear-gradient(
+        90deg,
+        var(--bg2) 25%,
+        var(--border) 50%,
+        var(--bg2) 75%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-exit {
+      animation: fade-in 0.3s ease-out reverse forwards;
+    }
+
+    /* Hero skeleton */
+    .skeleton-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+    }
+
+    .skeleton-hero-title {
+      height: 26px;
+      width: 200px;
+      margin: 0 auto 8px;
+      border-radius: 6px;
+    }
+
+    .skeleton-hero-bio {
+      height: 16px;
+      width: 280px;
+      margin: 0 auto;
+      border-radius: 4px;
+    }
+
+    .skeleton-hero-meta {
+      height: 14px;
+      width: 120px;
+      margin: 10px auto 0;
+      border-radius: 4px;
+    }
+
+    /* Serviço skeleton card */
+    .skeleton-servico-card {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .skeleton-servico-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .skeleton-servico-content {
+      flex: 1;
+    }
+
+    .skeleton-servico-title {
+      height: 18px;
+      width: 60%;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .skeleton-servico-meta {
+      height: 14px;
+      width: 40%;
+      border-radius: 4px;
+    }
+
+    .skeleton-servico-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Slot skeleton */
+    .skeleton-slot {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 4px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .skeleton-slot-text {
+      height: 14px;
+      width: 50px;
+      border-radius: 4px;
+    }
+
     /* ── STEPS NAV ── */
     .steps-nav {
       display: flex;
@@ -501,13 +629,20 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: border-color .2s, box-shadow .2s, transform .15s;
+      transition: border-color .2s, box-shadow .2s, transform .15s, opacity 0.3s ease;
       position: relative;
       overflow: hidden;
       width: 100%;
       text-align: left;
       appearance: none;
       -webkit-appearance: none;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .servico-card.loaded {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .servico-card::before {
@@ -774,8 +909,15 @@
       font-size: 13px;
       font-family: 'DM Mono', monospace;
       cursor: pointer;
-      transition: all .15s;
       color: var(--text);
+      opacity: 0;
+      transform: scale(0.95);
+      transition: all .15s, opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .slot.loaded {
+      opacity: 1;
+      transform: scale(1);
     }
 
     .slot:hover {
@@ -1232,9 +1374,11 @@
   <!-- HERO -->
   <div class="hero" id="hero">
     <div class="hero-inner">
-      <div class="avatar-wrap" id="hero-avatar">A</div>
-      <h1 id="hero-nome">Carregando…</h1>
-      <p class="hero-bio" id="hero-bio"></p>
+      <div class="avatar-wrap skeleton skeleton-avatar" id="hero-avatar"></div>
+      <div class="skeleton skeleton-hero-title" id="hero-nome-skeleton"></div>
+      <h1 id="hero-nome" style="display:none"></h1>
+      <div class="skeleton skeleton-hero-bio" id="hero-bio-skeleton"></div>
+      <p class="hero-bio" id="hero-bio" style="display:none"></p>
       <!-- Horário de funcionamento (Free + Pro) -->
       <div class="hero-horario" id="hero-horario" style="display:none">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1298,7 +1442,33 @@
       <div class="section-title">Escolha o serviço</div>
 
       <div id="servicos-container">
-        <div style="text-align:center;padding:40px 0;color:#999;font-size:14px">Carregando serviços…</div>
+        <!-- Skeleton cards (serão removidos quando carregar) -->
+        <div id="servicos-skeleton">
+          <div class="skeleton-servico-card skeleton">
+            <div class="skeleton-servico-icon"></div>
+            <div class="skeleton-servico-content">
+              <div class="skeleton-servico-title"></div>
+              <div class="skeleton-servico-meta"></div>
+            </div>
+            <div class="skeleton-servico-check"></div>
+          </div>
+          <div class="skeleton-servico-card skeleton">
+            <div class="skeleton-servico-icon"></div>
+            <div class="skeleton-servico-content">
+              <div class="skeleton-servico-title"></div>
+              <div class="skeleton-servico-meta"></div>
+            </div>
+            <div class="skeleton-servico-check"></div>
+          </div>
+          <div class="skeleton-servico-card skeleton">
+            <div class="skeleton-servico-icon"></div>
+            <div class="skeleton-servico-content">
+              <div class="skeleton-servico-title"></div>
+              <div class="skeleton-servico-meta"></div>
+            </div>
+            <div class="skeleton-servico-check"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1567,8 +1737,25 @@
       const nomeEl = document.getElementById('hero-nome');
       const bioEl  = document.getElementById('hero-bio');
       const avEl   = document.getElementById('hero-avatar');
-      if (nomeEl) nomeEl.textContent = data.nome || 'Profissional';
-      if (bioEl)  bioEl.textContent  = data.bio  || '';
+      const nomeSkeleton = document.getElementById('hero-nome-skeleton');
+      const bioSkeleton = document.getElementById('hero-bio-skeleton');
+
+      // Remove skeleton e mostra conteúdo real
+      if (nomeSkeleton) nomeSkeleton.remove();
+      if (bioSkeleton) bioSkeleton.remove();
+      if (avEl) avEl.classList.remove('skeleton', 'skeleton-avatar');
+
+      if (nomeEl) {
+        nomeEl.textContent = data.nome || 'Profissional';
+        nomeEl.style.display = 'block';
+        nomeEl.classList.add('fade-in');
+      }
+      if (bioEl) {
+        bioEl.textContent = data.bio || '';
+        bioEl.style.display = 'block';
+        bioEl.classList.add('fade-in');
+      }
+
       if (avEl) {
         if (data.foto_url) {
           avEl.innerHTML = `<img src="${escapeHtml(data.foto_url)}" alt="${escapeHtml(data.nome || 'Profissional')}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
@@ -1641,6 +1828,13 @@
         container.innerHTML = '<div style="text-align:center;padding:40px 0;color:#999">Nenhum serviço disponível no momento.</div>';
         return;
       }
+
+      // Remove skeleton se existir
+      const skeleton = document.getElementById('servicos-skeleton');
+      if (skeleton) {
+        skeleton.remove();
+      }
+
       container.innerHTML = '';
 
       // Verifica se já tem dados em cache (de visita anterior)
@@ -1739,6 +1933,11 @@
         });
 
         container.appendChild(card);
+
+        // Adiciona classe loaded com delay para animação stagger
+        setTimeout(() => {
+          card.classList.add('loaded');
+        }, i * 60); // 60ms de delay entre cada card
       });
     }
 
@@ -2362,7 +2561,18 @@
       const grid = document.getElementById('slots-grid');
       const header = document.getElementById('slots-header');
       if (!grid) return;
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#999">Buscando horários…</div>';
+
+      // Mostra skeleton slots
+      grid.innerHTML = `
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+        <div class="skeleton-slot skeleton"><div class="skeleton-slot-text"></div></div>
+      `;
 
       const sem = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
       const d = state.data;
@@ -2441,7 +2651,7 @@
 
       window.listaEsperaDisponivel = true;
 
-      slots.forEach(sl => {
+      slots.forEach((sl, index) => {
         const hora = typeof sl === 'string' ? sl : sl.hora;
         const disp = typeof sl === 'string' ? true : (sl.disponivel !== false);
         const el = document.createElement('div');
@@ -2459,6 +2669,11 @@
           };
         }
         grid.appendChild(el);
+
+        // Adiciona classe loaded com delay para animação stagger
+        setTimeout(() => {
+          el.classList.add('loaded');
+        }, index * 40); // 40ms de delay entre cada slot
       });
     }
 
