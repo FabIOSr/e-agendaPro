@@ -582,6 +582,36 @@
       max-width: 100%;
     }
 
+    /* Indicadores de disponibilidade */
+    .servico-dispo-placeholder {
+      display: none;
+    }
+
+    .servico-dispo {
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      line-height: 1.4;
+    }
+
+    .servico-dispo-green {
+      color: #2d7a3e;
+      background: #e8f5e9;
+    }
+
+    .servico-dispo-yellow {
+      color: #b8860b;
+      background: #fef9e7;
+    }
+
+    .servico-dispo-gray {
+      color: #757575;
+      background: #f5f5f5;
+    }
+
     .servico-preco {
       font-family: 'DM Mono', monospace;
       font-size: 15px;
@@ -1601,6 +1631,9 @@
 
      // ── RENDER SERVIÇOS DINÂMICO ──────────────────────────────────────────────
     const ICONES_PADRAO = ['✂️', '💅', '🏋️', '🎨', '💆', '💇', '🧴', '💈', '🩺', '📸'];
+    let disponibilidadeServicos = {}; // Cache de disponibilidade por serviço
+    let buscandoDisponibilidade = false; // Flag para evitar buscas duplicadas
+
     function renderServicos() {
       const container = document.getElementById('servicos-container');
       if (!container) return;
@@ -1609,6 +1642,25 @@
         return;
       }
       container.innerHTML = '';
+
+      // Verifica se já tem dados em cache (de visita anterior)
+      const cached = getServicosCache(SLUG);
+      if (cached && Object.keys(disponibilidadeServicos).length === 0) {
+        disponibilidadeServicos = cached;
+        // Agenda atualização dos indicadores após renderizar
+        requestAnimationFrame(() => atualizarIndicadoresDisponibilidade());
+      }
+
+      // Busca disponibilidade em background (apenas se ainda não tem)
+      if (!buscandoDisponibilidade && Object.keys(disponibilidadeServicos).length === 0) {
+        buscandoDisponibilidade = true;
+        buscarDisponibilidadeServicos().then(dados => {
+          disponibilidadeServicos = dados;
+          buscandoDisponibilidade = false;
+          // Atualiza apenas os indicadores, não re-renderiza tudo
+          atualizarIndicadoresDisponibilidade();
+        });
+      }
 
       SERVICOS.forEach((s, i) => {
         const icone = ICONES_PADRAO[i % ICONES_PADRAO.length];
@@ -1642,6 +1694,12 @@
 
         info.appendChild(nome);
         info.appendChild(meta);
+
+        // Placeholder para indicador de disponibilidade
+        const dispoPlaceholder = document.createElement('div');
+        dispoPlaceholder.className = 'servico-dispo-placeholder';
+        dispoPlaceholder.dataset.servicoId = s.id;
+        info.appendChild(dispoPlaceholder);
 
         if (s.descricao) {
           const desc = document.createElement('div');
@@ -1681,6 +1739,24 @@
         });
 
         container.appendChild(card);
+      });
+    }
+
+    // Atualiza apenas os indicadores de disponibilidade (não re-renderiza tudo)
+    function atualizarIndicadoresDisponibilidade() {
+      const placeholders = document.querySelectorAll('.servico-dispo-placeholder');
+      placeholders.forEach(placeholder => {
+        const servicoId = placeholder.dataset.servicoId;
+        const dispoInfo = disponibilidadeServicos[servicoId];
+
+        if (dispoInfo && dispoInfo.dia_label) {
+          const dispoEl = document.createElement('div');
+          dispoEl.className = `servico-dispo servico-dispo-${dispoInfo.cor}`;
+          dispoEl.textContent = dispoInfo.dia_label;
+          placeholder.replaceWith(dispoEl);
+        } else {
+          placeholder.remove();
+        }
       });
     }
 
@@ -2157,6 +2233,91 @@
         return dias;
       } catch (e) {
         console.error('Erro ao buscar slots do mês:', e);
+        return {};
+      }
+    }
+
+    // ── CACHE E BUSCA DE DISPONIBILIDADE DE SERVIÇOS ───────────────────────
+    // Cache para indicadores de disponibilidade ("Disponível hoje", etc)
+    const servicosCache = {}; // chave: prestadorSlug
+    const SERVICOS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+    function getServicosCache(prestadorSlug) {
+      try {
+        const stored = localStorage.getItem(`servicos_dispo_${prestadorSlug}`);
+        if (!stored) return null;
+
+        const { dados, expiraEm } = JSON.parse(stored);
+
+        // Verifica expiração
+        if (Date.now() > expiraEm) {
+          localStorage.removeItem(`servicos_dispo_${prestadorSlug}`);
+          return null;
+        }
+
+        return dados;
+      } catch (e) {
+        console.warn('Erro ao ler cache de serviços:', e);
+        return null;
+      }
+    }
+
+    function setServicosCache(prestadorSlug, dados) {
+      try {
+        const expiraEm = Date.now() + SERVICOS_CACHE_DURATION;
+        localStorage.setItem(`servicos_dispo_${prestadorSlug}`, JSON.stringify({ dados, expiraEm }));
+      } catch (e) {
+        console.warn('Erro ao salvar cache de serviços:', e);
+      }
+    }
+
+    // Busca disponibilidade de todos os serviços do prestador
+    // Retorno: { "servicoId": { tem_hoje, tem_amanha, dia_label, cor }, ... }
+    async function buscarDisponibilidadeServicos() {
+      // Tenta cache primeiro
+      const cached = getServicosCache(SLUG);
+      if (cached) {
+        console.log('Cache de serviços hit para:', SLUG);
+        return cached;
+      }
+
+      // Busca da Edge Function
+      try {
+        const res = await fetch(`${window.SUPABASE_URL}/functions/v1/disponibilidade-servicos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.SUPABASE_ANON}`
+          },
+          body: JSON.stringify({
+            prestador_slug: SLUG
+          })
+        });
+
+        if (!res.ok) {
+          console.warn('Erro ao buscar disponibilidade de serviços:', res.status);
+          return {};
+        }
+
+        const data = await res.json();
+        const servicos = data.servicos || [];
+
+        // Converte para mapa por ID
+        const mapa = {};
+        for (const s of servicos) {
+          mapa[s.id] = {
+            tem_hoje: s.tem_hoje,
+            tem_amanha: s.tem_amanha,
+            dia_label: s.dia_label,
+            cor: s.cor
+          };
+        }
+
+        // Salva no cache
+        setServicosCache(SLUG, mapa);
+        return mapa;
+      } catch (e) {
+        console.error('Erro ao buscar disponibilidade de serviços:', e);
         return {};
       }
     }

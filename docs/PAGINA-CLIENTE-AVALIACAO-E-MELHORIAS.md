@@ -101,6 +101,46 @@ const escapeHtml = (value) => String(value ?? '')
 
 ### ⚠️ PARCIALMENTE IMPLEMENTADO
 
+#### 2.1 ✅ Mostrar Primeiro Horário Disponível Por Serviço
+**Status:** IMPLEMENTADO (2026-04-19)
+
+**O que foi feito:**
+- Edge Function `disponibilidade-servicos` com cálculo de disponibilidade por serviço
+- Cache de 5 minutos para evitar requisições duplicadas
+- Indicadores visuais nos cards de serviço: "Disponível hoje", "Disponível amanhã", "Próxima vaga: Terça"
+- Verifica apenas slots que cabem a duração do serviço específico (não genérico)
+
+**Arquivos:**
+- `supabase/functions/disponibilidade-servicos/index.ts` - Nova Edge Function
+- `pages/pagina-cliente.html` - Cache, busca e exibição de indicadores
+
+**Como funciona:**
+1. Frontend chama `/disponibilidade-servicos` com `prestador_slug`
+2. Edge Function busca todos os serviços do prestador
+3. Para cada serviço, calcula disponibilidade:
+   - Hoje (se há slots que cabem o serviço)
+   - Amanhã (se não tem hoje)
+   - Próximos 7 dias (se não tem amanhã)
+4. Retorna indicadores com cores (green/yellow/gray)
+5. Cache de 5 minutos no frontend
+
+**Indicadores:**
+- 🟢 **Green**: "Disponível hoje"
+- 🟡 **Yellow**: "Disponível amanhã" ou "Próxima vaga: Terça"
+- ⚪ **Gray**: "Sem vagas esta semana"
+
+**Regras importantes:**
+- Verifica disponibilidade específica por duração de cada serviço
+- Respeita timezone BRT (America/Sao_Paulo)
+- Filtra horários passados automaticamente
+- Se não há expediente no dia da semana → não mostra disponibilidade
+
+**Impacto:**
+- ✅ Usuário vê rapidamente quais serviços têm vaga
+- ✅ Reduz cliques em serviços cheios
+- ✅ 1 requisição para todos os serviços (otimizado)
+- ✅ Cache de 5min evita requisições duplicadas
+
 #### Acessibilidade - Cards de Serviço
 **Status:** ✅ JA ESTAVA IMPLEMENTADO
 
@@ -272,27 +312,31 @@ Prioridade: media
 
 ## 2. Melhorias de conversao
 
-### 2.1 Mostrar primeiro horario disponivel por servico
+### 2.1 ✅ Mostrar primeiro horario disponivel por servico **[IMPLEMENTADO]**
 
-Em vez de apenas listar nome, duracao e preco, cada servico poderia exibir:
+**Status:** ✅ CONCLUIDO (2026-04-19)
 
-- "Proximo horario hoje 15:30"
-- ou "Disponivel amanha cedo"
+Em vez de apenas listar nome, duracao e preco, cada servico agora exibe:
+
+- "Disponível hoje"
+- "Disponível amanhã"
+- "Próxima vaga: Terça"
+- "Sem vagas esta semana"
+
+**Como foi implementado:**
+- Edge Function agregada `disponibilidade-servicos`
+- Cache de 5 minutos no frontend
+- 1 requisição para todos os serviços (otimizado)
+- Verifica disponibilidade específica por duração de cada serviço
+- Respeita timezone BRT e filtra horários passados
 
 Beneficio:
 
-- aumenta percepcao de disponibilidade
-- acelera decisao
+- ✅ aumenta percepcao de disponibilidade
+- ✅ acelera decisao
+- ✅ reduz cliques em serviços cheios
 
-Risco:
-
-- se feito com consulta individual por card, pode piorar desempenho
-
-Recomendacao:
-
-- so fazer se vier de endpoint agregado ou cacheado
-
-Prioridade: media
+Prioridade: media ✅ CONCLUIDO
 
 ### 2.2 Mais prova social no topo
 
