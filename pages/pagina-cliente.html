@@ -141,6 +141,12 @@
       font-size: 12px; font-weight: 500; color: rgba(250,249,246,.9);
     }
     .hero-rating-star { color: #f9c846; font-size: 13px; }
+    .hero-rating-count { display: inline; }
+
+    /* Mobile: esconder quantidade de avaliações */
+    @media (max-width: 600px) {
+      .hero-rating-count { display: none; }
+    }
 
     /* ── PRO: próximo slot no hero ── */
     .hero-next-slot {
@@ -148,7 +154,7 @@
       background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
       border-radius: 20px; padding: 5px 12px;
       font-size: 12px; color: rgba(250,249,246,.8);
-      margin-top: 8px; cursor: pointer; transition: background .2s;
+      cursor: pointer; transition: background .2s;
     }
     .hero-next-slot:hover { background: rgba(255,255,255,.18); }
     .hero-next-slot-dot {
@@ -1390,16 +1396,17 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           <span id="hero-local-text"></span>
         </div>
-        <div class="hero-rating" id="hero-rating" style="display:none">
-          <span class="hero-rating-star">★</span>
-          <span id="hero-rating-text"></span>
-        </div>
       </div>
-      <!-- PRO: próximo slot disponível -->
-      <div style="display:flex;justify-content:center;margin-top:0">
+      <!-- PRO: avaliações e próximo slot -->
+      <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
         <div class="hero-next-slot" id="hero-next-slot" style="display:none" onclick="irParaAgendamento()">
           <div class="hero-next-slot-dot"></div>
           <span id="hero-next-slot-text">Ver horários</span>
+        </div>
+        <div class="hero-rating" id="hero-rating" style="display:none">
+          <span class="hero-rating-star">★</span>
+          <span id="hero-rating-text"></span>
+          <span class="hero-rating-count" id="hero-rating-count"></span>
         </div>
       </div>
       <div class="hero-tags" id="hero-tags" style="display:none"></div>
@@ -1675,6 +1682,8 @@
     let GALERIA_URLS = [];
     let galeriaIndexAtual = 0;
     let ultimoFocoGaleria = null;
+    let PRESTADOR_COMPLETO_CACHE = null; // Cache do endpoint agregado
+    let SLOTS_MES_CACHE = null; // Cache de slots do mês
 
     async function carregarPrestador() {
       if (!SLUG) {
@@ -1684,13 +1693,29 @@
         return false;
       }
 
-      const { data, error } = await supabase
-        .from('prestadores')
-        .select('id, nome, bio, foto_url, whatsapp, slug, plano, plano_valido_ate, cor_tema, categoria, local_exibicao, galeria_urls, cidade')
-        .eq('slug', SLUG)
-        .maybeSingle();
+      // ENDPOINT AGREGADO: 1 requisição para tudo (prestador + serviços + slots + avaliações...)
+      const response = await fetch(`${window.SUPABASE_URL}/functions/v1/prestador-completo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${window.SUPABASE_ANON}`
+        },
+        body: JSON.stringify({ prestador_slug: SLUG })
+      });
 
-      if (error || !data) {
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        document.getElementById('hero-nome').textContent = 'Erro ao carregar';
+        document.getElementById('servicos-container').innerHTML =
+          `<div style="text-align:center;padding:40px 0;color:#999">${errorData.erro || 'Erro ao carregar dados do prestador.'}</div>`;
+        return false;
+      }
+
+      const agregado = await response.json();
+      PRESTADOR_COMPLETO_CACHE = agregado;
+
+      const data = agregado.prestador;
+      if (!data) {
         document.getElementById('hero-nome').textContent = 'Prestador não encontrado';
         document.getElementById('servicos-container').innerHTML =
           '<div style="text-align:center;padding:40px 0;color:#999">Este link não existe ou foi desativado.</div>';
@@ -1698,6 +1723,30 @@
       }
 
       PRESTADOR = data;
+
+      // Serviços já vêm no payload agregado
+      SERVICOS = agregado.servicos || [];
+
+      // Disponibilidade por serviço já vem calculada no payload
+      if (agregado.servicos_disponibilidade) {
+        const mapaDispo = {};
+        for (const s of agregado.servicos_disponibilidade) {
+          mapaDispo[s.id] = {
+            tem_hoje: s.tem_hoje,
+            tem_amanha: s.tem_amanha,
+            dia_label: s.dia_label,
+            cor: s.cor
+          };
+        }
+        disponibilidadeServicos = mapaDispo;
+        // NÃO chama atualizarIndicadoresDisponibilidade() aqui
+        // Será chamado depois de renderServicos()
+      }
+
+      // Slots do mês já vêm calculados (dias sem slots)
+      if (agregado.slots_mes) {
+        window.SLOTS_MES_CACHE = agregado.slots_mes;
+      }
 
       // ── Cor de tema personalizada ──────────────────────────────────────
       if (data.cor_tema) {
@@ -1786,16 +1835,15 @@
         }
       }
 
-      // Carrega serviços
-      const { data: servs } = await supabase
-        .from('servicos')
-        .select('id, nome, duracao_min, preco, descricao, exibir_preco')
-        .eq('prestador_id', data.id)
-        .eq('ativo', true)
-        .order('nome');
+      // Carrega serviços (JÁ VÊM NO PAYLOAD AGREGADO - linha 1719)
+      // SERVICOS já foi preenchido acima
 
-      SERVICOS = servs || [];
       renderServicos();
+
+      // Atualiza indicadores de disponibilidade APÓS renderizar cards
+      if (Object.keys(disponibilidadeServicos).length > 0) {
+        requestAnimationFrame(() => atualizarIndicadoresDisponibilidade());
+      }
 
       // Verificar limite free logo ao carregar a página (apenas UX — proteção real está no backend)
       // Consulta direta é segura pois só lê dados públicos do prestador, sem alterar nada
@@ -1837,23 +1885,13 @@
 
       container.innerHTML = '';
 
-      // Verifica se já tem dados em cache (de visita anterior)
-      const cached = getServicosCache(SLUG);
-      if (cached && Object.keys(disponibilidadeServicos).length === 0) {
-        disponibilidadeServicos = cached;
-        // Agenda atualização dos indicadores após renderizar
-        requestAnimationFrame(() => atualizarIndicadoresDisponibilidade());
-      }
-
-      // Busca disponibilidade em background (apenas se ainda não tem)
-      if (!buscandoDisponibilidade && Object.keys(disponibilidadeServicos).length === 0) {
-        buscandoDisponibilidade = true;
-        buscarDisponibilidadeServicos().then(dados => {
-          disponibilidadeServicos = dados;
-          buscandoDisponibilidade = false;
-          // Atualiza apenas os indicadores, não re-renderiza tudo
-          atualizarIndicadoresDisponibilidade();
-        });
+      // Dados de disponibilidade já vieram no payload agregado
+      // Se ainda não tem, tenta do cache local (visita anterior)
+      if (Object.keys(disponibilidadeServicos).length === 0) {
+        const cached = getServicosCache(SLUG);
+        if (cached) {
+          disponibilidadeServicos = cached;
+        }
       }
 
       SERVICOS.forEach((s, i) => {
@@ -3151,16 +3189,86 @@
         if (localTxt) localTxt.textContent = local;
       }
 
-      // Busca avaliações em paralelo com próximo slot
-      await Promise.all([
-        carregarAvaliacoesPro(prestador.slug),
-        carregarProximoSlot(prestador),
-      ]);
+      // Dados Pro já vieram no payload agregado
+      const cache = PRESTADOR_COMPLETO_CACHE;
+
+      // Avaliações (se vieram no payload)
+      if (cache?.avaliacoes && cache.avaliacoes.length > 0) {
+        renderAvaliacoesFromCache(cache.avaliacoes);
+      } else if (prestador.is_pro) {
+        // Fallback para chamada direta se não vier no payload
+        await carregarAvaliacoesPro(prestador.slug);
+      }
+
+      // Próximo slot (se veio no payload)
+      if (cache?.proximo_slot) {
+        renderProximoSlotFromCache(cache.proximo_slot);
+      } else if (prestador.is_pro) {
+        // Fallback para chamada direta se não vier no payload
+        await carregarProximoSlot(prestador);
+      }
 
       // Galeria (até 9 fotos)
-      if (prestador.galeria_urls?.length) {
+      if (cache?.galeria && cache.galeria.length > 0) {
+        // galeria vem como array de objetos {url, thumb} - extrai apenas as URLs
+        const galeriaUrls = cache.galeria.map(g => typeof g === 'string' ? g : g.url);
+        carregarGaleria(galeriaUrls);
+      } else if (prestador.galeria_urls?.length) {
         carregarGaleria(prestador.galeria_urls.slice(0, 9));
       }
+    }
+
+    // Helper: renderiza avaliações vindas do payload agregado
+    function renderAvaliacoesFromCache(avaliacoes) {
+      const lista = document.getElementById('avaliacoes-lista');
+      const placeholder = document.getElementById('avaliacoes-placeholder');
+
+      if (!lista) return;
+
+      lista.innerHTML = '';
+
+      for (const a of avaliacoes) {
+        const inicial = (a.cliente_nome || 'A')[0].toUpperCase();
+        const primeiro = escapeHtml((a.cliente_nome || '').split(' ')[0]);
+        const dataFmt = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        const estrelas = '★'.repeat(a.nota) + '☆'.repeat(5 - a.nota);
+
+        const card = document.createElement('div');
+        card.className = 'av-card fade-in-up';
+        card.innerHTML = `
+          <div class="av-card-header">
+            <div class="av-avatar">${inicial}</div>
+            <div>
+              <div class="av-nome">${primeiro}</div>
+              <div class="av-data">${dataFmt}</div>
+            </div>
+            <div class="av-stars" style="margin-left:auto">${estrelas}</div>
+          </div>
+          <div class="av-comentario">${escapeHtml(a.comentario || '')}</div>
+        `;
+        lista.appendChild(card);
+      }
+
+      // Remove placeholder se existir
+      if (placeholder) placeholder.remove();
+    }
+
+    // Helper: renderiza próximo slot vindo do payload agregado
+    function renderProximoSlotFromCache(proximoSlot) {
+      const container = document.getElementById('hero-next-slot');
+      if (!container) return;
+
+      const { data, hora } = proximoSlot;
+      const dataObj = new Date(data + 'T00:00:00');
+      const diaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dataObj.getDay()];
+      const dia = dataObj.getDate();
+      const mes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][dataObj.getMonth()];
+
+      container.innerHTML = `
+        <div class="hero-next-slot-dot"></div>
+        <span>Próxima vaga: ${diaSemana}, ${dia} de ${mes} às ${hora}</span>
+      `;
+      container.style.display = 'inline-flex';
     }
 
     async function carregarAvaliacoesPro(slug) {
@@ -3176,10 +3284,12 @@
         if (!total) return;
 
         // Rating no hero
-        const ratingEl  = document.getElementById('hero-rating');
-        const ratingTxt = document.getElementById('hero-rating-text');
+        const ratingEl   = document.getElementById('hero-rating');
+        const ratingTxt  = document.getElementById('hero-rating-text');
+        const ratingCount = document.getElementById('hero-rating-count');
         if (ratingEl)  ratingEl.style.display = 'flex';
-        if (ratingTxt) ratingTxt.textContent   = `${Number(media).toFixed(1)} · ${total} avaliação${total > 1 ? 'ões' : ''}`;
+        if (ratingTxt) ratingTxt.textContent = Number(media).toFixed(1);
+        if (ratingCount) ratingCount.textContent = `${total} avaliação${total > 1 ? 'ões' : ''}`;
 
         // Seção de avaliações
         const section = document.getElementById('avaliacoes-section');
@@ -3469,6 +3579,7 @@
         plano: 'pro',
         plano_valido_ate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         cor_tema: PRESTADOR.cor_tema || '#7c3aed',
+        is_pro: true, // Importante para forçar comportamento Pro
       };
 
       // Aplica cor de tema (usa a existente ou roxo padrão para demo)
@@ -3489,8 +3600,28 @@
         `;
       }
 
-      // Carrega conteúdo Pro (se houver dados reais)
-      carregarConteudoPro(dadosPro);
+      // Carrega conteúdo Pro (se houver dados reais no cache)
+      const cache = PRESTADOR_COMPLETO_CACHE;
+
+      // Se o cache não tem dados Pro (porque o usuário é Free), busca na hora
+      const precisaBuscarDadosPro = !cache?.avaliacoes && !cache?.proximo_slot && !cache?.galeria;
+
+      if (precisaBuscarDadosPro) {
+        // Busca dados Pro para o preview
+        Promise.all([
+          carregarAvaliacoesPro(dadosPro.slug),
+          carregarProximoSlot(dadosPro),
+        ]).then(() => {
+          // Avaliações e próximo slot carregados
+          // Galeria já vem de _eDonoFree.galeria_urls
+          if (_eDonoFree?.galeria_urls?.length) {
+            carregarGaleria(_eDonoFree.galeria_urls.slice(0, 9));
+          }
+        });
+      } else {
+        // Usa dados do cache (se vieram no payload agregado)
+        carregarConteudoPro(dadosPro);
+      }
 
       // Preview: mostra placeholders se não há dados reais
       const galeriaSection = document.getElementById('galeria-section');
@@ -3506,6 +3637,24 @@
       if (avalSection) avalSection.style.display = 'block';
       // Mostra cards reais se tem avaliações, senão placeholder
       if (avalPh) avalPh.style.display = 'block';
+
+      // DADOS FAKE para preview (se não carregou dados reais ainda)
+      const heroRating = document.getElementById('hero-rating');
+      const heroNextSlot = document.getElementById('hero-next-slot');
+      const ratingText = document.getElementById('hero-rating-text');
+      const ratingCount = document.getElementById('hero-rating-count');
+      const slotText = document.getElementById('hero-next-slot-text');
+
+      // Se não tem dados reais, mostra fake para demo
+      if (heroRating && heroRating.style.display === 'none' && !cache?.avaliacoes) {
+        heroRating.style.display = 'inline-flex';
+        if (ratingText) ratingText.textContent = '4.9';
+        if (ratingCount) ratingCount.textContent = '127 avaliações';
+      }
+      if (heroNextSlot && heroNextSlot.style.display === 'none' && !cache?.proximo_slot) {
+        heroNextSlot.style.display = 'inline-flex';
+        if (slotText) slotText.textContent = 'Próxima vaga: Segunda às 14:00';
+      }
     };
 
     window.sairModoPreview = function() {
