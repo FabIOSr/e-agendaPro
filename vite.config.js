@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 import { readdirSync, statSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
 import dotenv from 'dotenv';
+import { build } from 'esbuild';
 
 const __dirname = import.meta.dirname;
 
@@ -25,7 +26,7 @@ function copyAndInjectHtml() {
       config = resolvedConfig;
     },
 
-    closeBundle() {
+    async closeBundle() {
       const outDir = config.build.outDir;
       const srcPages = resolve(__dirname, 'pages');
 
@@ -127,22 +128,66 @@ function copyAndInjectHtml() {
       copyPages(srcPages);
       console.log(`   ✅ ${readdirSync(resolve(outDir, 'pages')).length} pasta(s) copiada(s) para dist/pages/`);
 
-      // Copia modules/ para dist/modules/
+      // Transpila arquivos .ts em modules/ para .js antes de copiar
       const srcModules = resolve(__dirname, 'modules');
+      const tsFiles = [];
+
+      function collectTsFiles(dir, relPath = '') {
+        for (const file of readdirSync(dir)) {
+          const s = resolve(dir, file);
+          if (statSync(s).isDirectory()) {
+            collectTsFiles(s, `${relPath}${file}/`);
+          } else if (file.endsWith('.ts')) {
+            tsFiles.push({ src: s, relPath: `${relPath}${file}` });
+          }
+        }
+      }
+
+      collectTsFiles(srcModules);
+
+      // Copia modules/ para dist/modules/ (cria o diretório primeiro)
       const destModules = resolve(outDir, 'modules');
       function copyDir(src, dest) {
         mkdirSync(dest, { recursive: true });
         for (const file of readdirSync(src)) {
           const s = resolve(src, file);
           const d = resolve(dest, file);
+
           if (statSync(s).isDirectory()) {
             copyDir(s, d);
-          } else {
+          } else if (!file.endsWith('.ts')) {
+            // Copia tudo EXCETO arquivos .ts (serão transpilados depois)
             copyFileSync(s, d);
           }
         }
       }
       copyDir(srcModules, destModules);
+
+      if (tsFiles.length > 0) {
+        console.log(`   🔧 Transpilando ${tsFiles.length} arquivo(s) TypeScript...`);
+
+        // Transpila cada .ts direto para dist/modules/ (não mexe no source)
+        for (const { src, relPath } of tsFiles) {
+          const destJs = resolve(destModules, relPath.replace('.ts', '.js'));
+
+          await build({
+            entryPoints: [src],
+            bundle: false,
+            outfile: destJs,
+            format: 'esm',
+            target: 'es2020',
+            platform: 'neutral',
+            tsconfigRaw: {
+              compilerOptions: {
+                importsNotUsedAsValues: 'preserve',
+              },
+            },
+          });
+
+          console.log(`      ✅ ${relPath} → .js`);
+        }
+      }
+
       console.log(`   ✅ ${readdirSync(destModules).length} módulo(s) copiado(s) para dist/modules/`);
     },
   };

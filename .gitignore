@@ -89,3 +89,4 @@ playwright/.cache/
 .env.test
 *.backup
 .mcp.json
+supabase/supabase/
