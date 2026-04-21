@@ -205,7 +205,7 @@ Deno.serve(async (req: Request) => {
     // Agendamentos confirmados/reservados do mês
     const { data: agendamentos, error: errA } = await supabase
       .from("agendamentos")
-      .select("data_hora, servicos(duracao_min)")
+      .select("data_hora, servico_id, servicos(duracao_min)")
       .eq("prestador_id", prestadorId)
       .in("status", ["confirmado", "reservado"])
       .gte("data_hora", `${hoje}T00:00:00Z`)
@@ -328,12 +328,18 @@ Deno.serve(async (req: Request) => {
 
     const agendamentosNorm = (agendamentos ?? []).map((ag: any) => ({
       data_hora: ag.data_hora,
+      servico_id: ag.servico_id,
       duracao_min: ag.servicos?.duracao_min ?? 60,
       intervalo_min: intervaloMin,
     }));
 
     for (const servico of (servicos || [])) {
       const cadenciaSlots = intervaloSlotConfig || (servico.duracao_min + intervaloMin);
+
+      // Filtra agendamentos apenas deste serviço
+      const agendamentosDoServico = agendamentosNorm.filter(
+        ag => ag.servico_id === servico.id
+      );
 
       // Verifica hoje
       const hojeSemana = agora.getUTCDay();
@@ -342,7 +348,7 @@ Deno.serve(async (req: Request) => {
         hojeSemana,
         servico.duracao_min,
         dispPorDia,
-        agendamentosNorm,
+        agendamentosDoServico,
         bloqueios ?? [],
         bloqueiosRecPorDia,
         cadenciaSlots,
@@ -362,7 +368,7 @@ Deno.serve(async (req: Request) => {
         amanhaSemana,
         servico.duracao_min,
         dispPorDia,
-        agendamentosNorm,
+        agendamentosDoServico,
         bloqueios ?? [],
         bloqueiosRecPorDia,
         cadenciaSlots,
@@ -387,7 +393,7 @@ Deno.serve(async (req: Request) => {
           diaSemana,
           servico.duracao_min,
           dispPorDia,
-          agendamentosNorm,
+          agendamentosDoServico,
           bloqueios ?? [],
           bloqueiosRecPorDia,
           cadenciaSlots,
