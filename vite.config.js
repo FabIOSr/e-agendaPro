@@ -1,18 +1,47 @@
 import { defineConfig, normalizePath } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
-import { readdirSync, statSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
+import { readdirSync, statSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync } from 'fs';
 import dotenv from 'dotenv';
-import { build } from 'esbuild';
 
 const __dirname = import.meta.dirname;
 
-// Carrega variáveis do .env.local (mesmo comportamento do build.js)
-dotenv.config({ path: resolve(__dirname, '.env.local') });
+// Carrega variáveis do .env.local
+if (existsSync(resolve(__dirname, '.env.local'))) {
+  dotenv.config({ path: resolve(__dirname, '.env.local') });
+}
+
+/**
+ * Função para processar tags <include src="..."></include>
+ */
+function processIncludes(content) {
+  const includeRegex = /<include\s+src="([^"]+)"(?:\s+([^>]*))?><\/include>/g;
+  return content.replace(includeRegex, (match, src, attrs) => {
+    const filePath = resolve(__dirname, 'src', src);
+    if (existsSync(filePath)) {
+      let includeContent = readFileSync(filePath, 'utf-8');
+      
+      // Suporte para variáveis: replace {{key}} com valor do atributo key="..."
+      if (attrs) {
+        const attrRegex = /(\w+)="([^"]+)"/g;
+        let attrMatch;
+        while ((attrMatch = attrRegex.exec(attrs)) !== null) {
+          const [_, key, value] = attrMatch;
+          includeContent = includeContent.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        }
+      }
+      
+      // Recursividade: permite includes dentro de includes
+      return processIncludes(includeContent);
+    }
+    console.error(`   ❌ Arquivo de include não encontrado: ${filePath}`);
+    return `<!-- Erro: ${src} não encontrado -->`;
+  });
+}
 
 /**
  * Plugin: copia HTMLs de pages/ e config.js para dist/
- * Injeta os assets gerados pelo Vite nos HTMLs
+ * Injeta assets e processa includes
  */
 function copyAndInjectHtml() {
   let config = {};
@@ -20,25 +49,28 @@ function copyAndInjectHtml() {
 
   return {
     name: 'vite-plugin-copy-html',
-    apply: 'build',
 
     configResolved(resolvedConfig) {
       config = resolvedConfig;
     },
 
-    async closeBundle() {
+    // Suporte para dev server
+    transformIndexHtml(html) {
+      return processIncludes(html);
+    },
+
+    closeBundle() {
       const outDir = config.build.outDir;
       const srcPages = resolve(__dirname, 'pages');
 
-      // Descobre os assets gerados pelo build
+      // Descobre assets gerados
       const manifestPath = resolve(outDir, '.vite/manifest.json');
       let manifest = {};
       try {
         manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
       } catch {
-        // Sem manifest, tenta descobrir assets manualmente
         const assetsDir = resolve(outDir, 'assets');
-        if (readdirSync(assetsDir)) {
+        if (existsSync(assetsDir)) {
           for (const f of readdirSync(assetsDir)) {
             assets.push(`assets/${f}`);
           }
@@ -54,21 +86,7 @@ function copyAndInjectHtml() {
         if (cssFile && !assets.includes(cssFile)) assets.push(cssFile);
       }
 
-      // Fallback: descobrir assets manualmente
-      if (assets.length === 0) {
-        const assetsDir = resolve(outDir, 'assets');
-        try {
-          for (const f of readdirSync(assetsDir)) {
-            assets.push(`assets/${f}`);
-          }
-        } catch {
-          // Sem assets dir
-        }
-      }
-
-      console.log(`   📦 Assets encontrados: ${assets.join(', ')}`);
-
-      // Copia config.js com substituição de variáveis de ambiente
+      // Copia config.js com variáveis
       let configContent = readFileSync(resolve(__dirname, 'config.js'), 'utf-8');
       const env = {
         SUPABASE_URL: process.env.SUPABASE_URL || '',
@@ -88,9 +106,8 @@ function copyAndInjectHtml() {
         .replace('__VERSION__', env.VERSION);
 
       writeFileSync(resolve(outDir, 'config.js'), configContent, 'utf-8');
-      console.log(`   ✅ config.js com variáveis injetadas`);
 
-      // Copia HTMLs de pages/ para dist/pages/
+      // Copia e processa páginas HTML
       function copyPages(dir, relPath = '') {
         const destDir = resolve(outDir, 'pages', relPath);
         mkdirSync(destDir, { recursive: true });
@@ -102,8 +119,8 @@ function copyAndInjectHtml() {
             copyPages(src, `${relPath}${file}/`);
           } else if (file.endsWith('.html')) {
             let content = readFileSync(src, 'utf-8');
+            content = processIncludes(content); // Injeção de componentes
 
-            // Injeta assets antes de </head>
             const assetTags = assets
               .map((a) => {
                 if (a.endsWith('.css')) return `<link rel="stylesheet" href="/${a}">`;
@@ -113,9 +130,6 @@ function copyAndInjectHtml() {
               .filter(Boolean)
               .join('\n');
 
-            console.log(`   📝 Injetando ${assets.length} assets em ${relPath}${file}`);
-
-            // Injeta assets no </head> sempre
             if (assetTags) {
               content = content.replace('</head>', `${assetTags}\n</head>`);
             }
@@ -126,76 +140,30 @@ function copyAndInjectHtml() {
       }
 
       copyPages(srcPages);
-      console.log(`   ✅ ${readdirSync(resolve(outDir, 'pages')).length} pasta(s) copiada(s) para dist/pages/`);
+      console.log(`   ✅ Build finalizado com sucesso com suporte a componentes.`);
 
-      // Transpila arquivos .ts em modules/ para .js antes de copiar
+      // Copia modules/
       const srcModules = resolve(__dirname, 'modules');
-      const tsFiles = [];
-
-      function collectTsFiles(dir, relPath = '') {
-        for (const file of readdirSync(dir)) {
-          const s = resolve(dir, file);
-          if (statSync(s).isDirectory()) {
-            collectTsFiles(s, `${relPath}${file}/`);
-          } else if (file.endsWith('.ts')) {
-            tsFiles.push({ src: s, relPath: `${relPath}${file}` });
-          }
-        }
-      }
-
-      collectTsFiles(srcModules);
-
-      // Copia modules/ para dist/modules/ (cria o diretório primeiro)
       const destModules = resolve(outDir, 'modules');
       function copyDir(src, dest) {
         mkdirSync(dest, { recursive: true });
         for (const file of readdirSync(src)) {
           const s = resolve(src, file);
           const d = resolve(dest, file);
-
           if (statSync(s).isDirectory()) {
             copyDir(s, d);
-          } else if (!file.endsWith('.ts')) {
-            // Copia tudo EXCETO arquivos .ts (serão transpilados depois)
+          } else {
             copyFileSync(s, d);
           }
         }
       }
-      copyDir(srcModules, destModules);
-
-      if (tsFiles.length > 0) {
-        console.log(`   🔧 Transpilando ${tsFiles.length} arquivo(s) TypeScript...`);
-
-        // Transpila cada .ts direto para dist/modules/ (não mexe no source)
-        for (const { src, relPath } of tsFiles) {
-          const destJs = resolve(destModules, relPath.replace('.ts', '.js'));
-
-          await build({
-            entryPoints: [src],
-            bundle: false,
-            outfile: destJs,
-            format: 'esm',
-            target: 'es2020',
-            platform: 'neutral',
-            tsconfigRaw: {
-              compilerOptions: {
-                importsNotUsedAsValues: 'preserve',
-              },
-            },
-          });
-
-          console.log(`      ✅ ${relPath} → .js`);
-        }
-      }
-
-      console.log(`   ✅ ${readdirSync(destModules).length} módulo(s) copiado(s) para dist/modules/`);
+      if (existsSync(srcModules)) copyDir(srcModules, destModules);
     },
   };
 }
 
 export default defineConfig({
   plugins: [tailwindcss(), copyAndInjectHtml()],
-
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -212,12 +180,7 @@ export default defineConfig({
       },
     },
   },
-
-  server: {
-    port: 3000,
-    open: false,
-  },
-
+  server: { port: 3000 },
   resolve: {
     alias: {
       '@pages': resolve(__dirname, 'pages'),
@@ -225,7 +188,6 @@ export default defineConfig({
       '@config': resolve(__dirname, 'config.js'),
     },
   },
-
   define: {
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || ''),
     'import.meta.env.VITE_SUPABASE_ANON': JSON.stringify(process.env.SUPABASE_ANON || ''),
