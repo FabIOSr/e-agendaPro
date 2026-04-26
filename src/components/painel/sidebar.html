@@ -1,0 +1,87 @@
+<!-- SIDEBAR COLAPSÁVEL -->
+<aside id="sidebar" class="bg-[var(--color-panel-bg2)] border-r border-[var(--color-panel-border)] flex flex-col overflow-hidden transition-all duration-300">
+  <!-- Sidebar Header -->
+  <div class="p-4 border-b border-[var(--color-panel-border)] flex items-center justify-between">
+    <span class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)]">Menu</span>
+    <button onclick="toggleSidebar()" class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Sidebar Navigation -->
+  <nav class="p-3 flex flex-col gap-1">
+    <a href="/painel" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-text)] bg-[var(--color-panel-bg3)] font-semibold no-underline">
+      <span class="text-[18px] flex-shrink-0">📅</span>
+      <span class="nav-item-label flex-1">Agenda</span>
+    </a>
+    <a href="/clientes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+      <span class="text-[18px] flex-shrink-0">👥</span>
+      <span class="nav-item-label flex-1">Clientes</span>
+    </a>
+    <a href="/relatorio" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+      <span class="text-[18px] flex-shrink-0">📊</span>
+      <span class="nav-item-label flex-1">Relatórios</span>
+    </a>
+    <a href="/configuracoes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+      <span class="text-[18px] flex-shrink-0">⚙️</span>
+      <span class="nav-item-label flex-1">Configurações</span>
+    </a>
+    <a href="/planos" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
+      <span class="text-[18px] flex-shrink-0">⭐</span>
+      <span class="nav-item-label flex-1">Plano</span>
+    </a>
+  </nav>
+
+  <!-- Sidebar Widgets (desaparece quando colapsada) -->
+  <div class="sidebar-widgets flex-1 overflow-y-auto">
+    <!-- Mini Calendar -->
+    <div class="p-3 border-t border-[var(--color-panel-border)]">
+      <div class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5" id="sidebar-mes-label">—</div>
+      <div class="mini-cal text-[12px]">
+        <div class="mini-cal-header flex justify-between items-center mb-2 text-[var(--color-panel-faint)]">
+          <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-panel-text)]" onclick="mudarMesCal(-1)">‹</span>
+          <span class="text-[var(--color-panel-text)] font-medium" id="mini-cal-mes-label">—</span>
+          <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-panel-text)]" onclick="mudarMesCal(1)">›</span>
+        </div>
+        <div class="mini-cal-grid grid grid-cols-7 gap-px text-center" id="mini-cal"></div>
+      </div>
+    </div>
+
+    <!-- Stats Hoje -->
+    <div class="p-3 border-t border-[var(--color-panel-border)]">
+      <div class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Hoje</div>
+      <div class="stats flex flex-col gap-2">
+        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg">
+          <span class="stat-label text-[12px] text-[var(--color-panel-faint)]">Agendamentos</span>
+          <span class="stat-val text-[15px] font-semibold font-mono text-[var(--color-panel-accent)]" id="stat-count">—</span>
+        </div>
+        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg">
+          <span class="stat-label text-[12px] text-[var(--color-panel-faint)]">Receita prevista</span>
+          <span class="stat-val text-[15px] font-semibold font-mono text-[#7dd3a8]" id="stat-receita">—</span>
+        </div>
+        <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg">
+          <span class="stat-label text-[12px] text-[var(--color-panel-faint)]">Próximo horário</span>
+          <span class="stat-val text-[15px] font-semibold font-mono text-[13px] text-[var(--color-panel-text)]" id="stat-proximo">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Serviços -->
+    <div class="p-3 border-t border-[var(--color-panel-border)]">
+      <div class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Serviços</div>
+      <div class="servicos-list flex flex-col gap-1.5" id="sidebar-servicos-list">
+        <!-- Serviços serão carregados dinamicamente -->
+        <div class="text-[11px] text-[var(--color-panel-faint)] text-center py-2">Carregando…</div>
+      </div>
+    </div>
+
+    <!-- Botão Bloqueio -->
+    <div class="p-3 border-t border-[var(--color-panel-border)]">
+      <button class="btn-bloqueio w-full py-2 rounded-lg bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-faint)] text-[13px] font-medium cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)]" onclick="abrirNovoBloqueio()">
+        <span>⛔</span> Adicionar bloqueio
+      </button>
+    </div>
+  </div>
+</aside>

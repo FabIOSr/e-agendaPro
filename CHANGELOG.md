@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactor - 2026-04-25
+
+#### Componentização do painel.html ✅
+
+**Problema:** O arquivo `pages/painel.html` tinha 1246 linhas, sendo um "monolito" difícil de manter.
+
+**Solução:** Extração de componentes reutilizáveis usando sistema de `<include>` implementado no vite.config.js.
+
+**Componentes criados:**
+```
+src/components/painel/
+├── head.html      (Scripts FOUC, Sentry, Analytics - 20 linhas)
+├── topbar.html    (Barra superior + dropdown + layout functions - 150 linhas)
+├── sidebar.html   (Menu lateral, mini-calendário, stats - 90 linhas)
+├── kpis.html      (4 cards de indicadores - 25 linhas)
+└── modals.html    (Detail panel e overlay - 10 linhas)
+```
+
+**Benefícios:**
+- **Redução de 23%**: painel.html de 1246 → 960 linhas
+- **Manutenibilidade**: Cada componente isolado com responsabilidade única
+- **Reutilização**: Componentes podem ser usados em outras páginas
+- **Colaboração**: Múltiplos devs podem trabalhar em componentes diferentes sem conflitos
+
+**Exemplo de uso:**
+```html
+<!-- Antes: 1246 linhas em um arquivo -->
+<html>
+<body>
+  <!-- Topbar (70 linhas) -->
+  <!-- Sidebar (90 linhas) -->
+  <!-- KPIs (25 linhas) -->
+  <!-- ... -->
+</body>
+</html>
+
+<!-- Depois: Componentizados -->
+<html>
+<body>
+  <include src="components/painel/topbar.html"></include>
+  <include src="components/painel/sidebar.html"></include>
+  <include src="components/painel/kpis.html"></include>
+  <include src="components/painel/modals.html"></include>
+</body>
+</html>
+```
+
+**Arquivos modificados:**
+- `pages/painel.html` - Refatorado para usar includes
+- `src/components/painel/*` - Novos componentes (5 arquivos)
+
+**Build:** ✅ Testado e validado localmente
+
 ### Security - 2026-04-20
 
 #### Correções de Segurança (Média Prioridade) - Completado ✅

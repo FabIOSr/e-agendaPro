@@ -1,0 +1,10 @@
+<!-- DETAIL PANEL -->
+<div class="detail-overlay fixed inset-0 z-[199] hidden" id="overlay" onclick="fecharDetalhe()"></div>
+<div class="detail-panel bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
+  <div class="detail-header flex justify-between items-start mb-4">
+    <div class="detail-title text-[16px] font-semibold text-[var(--color-panel-text)]" id="dp-title"></div>
+    <button class="detail-close bg-[var(--color-panel-bg2)] border-none text-[var(--color-panel-faint)] w-[26px] h-[26px] rounded-md text-[15px] cursor-pointer flex items-center justify-center transition-colors hover:text-[var(--color-panel-text)]" onclick="fecharDetalhe()">✕</button>
+  </div>
+  <div id="dp-body"></div>
+  <div class="detail-actions flex gap-2 mt-[18px]" id="dp-actions"></div>
+</div>

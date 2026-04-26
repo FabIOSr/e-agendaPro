@@ -1,35 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<script src="/config.js"></script>
-<script src="/modules/sentry.js"></script>
-<!-- Privacy-friendly analytics by Plausible -->
-<script async src="https://plausible.io/js/pa-0cSbl_0lg3SO6Ddb7XWLc.js"></script>
-<script>
-  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
-</script>
+<include src="components/painel/head.html"></include>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda — Ana Cabelos</title>
-
-<!-- ⚡ CRÍTICO: FOUC Prevention - Executa ANTES do carregamento -->
-<script>
-  // Tema - aplicar explicitamente para evitar FOUC
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else {
-    // Garantir que o light theme seja aplicado (remove data-theme)
-    document.documentElement.removeAttribute('data-theme');
-  }
-
-  // Sidebar colapsada
-  const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-  if (sidebarCollapsed) {
-    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
-  }
-</script>
 <style>
 
 @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
@@ -84,144 +59,7 @@
 </head>
 <body class="bg-[var(--color-panel-bg)] text-[var(--color-panel-text)] font-sans min-h-screen">
 
-<!-- TOPBAR UNIFICADA -->
-<div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">
-  <!-- Topbar Left -->
-  <div class="flex items-center gap-4">
-    <button
-      onclick="toggleSidebar()"
-      id="sidebarToggle"
-      class="hidden p-2 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] transition-all duration-200 md:flex items-center justify-center bg-transparent border-0 cursor-pointer"
-      aria-label="Toggle sidebar"
-    >
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 6h18M3 10h18M3 14h18"/>
-      </svg>
-    </button>
-    <a href="/painel" class="font-fraunces text-[18px] font-normal flex items-center gap-2 no-underline text-[var(--color-panel-text)]">
-      <div class="w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5); animation:pulse-dot 2s ease-in-out infinite"></div>
-      AgendaPro
-    </a>
-  </div>
-
-  <!-- Topbar Center - Date Navigation -->
-  <div class="flex items-center gap-2 hide-mobile">
-    <button onclick="mudarDia(-1)" class="px-2 py-1 bg-transparent border border-[var(--color-panel-border)] rounded-md text-[var(--color-panel-faint)] hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)] cursor-pointer transition-all duration-200" aria-label="Dia anterior">
-      ‹
-    </button>
-    <div class="text-[14px] font-medium min-w-[180px] text-center cursor-pointer" id="date-label">
-      <span id="date-text"></span>
-      <span class="text-[var(--color-panel-faint)] text-[12px] font-normal ml-1.5" id="weekday-text"></span>
-    </div>
-    <button onclick="mudarDia(1)" class="px-2 py-1 bg-transparent border border-[var(--color-panel-border)] rounded-md text-[var(--color-panel-faint)] hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)] cursor-pointer transition-all duration-200" aria-label="Próximo dia">
-      ›
-    </button>
-  </div>
-
-  <!-- Topbar Right -->
-  <div class="flex items-center gap-3">
-    <button
-      onclick="toggleTheme()"
-      id="themeToggle"
-      class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
-      title="Alternar tema"
-      aria-label="Alternar tema claro/escuro"
-    >
-      🌙
-    </button>
-    <span id="badge-pro-topbar" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-lime)] text-[var(--color-lime-ink)]" style="display:none;">
-      Pro
-    </span>
-    <button class="px-3.5 py-2 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-[var(--color-lime-d)]" onclick="abrirNovoAgendamento()">
-      + Novo
-    </button>
-    <!-- Avatar com dropdown -->
-    <div class="relative">
-      <div class="w-8 h-8 bg-[var(--color-lime)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-lime-ink)] cursor-pointer hover:scale-105 transition-transform duration-200" id="avatar-initials" title="Meu perfil" onclick="toggleUserMenu()">
-        AC
-      </div>
-      <!-- Dropdown menu -->
-      <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg shadow-lg py-1 hidden" style="z-index: 200;">
-        <div class="px-4 py-2 border-b border-[var(--color-panel-border)]">
-          <div class="text-[11px] text-[var(--color-panel-faint)]">Logado como</div>
-          <div class="text-[13px] font-medium text-[var(--color-panel-text)] truncate" id="user-menu-name">Profissional</div>
-        </div>
-        <button onclick="fazerLogout()" class="w-full text-left px-4 py-2 text-[13px] text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg2)] hover:text-[var(--color-panel-text)] transition-colors cursor-pointer border-none bg-transparent">
-          Sair
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Script para dropdown do avatar -->
-<script>
-window.toggleUserMenu = function() {
-  const menu = document.getElementById('user-menu');
-  if (menu) {
-    menu.classList.toggle('hidden');
-  }
-};
-
-// Fechar dropdown ao clicar fora
-document.addEventListener('click', (e) => {
-  const menu = document.getElementById('user-menu');
-  const avatar = document.getElementById('avatar-initials');
-  if (menu && !menu.classList.contains('hidden') && !avatar?.contains(e.target) && !menu?.contains(e.target)) {
-    menu.classList.add('hidden');
-  }
-});
-
-// Layout functions (toggleSidebar e toggleTheme)
-window.toggleSidebar = function() {
-  const layout = document.getElementById('appLayout');
-  if (!layout) return;
-
-  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
-
-  // Sincronizar data attribute
-  if (isCollapsed) {
-    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
-  } else {
-    document.documentElement.removeAttribute('data-sidebar-collapsed');
-  }
-
-  // Salvar preferência
-  localStorage.setItem('sidebar-collapsed', isCollapsed);
-
-  // Atualizar ícone
-  const toggle = document.getElementById('sidebarToggle');
-  if (toggle) {
-    toggle.innerHTML = isCollapsed
-      ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
-      : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
-  }
-};
-
-window.toggleTheme = function() {
-  const html = document.documentElement;
-  const current = html.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-
-  html.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-
-  // Atualizar ícone
-  const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
-  }
-};
-
-// Inicializar ícone do theme toggle
-document.addEventListener('DOMContentLoaded', () => {
-  const savedTheme = localStorage.getItem('theme');
-  const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-  }
-});
-</script>
+<include src="components/painel/topbar.html"></include>
 
 <!-- BANNER FREE (Pro-only feature promo) -->
 <div class="banner-free bg-[rgba(var(--color-lime),0.1)] border border-[rgba(var(--color-lime),0.3)] text-[var(--color-panel-text)] mx-auto mt-4 max-w-[1400px] rounded-xl mx-4" id="banner-free" style="display:none;animation:slide-down .4s ease-out">
@@ -240,93 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- LAYOUT GRID (App Layout) -->
 <div class="app-layout" id="appLayout">
 
-  <!-- SIDEBAR COLAPSÁVEL -->
-  <aside id="sidebar" class="bg-[var(--color-panel-bg2)] border-r border-[var(--color-panel-border)] flex flex-col overflow-hidden transition-all duration-300">
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-[var(--color-panel-border)] flex items-center justify-between">
-      <span class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)]">Menu</span>
-      <button onclick="toggleSidebar()" class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg transition-all duration-200 flex items-center justify-center bg-transparent border-0 cursor-pointer">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 19l-7-7 7-7M8 19l-7-7 7-7"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Sidebar Navigation -->
-    <nav class="p-3 flex flex-col gap-1">
-      <a href="/painel" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-text)] bg-[var(--color-panel-bg3)] font-semibold no-underline">
-        <span class="text-[18px] flex-shrink-0">📅</span>
-        <span class="nav-item-label flex-1">Agenda</span>
-      </a>
-      <a href="/clientes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
-        <span class="text-[18px] flex-shrink-0">👥</span>
-        <span class="nav-item-label flex-1">Clientes</span>
-      </a>
-      <a href="/relatorio" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
-        <span class="text-[18px] flex-shrink-0">📊</span>
-        <span class="nav-item-label flex-1">Relatórios</span>
-      </a>
-      <a href="/configuracoes" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
-        <span class="text-[18px] flex-shrink-0">⚙️</span>
-        <span class="nav-item-label flex-1">Configurações</span>
-      </a>
-      <a href="/planos" class="flex items-center gap-3 p-3 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] text-[13px] font-medium transition-all duration-200 no-underline whitespace-nowrap overflow-hidden">
-        <span class="text-[18px] flex-shrink-0">⭐</span>
-        <span class="nav-item-label flex-1">Plano</span>
-      </a>
-    </nav>
-
-    <!-- Sidebar Widgets (desaparece quando colapsada) -->
-    <div class="sidebar-widgets flex-1 overflow-y-auto">
-      <!-- Mini Calendar -->
-      <div class="p-3 border-t border-[var(--color-panel-border)]">
-        <div class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5" id="sidebar-mes-label">—</div>
-        <div class="mini-cal text-[12px]">
-          <div class="mini-cal-header flex justify-between items-center mb-2 text-[var(--color-panel-faint)]">
-            <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-panel-text)]" onclick="mudarMesCal(-1)">‹</span>
-            <span class="text-[var(--color-panel-text)] font-medium" id="mini-cal-mes-label">—</span>
-            <span class="cursor-pointer px-1.5 py-0.5 hover:text-[var(--color-panel-text)]" onclick="mudarMesCal(1)">›</span>
-          </div>
-          <div class="mini-cal-grid grid grid-cols-7 gap-px text-center" id="mini-cal"></div>
-        </div>
-      </div>
-
-      <!-- Stats Hoje -->
-      <div class="p-3 border-t border-[var(--color-panel-border)]">
-        <div class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Hoje</div>
-        <div class="stats flex flex-col gap-2">
-          <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg">
-            <span class="stat-label text-[12px] text-[var(--color-panel-faint)]">Agendamentos</span>
-            <span class="stat-val text-[15px] font-semibold font-mono text-[var(--color-panel-accent)]" id="stat-count">—</span>
-          </div>
-          <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg">
-            <span class="stat-label text-[12px] text-[var(--color-panel-faint)]">Receita prevista</span>
-            <span class="stat-val text-[15px] font-semibold font-mono text-[#7dd3a8]" id="stat-receita">—</span>
-          </div>
-          <div class="stat flex items-center justify-between p-2.5 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg">
-            <span class="stat-label text-[12px] text-[var(--color-panel-faint)]">Próximo horário</span>
-            <span class="stat-val text-[15px] font-semibold font-mono text-[13px] text-[var(--color-panel-text)]" id="stat-proximo">—</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Serviços -->
-      <div class="p-3 border-t border-[var(--color-panel-border)]">
-        <div class="text-[10px] font-bold tracking-widest uppercase text-[var(--color-panel-faint)] mb-2.5">Serviços</div>
-        <div class="servicos-list flex flex-col gap-1.5" id="sidebar-servicos-list">
-          <!-- Serviços serão carregados dinamicamente -->
-          <div class="text-[11px] text-[var(--color-panel-faint)] text-center py-2">Carregando…</div>
-        </div>
-      </div>
-
-      <!-- Botão Bloqueio -->
-      <div class="p-3 border-t border-[var(--color-panel-border)]">
-        <button class="btn-bloqueio w-full py-2 rounded-lg bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] text-[var(--color-panel-faint)] text-[13px] font-medium cursor-pointer flex items-center justify-center gap-1.5 transition-colors hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)]" onclick="abrirNovoBloqueio()">
-          <span>⛔</span> Adicionar bloqueio
-        </button>
-      </div>
-    </div>
-  </aside>
+  <include src="components/painel/sidebar.html"></include>
 
   <!-- MAIN CONTENT -->
   <main class="main-content p-6 overflow-y-auto">
@@ -334,34 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="mb-6">
       <h1 class="font-fraunces text-[28px] font-light mb-2">Agenda</h1>
       <p class="text-[14px] text-[var(--color-panel-faint)]" id="page-subtitle">Gerencie seus agendamentos</p>
-    </div>  
-
-    <!-- KPIs (MOBILE: scroll horizontal) -->
-    <div class="kpi-grid grid grid-cols-4 gap-4 mb-6 overflow-x-auto">
-      <!-- KPI 1 -->
-      <div class="relative bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-4 overflow-hidden kpi-card">
-        <div class="text-[10px] font-bold tracking-wider uppercase text-[var(--color-panel-faint)] mb-2">Agendamentos</div>
-        <div class="font-fraunces text-[24px] font-light mb-1 text-[var(--color-lime-d)]" id="kpi-agendamentos">—</div>
-      </div>
-
-      <!-- KPI 2 -->
-      <div class="relative bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-4 overflow-hidden kpi-card teal">
-        <div class="text-[10px] font-bold tracking-wider uppercase text-[var(--color-panel-faint)] mb-2">Receita hoje</div>
-        <div class="font-fraunces text-[24px] font-light mb-1 text-[rgb(93,202,165)]" id="kpi-receita">—</div>
-      </div>
-
-      <!-- KPI 3 -->
-      <div class="relative bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-4 overflow-hidden kpi-card amber">
-        <div class="text-[10px] font-bold tracking-wider uppercase text-[var(--color-panel-faint)] mb-2">Próximo horário</div>
-        <div class="font-fraunces text-[20px] font-light mb-1 text-[rgb(239,159,39)]" id="kpi-proximo">—</div>
-      </div>
-
-      <!-- KPI 4 -->
-      <div class="relative bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-[14px] p-4 overflow-hidden kpi-card rust">
-        <div class="text-[10px] font-bold tracking-wider uppercase text-[var(--color-panel-faint)] mb-2">Ocupação</div>
-        <div class="font-fraunces text-[24px] font-light mb-1 text-[var(--color-rust)]" id="kpi-ocupacao">—%</div>
-      </div>
     </div>
+
+    <include src="components/painel/kpis.html"></include>
 
       <!-- Date Navigation (MOBILE ONLY) -->
     <div class="show-mobile-only mb-6 flex items-center justify-center gap-3">
@@ -431,22 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
     <span class="text-[20px]">⚙️</span>
     <span class="text-[10px] font-medium">Config</span>
   </a>
-  <!-- <a href="/planos" class="flex flex-col items-center gap-1 p-2 rounded-lg text-[var(--color-panel-faint)] no-underline transition-all duration-200" aria-label="Plano">
-    <span class="text-[20px]">⭐</span>
-    <span class="text-[10px] font-medium">Plano</span>
-  </a> -->
 </nav>
 
-<!-- DETAIL PANEL -->
-<div class="detail-overlay fixed inset-0 z-[199] hidden" id="overlay" onclick="fecharDetalhe()"></div>
-<div class="detail-panel bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border2)] rounded-xl w-[320px] p-5 z-[200] opacity-0 pointer-events-none transition-all duration-200 shadow-[0_24px_64px_rgba(0,0,0,.6)]" id="detail-panel">
-  <div class="detail-header flex justify-between items-start mb-4">
-    <div class="detail-title text-[16px] font-semibold text-[var(--color-panel-text)]" id="dp-title"></div>
-    <button class="detail-close bg-[var(--color-panel-bg2)] border-none text-[var(--color-panel-faint)] w-[26px] h-[26px] rounded-md text-[15px] cursor-pointer flex items-center justify-center transition-colors hover:text-[var(--color-panel-text)]" onclick="fecharDetalhe()">✕</button>
-  </div>
-  <div id="dp-body"></div>
-  <div class="detail-actions flex gap-2 mt-[18px]" id="dp-actions"></div>
-</div>
+<include src="components/painel/modals.html"></include>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -688,7 +402,7 @@ async function renderAgenda() {
       const h      = (ag.dur / 60) * HOUR_H;
       const horaFim = ag.hora + ag.dur / 60;
       const el     = document.createElement('div');
-      
+
       // Cores adaptativas por categoria
       const cats = {
         corte:   { bg: 'rgba(var(--color-lime), 0.15)',  border: 'var(--color-lime-d)',  text: 'rgb(var(--color-lime-ink))' },
@@ -697,10 +411,10 @@ async function renderAgenda() {
         barba:   { bg: 'rgba(239, 159, 39, 0.15)',      border: 'rgb(239, 159, 39)',         text: 'var(--color-text)' },
       };
       const c = cats[ag.cat] || cats.corte;
-      
+
       el.className = `agendamento absolute left-1.5 right-1.5 rounded-lg border-l-[3px] p-2 cursor-pointer overflow-hidden z-5 transition-all`;
       el.style.cssText = `top:${top + 2}px;height:${h - 5}px; background-color: ${c.bg}; border-left-color: ${c.border}; color: ${c.text}`;
-      
+
       el.innerHTML = `
         <div class="ag-service text-[12px] font-semibold mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">${ag.servico}</div>
         <div class="ag-client text-[11px] opacity-80 whitespace-nowrap overflow-hidden text-ellipsis">${ag.cliente}</div>
@@ -1168,11 +882,11 @@ function renderMiniCal() {
       el.className = 'day py-1 rounded-sm cursor-pointer text-[var(--color-panel-faint)] transition-colors hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] tabular-nums relative';
       el.textContent = d;
       const dataD = new Date(calAno, calMes, d);
-      
+
       // Marcar dia selecionado e hoje
       if (dataD.toDateString() === hoje.toDateString()) el.classList.add('day-today');
       if (dataD.toDateString() === diaAtual.toDateString()) el.classList.add('day-selected');
-      
+
       // Lógica de "has-event" (Dot)
       const chave = dataD.toISOString().slice(0,10);
       if (dadosPorDia[chave] && (dadosPorDia[chave].ag.length > 0 || dadosPorDia[chave].bl.length > 0)) {

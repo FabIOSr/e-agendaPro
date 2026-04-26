@@ -1,0 +1,138 @@
+<!-- TOPBAR UNIFICADA -->
+<div class="sticky top-0 z-[100] flex items-center justify-between px-5 h-14 bg-[var(--color-panel-bg2)] border-b border-[var(--color-panel-border)]">
+  <!-- Topbar Left -->
+  <div class="flex items-center gap-4">
+    <button
+      onclick="toggleSidebar()"
+      id="sidebarToggle"
+      class="hidden p-2 rounded-lg text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] transition-all duration-200 md:flex items-center justify-center bg-transparent border-0 cursor-pointer"
+      aria-label="Toggle sidebar"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M3 10h18M3 14h18"/>
+      </svg>
+    </button>
+    <a href="/painel" class="font-fraunces text-[18px] font-normal flex items-center gap-2 no-underline text-[var(--color-panel-text)]">
+      <div class="w-[7px] h-[7px] bg-[var(--color-lime)] rounded-full logo-dot" style="box-shadow: 0 0 8px rgba(200,240,96,0.5); animation:pulse-dot 2s ease-in-out infinite"></div>
+      AgendaPro
+    </a>
+  </div>
+
+  <!-- Topbar Center - Date Navigation -->
+  <div class="flex items-center gap-2 hide-mobile">
+    <button onclick="mudarDia(-1)" class="px-2 py-1 bg-transparent border border-[var(--color-panel-border)] rounded-md text-[var(--color-panel-faint)] hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)] cursor-pointer transition-all duration-200" aria-label="Dia anterior">
+      ‹
+    </button>
+    <div class="text-[14px] font-medium min-w-[180px] text-center cursor-pointer" id="date-label">
+      <span id="date-text"></span>
+      <span class="text-[var(--color-panel-faint)] text-[12px] font-normal ml-1.5" id="weekday-text"></span>
+    </div>
+    <button onclick="mudarDia(1)" class="px-2 py-1 bg-transparent border border-[var(--color-panel-border)] rounded-md text-[var(--color-panel-faint)] hover:border-[var(--color-panel-border2)] hover:text-[var(--color-panel-text)] cursor-pointer transition-all duration-200" aria-label="Próximo dia">
+      ›
+    </button>
+  </div>
+
+  <!-- Topbar Right -->
+  <div class="flex items-center gap-3">
+    <button
+      onclick="toggleTheme()"
+      id="themeToggle"
+      class="p-2 text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg3)] hover:text-[var(--color-panel-text)] rounded-lg text-[18px] transition-all duration-200 bg-transparent border-0 cursor-pointer"
+      title="Alternar tema"
+      aria-label="Alternar tema claro/escuro"
+    >
+      🌙
+    </button>
+    <span id="badge-pro-topbar" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[var(--color-lime)] text-[var(--color-lime-ink)]" style="display:none;">
+      Pro
+    </span>
+    <button class="px-3.5 py-2 bg-[var(--color-lime)] text-[var(--color-lime-ink)] border-none rounded-lg text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-[var(--color-lime-d)]" onclick="abrirNovoAgendamento()">
+      + Novo
+    </button>
+    <!-- Avatar com dropdown -->
+    <div class="relative">
+      <div class="w-8 h-8 bg-[var(--color-lime)] rounded-full flex items-center justify-center text-[12px] font-semibold text-[var(--color-lime-ink)] cursor-pointer hover:scale-105 transition-transform duration-200" id="avatar-initials" title="Meu perfil" onclick="toggleUserMenu()">
+        AC
+      </div>
+      <!-- Dropdown menu -->
+      <div id="user-menu" class="absolute right-0 top-full mt-2 w-48 bg-[var(--color-panel-bg3)] border border-[var(--color-panel-border)] rounded-lg shadow-lg py-1 hidden" style="z-index: 200;">
+        <div class="px-4 py-2 border-b border-[var(--color-panel-border)]">
+          <div class="text-[11px] text-[var(--color-panel-faint)]">Logado como</div>
+          <div class="text-[13px] font-medium text-[var(--color-panel-text)] truncate" id="user-menu-name">Profissional</div>
+        </div>
+        <button onclick="fazerLogout()" class="w-full text-left px-4 py-2 text-[13px] text-[var(--color-panel-faint)] hover:bg-[var(--color-panel-bg2)] hover:text-[var(--color-panel-text)] transition-colors cursor-pointer border-none bg-transparent">
+          Sair
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Script para dropdown do avatar e funções de layout -->
+<script>
+window.toggleUserMenu = function() {
+  const menu = document.getElementById('user-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const avatar = document.getElementById('avatar-initials');
+  if (menu && !menu.classList.contains('hidden') && !avatar?.contains(e.target) && !menu?.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+// Layout functions (toggleSidebar e toggleTheme)
+window.toggleSidebar = function() {
+  const layout = document.getElementById('appLayout');
+  if (!layout) return;
+
+  const isCollapsed = layout.classList.toggle('sidebar-collapsed');
+
+  // Sincronizar data attribute
+  if (isCollapsed) {
+    document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
+  } else {
+    document.documentElement.removeAttribute('data-sidebar-collapsed');
+  }
+
+  // Salvar preferência
+  localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+  // Atualizar ícone
+  const toggle = document.getElementById('sidebarToggle');
+  if (toggle) {
+    toggle.innerHTML = isCollapsed
+      ? '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18"/></svg>';
+  }
+};
+
+window.toggleTheme = function() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+
+  // Atualizar ícone
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+};
+
+// Inicializar ícone do theme toggle
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  }
+});
+</script>
