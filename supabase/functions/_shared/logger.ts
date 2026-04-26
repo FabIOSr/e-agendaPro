@@ -27,6 +27,10 @@ export interface LogContext {
 }
 
 function getCurrentLevel(): LogLevel {
+  // Verificação segura para Deno (Node.js não tem Deno)
+  if (typeof Deno === 'undefined' || !Deno.env) {
+    return LOG_LEVELS.DEBUG;
+  }
   return Deno.env.get("SENTRY_ENVIRONMENT") === "production"
     ? LOG_LEVELS.WARN
     : LOG_LEVELS.DEBUG;
@@ -61,6 +65,10 @@ async function sendToSentry(
   context: LogContext,
   feature?: string
 ): Promise<void> {
+  // Verificação segura para Deno (Node.js não tem Deno)
+  if (typeof Deno === 'undefined' || !Deno.env) {
+    return;
+  }
   const dsn = Deno.env.get("SENTRY_DSN");
   if (!dsn) return;
 
